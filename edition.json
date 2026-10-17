@@ -14,8 +14,10 @@
   "repository": "npuneil/Surface-Hybrid-Intelligence-Studio",
   "visibility": "public",
   "logo": {
+    "style": "device",
     "text": "HI",
-    "background": "#0F6CBD",
+    "background": "#2B8BE0",
+    "backgroundEnd": "#0B4A8C",
     "foreground": "#FFFFFF"
   },
   "accent": {

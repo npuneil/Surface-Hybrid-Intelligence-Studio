@@ -10,9 +10,10 @@ Set-StrictMode -Version Latest
 $script:IdentityFields = @('displayName', 'codeName', 'appUserModelId', 'serviceAppId', 'schemaPrefix', 'envPrefix', 'shortcutName', 'repository')
 $script:AccentKeys = [ordered]@{ base = ''; light1 = 'Light1'; light2 = 'Light2'; light3 = 'Light3'; dark1 = 'Dark1'; dark2 = 'Dark2'; dark3 = 'Dark3'; tint = $null }
 $script:WebAccentVariables = [ordered]@{ base = '--accent'; deep = '--accent-deep'; focus = '--focus' }
-$script:TextExtensions = @('.cs', '.xaml', '.csproj', '.manifest', '.config', '.py', '.ps1', '.psm1', '.js', '.html', '.css', '.md', '.json', '.svg', '.txt', '.yml', '.yaml')
+$script:TextExtensions = @('.cs', '.xaml', '.csproj', '.manifest', '.config', '.py', '.ps1', '.psm1', '.psd1', '.js', '.html', '.css', '.md', '.json', '.svg', '.txt', '.yml', '.yaml', '.cmd')
 $script:TextNames = @('.gitignore', '.gitattributes', '.editorconfig')
 $script:GeneratedFiles = @('edition.json', 'native\Brand.cs', 'native\Assets\AppIcon.ico', 'native\Assets\AppLogo.png', 'native\Assets\AppLogo.svg')
+$script:LogoStyles = @('monogram', 'device')
 
 function Get-Field($Object, [string]$Name) {
     if ($null -eq $Object) { return $null }
@@ -58,6 +59,10 @@ function Test-EditionManifest {
     $logo = Get-Field $Edition 'logo'
     if ((Get-Field $logo 'text') -cnotmatch '^[A-Za-z0-9]{1,4}$') { $errors.Add('logo.text must be 1-4 letters or digits') }
     foreach ($key in 'background', 'foreground') { if ((Get-Field $logo $key) -notmatch $hex) { $errors.Add("logo.$key must be #RRGGBB") } }
+    $style = Get-Field $logo 'style'
+    if ($null -ne $style -and $style -cnotin $script:LogoStyles) { $errors.Add("logo.style must be one of: $($script:LogoStyles -join ', ')") }
+    $end = Get-Field $logo 'backgroundEnd'
+    if ($null -ne $end -and $end -notmatch $hex) { $errors.Add('logo.backgroundEnd must be #RRGGBB') }
     $accent = Get-Field $Edition 'accent'
     foreach ($key in $script:AccentKeys.Keys) { if ((Get-Field $accent $key) -notmatch $hex) { $errors.Add("accent.$key must be #RRGGBB") } }
     $web = Get-Field $Edition 'webAccent'
@@ -167,9 +172,77 @@ function Get-BrandSource {
     return ($lines -join "`r`n") + "`r`n"
 }
 
+function Get-LogoStyle {
+    param([Parameter(Mandatory)]$Edition)
+    $style = Get-Field (Get-Field $Edition 'logo') 'style'
+    if ($style) { return $style } else { return 'monogram' }
+}
+
+function Get-LogoGeometry {
+    <# Shapes for the 'device' logo style (tools\LogoGeometry.psd1), shared by the SVG and PNG/ICO renderers. #>
+    return @((Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot 'LogoGeometry.psd1')).Device)
+}
+
+function Get-SparkSegments {
+    <# Four-point spark with concave sides: the top tip, then four cubic segments @(c1x, c1y, c2x, c2y, x, y). #>
+    param([double]$X, [double]$Y, [double]$R, [double]$Waist)
+    $k = $R * $Waist
+    $start = @($X, ($Y - $R))
+    $segments = @(
+        , @(($X + $k), ($Y - $k), ($X + $k), ($Y - $k), ($X + $R), $Y)
+        , @(($X + $k), ($Y + $k), ($X + $k), ($Y + $k), $X, ($Y + $R))
+        , @(($X - $k), ($Y + $k), ($X - $k), ($Y + $k), ($X - $R), $Y)
+        , @(($X - $k), ($Y - $k), ($X - $k), ($Y - $k), $X, ($Y - $R))
+    )
+    return [pscustomobject]@{ Start = $start; Segments = $segments }
+}
+
+function Format-SvgNumber([double]$Value) { return ([math]::Round($Value, 2)).ToString([System.Globalization.CultureInfo]::InvariantCulture) }
+
+function Get-DeviceLogoSvgBody {
+    param([Parameter(Mandatory)]$Edition)
+    $logo = $Edition.logo
+    $end = Get-Field $logo 'backgroundEnd'
+    $tile = if ($end) { 'url(#tile)' } else { $logo.background }
+    $ink = $logo.foreground
+    $lines = [System.Collections.Generic.List[string]]::new()
+    if ($end) {
+        $lines.Add('  <defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">' +
+            "<stop offset=""0"" stop-color=""$($logo.background)""/><stop offset=""1"" stop-color=""$end""/></linearGradient></defs>")
+    }
+    foreach ($shape in Get-LogoGeometry) {
+        $fill = if ($shape.Fill -eq 'tile') { $tile } else { $ink }
+        $paint = "fill=""$fill"""
+        if ($shape.ContainsKey('FillOpacity')) { $paint += " fill-opacity=""$(Format-SvgNumber $shape.FillOpacity)""" }
+        if ($shape.ContainsKey('Stroke')) {
+            $stroke = if ($shape.Stroke -eq 'tile') { $tile } else { $ink }
+            $paint += " stroke=""$stroke"" stroke-width=""$(Format-SvgNumber $shape.StrokeWidth)"" stroke-linejoin=""round"""
+        }
+        if ($shape.Kind -eq 'rect') {
+            $lines.Add("  <rect x=""$($shape.X)"" y=""$($shape.Y)"" width=""$($shape.W)"" height=""$($shape.H)"" rx=""$($shape.R)"" $paint/>")
+        } elseif ($shape.Kind -eq 'spark') {
+            $spark = Get-SparkSegments -X $shape.X -Y $shape.Y -R $shape.R -Waist $shape.Waist
+            $d = "M$(Format-SvgNumber $spark.Start[0]) $(Format-SvgNumber $spark.Start[1])"
+            foreach ($s in $spark.Segments) { $d += 'C' + (($s | ForEach-Object { Format-SvgNumber $_ }) -join ' ') }
+            $lines.Add("  <path d=""${d}Z"" $paint/>")
+        } else {
+            throw "LogoGeometry.psd1: unknown shape kind '$($shape.Kind)'"
+        }
+    }
+    return $lines
+}
+
 function Get-LogoSvg {
     param([Parameter(Mandatory)]$Edition)
     $label = [System.Security.SecurityElement]::Escape("$($Edition.displayName) logo")
+    $style = Get-LogoStyle -Edition $Edition
+    if ($style -eq 'device') {
+        return (@(
+            "<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 256 256"" role=""img"" aria-label=""$label"" data-style=""device"">"
+            Get-DeviceLogoSvgBody -Edition $Edition
+            '</svg>'
+        ) -join "`r`n") + "`r`n"
+    }
     $text = [System.Security.SecurityElement]::Escape($Edition.logo.text)
     $size = @{ 1 = 150; 2 = 120; 3 = 87; 4 = 68 }[$Edition.logo.text.Length]
     $baseline = 128 + [int]($size * 0.29)
@@ -333,7 +406,10 @@ function Sync-EditionTree {
             if (-not (Test-Path -LiteralPath (Join-Path $Root $asset))) { $drift.Add("$asset (missing)") }
         }
     } else {
-        & (Join-Path $Root 'tools\New-AppAssets.ps1') -Root $Root | Out-Null
+        # Own process: the script imports its tree's Edition.psm1, which may differ from the module running this.
+        $output = & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $Root 'tools\New-AppAssets.ps1') -Root $Root 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "tools\New-AppAssets.ps1 failed: $($output -join ' ')" }
+        $output | ForEach-Object { Write-Host $_ }
     }
     $project = Join-Path $Root "native\$($edition.codeName).csproj"
     if (-not (Test-Path -LiteralPath $project)) { $drift.Add("native\$($edition.codeName).csproj (missing: project file must be named after codeName)") }
@@ -341,5 +417,5 @@ function Sync-EditionTree {
 }
 
 Export-ModuleMember -Function Get-Field, Read-Edition, Test-EditionManifest, ConvertTo-TreeManifest, Get-EditionIdentityMap, Convert-EditionText,
-    Get-EditionRules, Get-BrandSource, Get-LogoSvg, Set-AccentInXaml, Set-AccentInCss, Get-EditionFiles, Test-EditionTextFile,
-    Find-EditionLeaks, Find-HygieneIssues, Write-TextFile, Sync-EditionTree
+    Get-EditionRules, Get-BrandSource, Get-LogoStyle, Get-LogoGeometry, Get-SparkSegments, Get-LogoSvg, Set-AccentInXaml, Set-AccentInCss,
+    Get-EditionFiles, Test-EditionTextFile, Find-EditionLeaks, Find-HygieneIssues, Write-TextFile, Sync-EditionTree

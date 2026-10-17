@@ -8,6 +8,27 @@ presentation remains available as a companion.
 Independent seller-enablement prototype, not a product announcement or endorsement.
 The conceptual device illustration is original, not a product photograph.
 
+## Download
+
+The [latest release](https://github.com/npuneil/Surface-Hybrid-Intelligence-Studio/releases/latest) contains:
+
+| File | What it is |
+|---|---|
+| `HybridIntelligenceStudio-<version>-win-arm64.zip` | The self-contained app (no .NET or Windows App SDK install needed), the local service, demo content and `Setup.cmd` |
+| `HybridIntelligenceStudio-<version>-icon-pack.zip` | The app icon: PNG from 16 to 1024 px, a multi-size `.ico` and the `.svg` source, with a NOTICE |
+| `SHA256SUMS.txt` | SHA-256 hashes of both zips |
+
+Check the hash, unblock the zip (`Unblock-File`), extract it to a short path
+such as `C:\Apps`, then double-click `Setup.cmd`. It finds an ARM64 Python 3.12
+to 3.14 (3.13 tested), creates `.venv`, installs `requirements.txt` with the
+tested dependency versions pinned in `constraints.txt`, adds the
+desktop shortcut, then downloads every model the app uses and runs each live
+demo once to check it. `.\Setup.ps1 -Prepare` does the same from a terminal
+(Windows PowerShell 5.1 or PowerShell 7); `-NoShortcut`, `-Port` and
+`-Python <path>` are optional. The pre-flight result is saved to
+`.runtime\setup-prepare.json`. Requires Windows 11 on ARM64 with an NVIDIA GPU.
+The app is not code-signed, so Windows may ask you to confirm the first launch.
+
 ## Run on this device
 
 From the repository root:
@@ -34,7 +55,7 @@ app crashes. Startup logs are in `.runtime\native\backend-*.log`.
 The launcher builds the native executable if it is missing. A .NET 10 SDK
 and Windows App SDK NuGet packages are required for a build, not for every launch.
 
-The original blue **HI (Hybrid Intelligence) monogram** appears in native window/taskbar
+The original blue **laptop-and-spark icon** (Fluent-style, drawn for this project) appears in native window/taskbar
 branding, the executable, and the companion browser tab. It is prototype
 artwork, not official Microsoft brand artwork or an endorsement. The name, logo and
 accent colours come from `edition.json` (see *Editions and scale-out harness*);
@@ -220,15 +241,14 @@ Use `-Prepare` explicitly to allow missing model/initial provider acquisition
 before presenting. `-RehearsalOnly` does not import the SDK or load a model.
 `-NoBrowser` and `-Port 8791` are also available.
 
-For a standalone installation on compatible Windows ARM64 NVIDIA hardware:
+For a standalone installation from source on compatible Windows ARM64 NVIDIA hardware:
 
 ```powershell
 git clone https://github.com/npuneil/Surface-Hybrid-Intelligence-Studio.git
 Set-Location Surface-Hybrid-Intelligence-Studio
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\Start-Showcase.ps1 -Prepare
-.\Start-NativeShowcase.ps1
+.\Setup.ps1 -Prepare                      # .venv, requirements.txt, every model checked
+.\Start-NativeShowcase.ps1                # builds the native app on first run
+.\tools\Install-NativeShortcut.ps1
 ```
 
 The native build needs the .NET 10 SDK: the launchers use
@@ -323,7 +343,7 @@ without hand-editing a fork. `edition.json` is this tree's brand manifest:
 | Field | Used for |
 |---|---|
 | `id`, `displayName`, `device` | Window title, title bar, exports folder, web title |
-| `mark`, `markSubtitle`, `logo` | Navigation header and the generated monogram icon/logo |
+| `mark`, `markSubtitle`, `logo` | Navigation header and the generated icon/logo: `logo.style` is `monogram` (default; `logo.text` on a rounded square) or `device` (an original laptop-and-spark glyph from `tools\LogoGeometry.psd1`); optional `logo.backgroundEnd` adds a gradient |
 | `accent`, `webAccent` | WinUI accent ramp and palette; web accent and focus colours |
 | `codeName` | C# namespace, assembly/executable, project file, app-data folder |
 | `appUserModelId`, `shortcutName` | Windows taskbar identity and desktop shortcut |
@@ -335,6 +355,7 @@ without hand-editing a fork. `edition.json` is this tree's brand manifest:
 .\tools\Sync-Edition.ps1 -Check      # fail if generated files drifted from edition.json
 .\tools\New-Edition.ps1 -Edition <id> -Destination ..\<folder>
 .\tools\Test-Edition.ps1 -Path ..\<folder> -ForbiddenToken <word>
+.\tools\New-ReleasePackage.ps1 -ForbiddenToken <word>   # release zips in .runtime\release
 ```
 
 A target edition lives in `editions\<id>.json`: the same fields plus optional
@@ -358,6 +379,15 @@ self-test and UI smoke. `-Live` adds CUDA runs; `-Browser` runs the browser
 check, refreshes `Executive-Handout.pdf` and scans it. Results are written to
 `.runtime\edition-conformance.json`. The native self-test also fails if
 `Brand.cs` disagrees with `edition.json`.
+
+`New-ReleasePackage.ps1` builds the downloadable release for the current
+edition: it stages the edition's files, exports the icon pack, builds the
+self-contained native app for `win-arm64` without PDBs where the shortcut
+expects it (`dotnet publish` would omit the app's `.pri` and `App.xbf`),
+runs the hygiene scan on everything and the forbidden-token scan on text
+files and the app's own binaries, then writes both zips, `SHA256SUMS.txt`
+and `release-notes.md` (version from the project file). Publish with
+`gh release create v<version> <both zips> SHA256SUMS.txt --notes-file release-notes.md`.
 
 ## Checks
 

@@ -396,6 +396,9 @@ class EditionTests(unittest.TestCase):
         self.assertRegex(e["envPrefix"], r"^[A-Z][A-Z0-9]*_([A-Z0-9]+_)*$")
         self.assertIn(e["visibility"], ("public", "private"))
         self.assertRegex(e["logo"]["text"], r"^[A-Za-z0-9]{1,4}$")
+        self.assertIn(e["logo"].get("style", "monogram"), ("monogram", "device"))
+        if "backgroundEnd" in e["logo"]:
+            self.assertRegex(e["logo"]["backgroundEnd"], r"^#[0-9A-Fa-f]{6}$")
         for group, keys in (("accent", ("base", "light1", "light2", "light3", "dark1", "dark2", "dark3", "tint")),
                             ("webAccent", ("base", "deep", "focus")), ("logo", ("background", "foreground"))):
             for key in keys:
@@ -436,8 +439,59 @@ class EditionTests(unittest.TestCase):
             self.assertIn(f"{variable}:{e['webAccent'][key].lower()}", css)
         self.assertTrue((ROOT / "native" / f"{e['codeName']}.csproj").is_file())
         svg = (ROOT / "native" / "Assets" / "AppLogo.svg").read_text(encoding="utf-8")
-        self.assertIn(f">{e['logo']['text']}</text>", svg)
-        self.assertIn(f'fill="{e["logo"]["background"]}"', svg)
+        logo = e["logo"]
+        if logo.get("style", "monogram") == "device":
+            self.assertIn('data-style="device"', svg)
+            self.assertEqual(svg.count("<path "), 2, "laptop-and-spark glyph has two sparks")
+            paint = f'stop-color="{logo["background"]}"' if "backgroundEnd" in logo else f'fill="{logo["background"]}"'
+            self.assertIn(paint, svg)
+        else:
+            self.assertIn(f">{logo['text']}</text>", svg)
+            self.assertIn(f'fill="{logo["background"]}"', svg)
+
+    def test_generated_icon_and_logo_sizes(self):
+        import struct
+        png = (ROOT / "native" / "Assets" / "AppLogo.png").read_bytes()
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(struct.unpack(">II", png[16:24]), (256, 256))
+        ico = (ROOT / "native" / "Assets" / "AppIcon.ico").read_bytes()
+        reserved, kind, count = struct.unpack("<HHH", ico[:6])
+        self.assertEqual((reserved, kind), (0, 1))
+        sizes = [ico[6 + 16 * i] or 256 for i in range(count)]
+        self.assertEqual(sizes, [16, 24, 32, 48, 64, 128, 256])
+        for i in range(count):
+            length, offset = struct.unpack("<II", ico[6 + 16 * i + 8:6 + 16 * i + 16])
+            self.assertEqual(ico[offset:offset + 8], b"\x89PNG\r\n\x1a\n")
+            self.assertLessEqual(offset + length, len(ico))
+
+    def test_setup_and_release_scripts_are_edition_neutral(self):
+        edition = json.loads((ROOT / "edition.json").read_text(encoding="utf-8"))
+        identity = [edition[key] for key in ("displayName", "codeName", "appUserModelId", "serviceAppId",
+                                             "schemaPrefix", "envPrefix", "shortcutName", "mark")]
+        scripts = {name: (ROOT / name).read_bytes() for name in ("Setup.ps1", "Setup.cmd", "tools/New-ReleasePackage.ps1")}
+        for name, data in scripts.items():
+            text = data.decode("utf-8")
+            self.assertNotRegex(text, r"(?<!\r)\n", f"{name} must use CRLF line endings")
+            for token in identity:
+                self.assertFalse(token.lower() in text.lower(), f"{name} hardcodes {token!r}; read edition.json instead")
+        # Windows PowerShell 5.1 reads BOM-less scripts as ANSI, and Setup.cmd runs Setup.ps1 with it.
+        self.assertTrue(scripts["Setup.ps1"].isascii())
+        self.assertNotIn(b"#Requires -Version 7", scripts["Setup.ps1"])
+        self.assertIn(b'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Setup.ps1"', scripts["Setup.cmd"])
+        self.assertIn(b"-Prepare", scripts["Setup.cmd"])
+        self.assertIn(b"-c (Join-Path $root 'constraints.txt')", scripts["Setup.ps1"])
+
+    def test_constraints_pin_the_tested_requirements(self):
+        def pins(name):
+            lines = (ROOT / name).read_text(encoding="utf-8").splitlines()
+            entries = [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+            for entry in entries:
+                self.assertRegex(entry, r"^[a-z0-9][a-z0-9.-]*==[0-9][0-9A-Za-z.]*$", f"{name}: {entry}")
+            return dict(entry.split("==") for entry in entries)
+        requirements, constraints = pins("requirements.txt"), pins("constraints.txt")
+        for package, version in requirements.items():
+            self.assertEqual(constraints.get(package), version, f"constraints.txt must pin {package}=={version}")
+        self.assertEqual(list(constraints), sorted(constraints))
 
 
 class PortabilityTests(unittest.TestCase):
