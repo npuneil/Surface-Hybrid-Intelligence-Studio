@@ -240,20 +240,23 @@ internal sealed partial class MainWindow
     {
         bool online = _status is not null && !_serviceInfo.IsOpen;
         bool ready = online && _status!.Engine.IsReady && !_switching;
-        _runLive.IsEnabled = ready && !_running && SelectedScenario is not null;
-        _runRehearsal.IsEnabled = online && !_running && !_switching && SelectedScenario is not null;
-        _loadModel.IsEnabled = online && !_running && !_switching && _status!.Engine.State is "ready" or "error" && _modelPicker.SelectedItem is not null;
+        // The service runs one inference at a time, so the Live demos tab and this workspace interlock.
+        bool idle = !_running && !_demoRunning;
+        _runLive.IsEnabled = ready && idle && SelectedScenario is not null;
+        _runRehearsal.IsEnabled = online && idle && !_switching && SelectedScenario is not null;
+        _loadModel.IsEnabled = online && idle && !_switching && _status!.Engine.State is "ready" or "error" && _modelPicker.SelectedItem is not null;
         _stop.IsEnabled = _running;
         _scenarioPicker.IsEnabled = !_running;
-        _modelPicker.IsEnabled = !_running && !_switching;
+        _modelPicker.IsEnabled = idle && !_switching;
         _prompt.IsReadOnly = _running;
         _copy.IsEnabled = !_running && _output.Text.Length > 0;
         _export.IsEnabled = !_running && _lastRun is not null;
+        UpdateDemoButtons();
     }
 
     private async Task SwitchModelAsync()
     {
-        if (_modelPicker.SelectedItem is not ComboBoxItem { Tag: string alias } || _running) return;
+        if (_modelPicker.SelectedItem is not ComboBoxItem { Tag: string alias } || _running || _demoRunning) return;
         if (_status?.Engine.IsReady == true && _status.Engine.Model?.Alias == alias)
         {
             _engineText.Text = "That model is already loaded and ready.";
@@ -283,7 +286,7 @@ internal sealed partial class MainWindow
 
     private async Task RunScenarioAsync(string mode)
     {
-        if (_running || SelectedScenario is not { } scenario) return;
+        if (_running || _demoRunning || SelectedScenario is not { } scenario) return;
         bool live = mode == "live";
         if (!live) _prompt.Text = scenario.Prompt;
         string prompt = live ? PromptText : scenario.Prompt;

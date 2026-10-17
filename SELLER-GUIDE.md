@@ -14,7 +14,8 @@ workload belongs on a PC. The device earns its place through a customer pilot.
 | 4:15 | Pilot close | "Let's scope one workflow, ten users and two weeks, with clear quality and task-time gates." |
 
 Before the meeting, launch the app, wait for **Local AI ready**, and run both
-stories once. Inspect the actual output; generation quality can vary. Confirm
+stories once. Then open **Live demos** and press **Pre-flight: run every demo
+live** (see below). Inspect the actual output; generation quality can vary. Confirm
 the customer-facing device name, availability and approved specifications.
 For a non-live walkthrough, explicitly choose **Authored rehearsal**.
 Never present rehearsal as an inference or timing measurement.
@@ -26,9 +27,48 @@ additive pools or a dedicated-VRAM claim. No memory partition settings are chang
 
 **Larger-model walkthrough:** Start with **Qwen2.5-Coder 14B**, then use the
 on-device model selector to load **GPT-OSS 20B**. Wait for ready status before
-running. Only one model is resident at a time. GPT-OSS can spend longer reasoning
+running. The workspace keeps one chat model resident at a time; the Live demos
+face-off loads both. GPT-OSS can spend longer reasoning
 before the answer appears; activity counts are real, while private reasoning text
 is neither displayed nor saved. A larger parameter count is not an accuracy claim.
+
+## Show it live: the Live demos tab
+
+**Before the customer arrives**, open **Live demos** and press **Pre-flight:
+run every demo live**. On this unit a warm pre-flight takes about three
+minutes; the first one of the day also loads every model. Green means the demo
+ran and passed every engine check. Amber on the face-off usually means one
+model answered wrong. That is a real, graded result and worth showing. Red
+means a step did not run; read its message. The **Ready to present?** panel
+lists anything still missing. If models or NVIDIA libraries are missing, run
+`.\Start-Showcase.ps1 -Prepare` once on an approved network.
+
+**In the meeting**, choose two or three demos that match what the customer said:
+
+| If they mention | Open | Say |
+|---|---|---|
+| Meetings, notes, field work | Meeting to minutes and actions; Voice memo to work order | "That recording was transcribed on this laptop. The app checks the transcript against the script we wrote." |
+| Forms, receipts, paperwork | Scanned form to structured data | "A vision model reads the image here and returns data a system can use. The app checks the result against the document we generated." |
+| Policies, HR or IT questions | Ask your documents | "It answers only from the documents it found on this laptop and cites them, and the app checks those citations." |
+| Global teams, customer notices | Translate on the device | "Names, references and times come through exactly as written. The app checks that." |
+| Privacy, compliance | Redact before it leaves the device | "Personal details are replaced on the laptop before anything is shared." |
+| Developers | Local coding assistant | "The code is drafted here and shown for review. This app never runs it." |
+| Planning, analysis | Plan it out with a reasoning model | "A large reasoning model works through six constraints, and the app checks every one." |
+| "How much can it run?" | Model face-off; Five models, one laptop | "These models are loaded together on one laptop, and each is doing real work right now." |
+
+Rules for live demos:
+- All inputs are synthetic and fictional. Do not type customer data into the
+  instruction box.
+- **Play rehearsal** is labelled *Rehearsal: no model ran*. It is a fallback
+  walkthrough, not a measurement.
+- If a live run fails, say so and move on. The app never substitutes rehearsal
+  output for a failed run.
+- Timings are this run on this laptop. They are not a comparison with any other
+  device or with cloud AI.
+- **Export** saves the run's evidence as JSON (models, timings, checks), with
+  no reasoning text.
+- On the **T-shirt sizing** Sales tab, **Show it live** jumps straight to the
+  demo for the workload the customer picked.
 
 ## Questions that qualify an opportunity
 

@@ -4,13 +4,14 @@ param(
     [switch]$Live,
     [string]$WindowSize,
     [switch]$Rebuild,
-    [ValidateRange(60, 3600)][int]$TimeoutSeconds = 900
+    [ValidateRange(60, 7200)][int]$TimeoutSeconds = 2400
 )
 # Native UX checks for Surface Hybrid Intelligence Studio:
 #  1. --self-test: deterministic sizing/platform/parser/privacy/export checks (no UI, no network).
 #  2. --smoke: drives the real WinUI window (navigation, sizing controls, business case via the
-#     service, rehearsal for every scenario, exports, screenshots). -Live also streams every
-#     scenario on the RTX GPU and checks CUDA provenance. Results: .runtime\native\*.json, screens\*.png.
+#     service, rehearsal for every scenario and demo, exports, screenshots). -Live also streams every
+#     scenario on the RTX GPU, checks CUDA provenance, and runs the Live demos pre-flight (every demo
+#     live). Results: .runtime\native\*.json, screens\*.png.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $runtime = Join-Path $root '.runtime\native'
@@ -55,6 +56,10 @@ Write-Host ("UI smoke: {0}/{1} checks passed, live={2} (exit {3})" -f $passedChe
 $smoke.failures | ForEach-Object { Write-Host "  FAIL $_" -ForegroundColor Red }
 foreach ($run in $smoke.live_runs) {
     Write-Host ("  live {0}: {1} on {2}, TTFT {3} ms, {4} tokens in {5} ms" -f $run.scenario, $run.model, $run.provider, $run.ttft_ms, $run.output_tokens, $run.total_ms)
+}
+foreach ($demo in $smoke.live_demos) {
+    Write-Host ("  demo {0}: {1} in {2:N0} ms" -f $demo.demo, $demo.outcome, $demo.total_ms)
+    $demo.failed_checks | ForEach-Object { Write-Host "    check not met: $_" -ForegroundColor Yellow }
 }
 Write-Host "Screenshots: $(Join-Path $runtime 'screens')"
 if ($smokeCode -ne 0 -or -not $smoke.passed) { $failed = $true }

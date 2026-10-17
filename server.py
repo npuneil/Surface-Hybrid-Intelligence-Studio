@@ -10,12 +10,15 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import demos
 from content import DEFAULT_ASSUMPTIONS, SCENARIOS, calculate
+from demo_runner import DemoRunner, MediaStore
 from edition import APP_ID, DISPLAY_NAME
 from local_engine import DEFAULT_MODEL, MODELS, LocalEngine
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 24000
+MEDIA_TYPES = {".wav": "audio/wav", ".png": "image/png"}
 
 
 def read_device():
@@ -69,11 +72,13 @@ class ShowcaseServer(ThreadingHTTPServer):
     # Windows SO_REUSEADDR lets a second instance bind a port that is already listening.
     allow_reuse_address = False
 
-    def __init__(self, address, *, engine=None, device=None, rehearsal_only=False):
+    def __init__(self, address, *, engine=None, device=None, rehearsal_only=False, media_store=None):
         # Inventory before binding so a listening socket can always answer status probes.
         self.device = read_device() if device is None else device
         super().__init__(address, Handler)
         self.engine = engine or LocalEngine()
+        self.media = media_store or MediaStore()
+        self.demos = DemoRunner(self.engine, self.media, self.device)
         self.token = secrets.token_urlsafe(32)
         self.run_lock = threading.Lock()
         if rehearsal_only:
@@ -134,6 +139,19 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/scenarios":
             return self.json_out(200, {k: {n: v[n] for n in ("title", "label", "prompt", "source")}
                                       for k, v in SCENARIOS.items()})
+        if path == "/api/demos":
+            engine = self.server.engine.state
+            return self.json_out(200, {"demos": demos.public(), "media": dict(self.server.media.state),
+                                       "engine": {"state": engine.get("state"), "model": engine.get("model"),
+                                                  "media": engine.get("media")}})
+        if path.startswith("/api/demo-media/"):
+            file = self.server.media.path(path.rsplit("/", 1)[1])
+            if file is None:
+                return self.json_out(404, {"error": "Demo media is not available."})
+            body = file.read_bytes()
+            self.headers_out(200, MEDIA_TYPES[file.suffix], len(body))
+            self.wfile.write(body)
+            return None
         files = {"/": "index.html", "/app.js": "app.js", "/style.css": "style.css",
                  "/seller-guide": "SELLER-GUIDE.md", "/favicon.ico": r"native\Assets\AppIcon.ico"}
         if path not in files:
@@ -195,6 +213,16 @@ class Handler(BaseHTTPRequestHandler):
 
             threading.Thread(target=switch, name="model-switch", daemon=True).start()
             return self.json_out(202, {"selected_model": selected, "state": "loading"})
+        if self.path == "/api/demo/run":
+            try:
+                demo_id, mode, prompt, option, edited = self.server.demos.validate(body)
+            except ValueError as exc:
+                return self.json_out(400, {"error": str(exc)})
+            if mode == "live" and self.server.engine.state["state"] != "ready":
+                return self.json_out(503, {"error": self.server.engine.state["detail"]})
+            if not self.server.run_lock.acquire(blocking=False):
+                return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
+            return self.stream_events(lambda: self.server.demos.run(demo_id, mode, prompt, option, edited))
         if self.path != "/api/run":
             return self.json_out(404, {"error": "Not found"})
         scenario = SCENARIOS.get(body.get("scenario")) if isinstance(body.get("scenario"), str) else None
@@ -210,19 +238,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_out(503, {"error": self.server.engine.state["detail"]})
         if not self.server.run_lock.acquire(blocking=False):
             return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
+        if mode == "rehearsal":
+            return self.stream_events(lambda: iter([
+                {"type": "token", "text": scenario["rehearsal"]},
+                {"type": "done", "mode": "rehearsal", "characters": len(scenario["rehearsal"]),
+                 "model": None, "ttft_ms": None, "total_ms": None,
+                 "output_tokens": None, "tokens_per_second": None, "finish_reason": "AUTHORED"}]))
+        return self.stream_events(lambda: self.server.engine.stream(
+            prompt.strip() + "\n\n" + scenario["source"], scenario["system"],
+            max_tokens=self.server.engine.generation_budget(body["scenario"])))
+
+    def stream_events(self, factory):
+        """Write NDJSON events; the caller has acquired run_lock, which is always released here."""
         events = None
         try:
             self.headers_out(200, "application/x-ndjson; charset=utf-8")
-            if mode == "rehearsal":
-                events = iter([{"type": "token", "text": scenario["rehearsal"]},
-                               {"type": "done", "mode": "rehearsal", "characters": len(scenario["rehearsal"]),
-                                "model": None, "ttft_ms": None, "total_ms": None,
-                                "output_tokens": None, "tokens_per_second": None, "finish_reason": "AUTHORED"}])
-            else:
-                events = self.server.engine.stream(
-                    prompt.strip() + "\n\n" + scenario["source"], scenario["system"],
-                    max_tokens=self.server.engine.generation_budget(body["scenario"]),
-                )
+            events = factory()
             for event in events:
                 self.wfile.write((json.dumps(event) + "\n").encode())
                 self.wfile.flush()
@@ -250,6 +281,7 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     server = ShowcaseServer(("127.0.0.1", args.port), rehearsal_only=args.rehearsal_only)
+    threading.Thread(target=server.media.ensure, name="demo-media", daemon=True).start()
     if not args.rehearsal_only:
         threading.Thread(target=server.engine.start,
                          kwargs={"allow_download": args.prepare, "model_ref": args.model}, daemon=True).start()

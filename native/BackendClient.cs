@@ -69,7 +69,15 @@ internal sealed class BackendClient : IDisposable
             Timeout = Timeout.InfiniteTimeSpan
         };
         _http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        // The local service answers HTTP/1.0 and closes every connection; never race a pooled socket it is closing.
+        _http.DefaultRequestHeaders.ConnectionClose = true;
     }
+
+    /// <summary>Transport failures wrap the useful cause; show both so a presenter sees what actually happened.</summary>
+    internal static string Describe(Exception exception) =>
+        exception is HttpRequestException { InnerException: { } inner } && !exception.Message.Contains(inner.Message, StringComparison.Ordinal)
+            ? $"{exception.Message} ({inner.Message})"
+            : exception.Message;
 
     internal Uri BaseUri { get; }
 
@@ -133,10 +141,54 @@ internal sealed class BackendClient : IDisposable
         }
     }
 
+    internal async Task<DemoCatalog> GetDemosAsync(CancellationToken cancellationToken)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        using var response = await _http.GetAsync("/api/demos", cts.Token);
+        using var document = await ReadJsonAsync(response, cts.Token);
+        return DemoParser.ParseCatalog(document.RootElement);
+    }
+
+    /// <summary>Synthetic demo media rendered by the local service (allow-listed names only).</summary>
+    internal async Task<byte[]> GetDemoMediaAsync(string name, CancellationToken cancellationToken)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(20));
+        using var response = await _http.GetAsync("/api/demo-media/" + Uri.EscapeDataString(name), cts.Token);
+        if (!response.IsSuccessStatusCode)
+        {
+            using var _ = await ReadJsonAsync(response, cts.Token);
+        }
+        return await response.Content.ReadAsByteArrayAsync(cts.Token);
+    }
+
+    internal async IAsyncEnumerable<DemoEvent> RunDemoAsync(string demo, string mode, string? option, string prompt,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var body = new Dictionary<string, object> { ["demo"] = demo, ["mode"] = mode, ["prompt"] = prompt };
+        if (option is not null) body["option"] = option;
+        using var response = await PostAsync("/api/demo/run", body, HttpCompletionOption.ResponseHeadersRead, cancellationToken, null);
+        if (!response.IsSuccessStatusCode)
+        {
+            using var error = await ReadJsonAsync(response, cancellationToken);
+        }
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        while (true)
+        {
+            string? line = await reader.ReadLineAsync(cancellationToken);
+            if (line is null) yield break;
+            if (line.Length == 0) continue;
+            yield return DemoParser.ParseEvent(line);
+        }
+    }
+
     private async Task<HttpResponseMessage> PostAsync(string path, Dictionary<string, object> body,
         HttpCompletionOption completion, CancellationToken cancellationToken, TimeSpan? timeout)
     {
         if (_token is null) await GetStatusAsync(cancellationToken);
+        bool transportRetried = false;
         for (int attempt = 0; ; attempt++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, path)
@@ -146,7 +198,18 @@ internal sealed class BackendClient : IDisposable
             request.Headers.Add("X-Showcase-Token", _token);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             if (timeout is TimeSpan t) cts.CancelAfter(t);
-            var response = await _http.SendAsync(request, completion, timeout is null ? cancellationToken : cts.Token);
+            HttpResponseMessage response;
+            try
+            {
+                response = await _http.SendAsync(request, completion, timeout is null ? cancellationToken : cts.Token);
+            }
+            catch (HttpRequestException) when (!transportRetried && !cancellationToken.IsCancellationRequested)
+            {
+                // No response headers arrived. Retrying once is safe: the service serialises runs and answers 409 if one is active.
+                transportRetried = true;
+                await Task.Delay(300, cancellationToken);
+                continue;
+            }
             // A restarted backend issues a new per-process token; refresh once and retry.
             if (response.StatusCode == HttpStatusCode.Forbidden && attempt == 0)
             {

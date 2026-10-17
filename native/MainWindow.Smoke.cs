@@ -3,7 +3,10 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
@@ -19,6 +22,7 @@ internal sealed partial class MainWindow
         var failures = new List<string>();
         var screenshots = new JsonArray();
         var liveRuns = new JsonArray();
+        var liveDemos = new JsonArray();
         string screens = Path.Combine(_options.RuntimeDirectory, "screens");
         Directory.CreateDirectory(screens);
         void Check(string name, bool passed, string detail = "")
@@ -40,7 +44,7 @@ internal sealed partial class MainWindow
             Check("titlebar-logo", FindById(_root, "TitleBarLogo") is Image { Source: not null });
             Check("brand-mark", FindById(_root, "NavMark") is TextBlock { Text: Brand.Mark } && Title == Brand.WindowTitle, Title);
 
-            foreach (string tag in new[] { "overview", "live", "sizing", "platforms", "business", "playbook", "learn" })
+            foreach (string tag in new[] { "overview", "live", "demos", "sizing", "platforms", "business", "playbook", "learn" })
             {
                 Navigate(tag);
                 await Settle();
@@ -82,7 +86,7 @@ internal sealed partial class MainWindow
             Check("sales-device-compare", FindText(_root, "SalesDeviceFit_this") == "Comfortable" && FindText(_root, "SalesDeviceFit_laptop16") == "Won't fit"
                 && FindText(_root, "SalesDeviceFit_laptop32") == "Comfortable", $"{FindText(_root, "SalesDeviceFit_this")} / {FindText(_root, "SalesDeviceFit_laptop32")} / {FindText(_root, "SalesDeviceFit_laptop16")}");
             Check("sales-talk-track-shown", _salesTalkTrack.Text == _lastSales?.TalkTrack && _salesTalkTrack.Text.Contains("Surface Laptop Ultra stands out"), _salesTalkTrack.Text);
-            Check("sales-live-buttons", FindById(_root, "SalesLive_coding") is Button { IsEnabled: true } && FindById(_root, "SalesLive_translation") is null);
+            Check("sales-live-buttons", FindById(_root, "SalesLive_coding") is Button { IsEnabled: true } && FindById(_root, "SalesLive_translation") is Button { IsEnabled: true });
             await Shot("sizing-sales-view");
             if (FindById(_root, "SalesResults") is FrameworkElement salesResults)
             {
@@ -252,6 +256,114 @@ internal sealed partial class MainWindow
             else Check("rehearsal-export-no-metrics", false, "export failed");
             await Shot("live-rehearsal");
 
+            // Live demos tab: registry parity, gallery, every runner, rehearsals, previews, option rules, interlock, hand-offs, export.
+            Navigate("demos");
+            await Settle();
+            for (int i = 0; i < 90 && (_demoCatalog.Demos.Count == 0 || _demoCatalog.MediaState is not ("ready" or "error")); i++)
+            {
+                await Task.Delay(1000);
+                await RefreshDemoCatalogAsync();
+            }
+            await Settle();
+            Check("demos-catalog-matches-app", _demoCatalog.Demos.Select(d => d.Id).SequenceEqual(DemoCatalog.KnownIds), string.Join(",", _demoCatalog.Demos.Select(d => d.Id)));
+            Check("demos-media-ready", _demoCatalog.MediaState == "ready", $"{_demoCatalog.MediaState} {_demoCatalog.MediaDetail}");
+            foreach (string id in new[] { "DemoReadinessCard", "DemoReadyChat", "DemoReadyModels", "DemoReadyRuntime", "DemoReadyMedia", "DemoReadinessDetail", "DemoRunAll", "DemoGallery" })
+                Check("automation-id-" + id, FindById(_root, id) is not null);
+            foreach (var demo in _demoCatalog.Demos)
+                Check($"demo-card-{demo.Id}", FindById(_root, "DemoCard_" + demo.Id) is not null && FindById(_root, "DemoLaunch_" + demo.Id) is Button { IsEnabled: true }
+                    && FindText(_root, "DemoCardStatus_" + demo.Id) is { Length: > 0 } && FindText(_root, "DemoCardModels_" + demo.Id)?.StartsWith("Runs: ") == true);
+            await Shot("demos-gallery");
+
+            if (FindById(_root, "DemoLaunch_meeting") is Button launchMeeting) InvokeButton(launchMeeting);
+            await Settle();
+            Check("demo-launch-opens-runner", DemoRunnerVisible && _openDemo?.Id == "meeting" && _demoTitle.Text == _demoCatalog.Find("meeting")?.Title, _demoTitle.Text);
+            foreach (string id in new[] { "DemoBack", "DemoRunnerTitle", "DemoInputHost", "DemoPrompt", "DemoRunLive", "DemoRunRehearsal", "DemoStop", "DemoModeBanner", "DemoSteps", "DemoCopy", "DemoExport" })
+                Check("automation-id-" + id, FindById(_root, id) is not null);
+            await WaitFor(() => FindById(_root, "DemoPlayAudio") is Button { IsEnabled: true }, 20);
+            Check("demo-audio-preview", FindById(_root, "DemoPlayAudio") is Button { IsEnabled: true } && FindText(_root, "DemoAudioInfo")?.Contains("-second recording") == true
+                && FindById(_root, "DemoScript") is Expander && File.Exists(Path.Combine(_options.RuntimeDirectory, "demo-media", "meeting.wav")), FindText(_root, "DemoAudioInfo") ?? "");
+            await Shot("demo-meeting-runner");
+            if (FindById(_root, "DemoBack") is HyperlinkButton back) InvokeButton(back);
+            await Settle();
+            Check("demo-back-to-gallery", !DemoRunnerVisible && _demoGalleryView.Visibility == Visibility.Visible);
+
+            foreach (var demo in _demoCatalog.Demos.ToArray())
+            {
+                OpenDemo(demo.Id);
+                await Settle();
+                bool opened = DemoRunnerVisible && _openDemo?.Id == demo.Id && _demoStepViews.Count == demo.Steps.Count && _demoPrompt.IsReadOnly == !demo.Editable;
+                if (!demo.RehearsalFor(SelectedDemoOption))
+                {
+                    Check($"demo-{demo.Id}-live-only", opened && !_demoRunRehearsal.IsEnabled && _demoRehearsalNote.Text.Contains("live only", StringComparison.OrdinalIgnoreCase), _demoRehearsalNote.Text);
+                    continue;
+                }
+                await RunOpenDemoAsync("rehearsal");
+                await Settle();
+                var r = _demoResults.GetValueOrDefault(demo.Id);
+                Check($"demo-{demo.Id}-rehearsal", opened && r is { Mode: "rehearsal", Error: null, Checks.Count: 0, Completed: true }
+                    && r.Steps.All(s => s.Text.Length > 0 && s.State == "done" && s.Metrics.All(m => m.Value.StartsWith("Rehearsal")))
+                    && _demoBannerText.Text.StartsWith("REHEARSAL") && _demoSummary.Text.StartsWith("Authored rehearsal") && _demoChecksSection.Visibility == Visibility.Collapsed
+                    && _demoStepViews.All(v => v.OutputText.Length > 0) && _demoExport.IsEnabled,
+                    r?.Error ?? $"{_demoBannerText.Text} steps={r?.Steps.Count} checks={r?.Checks.Count}");
+            }
+            await Shot("demo-rehearsal");
+
+            OpenDemo("translate");
+            if (_demoOption.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag as string == "ja") is { } japanese) _demoOption.SelectedItem = japanese;
+            await Settle();
+            Check("demo-translate-option-live-only", SelectedDemoOption == "ja" && !_demoRunRehearsal.IsEnabled && _demoPrompt.Text.Contains("Japanese")
+                && _demoRehearsalNote.Text.Contains("runs live only"), _demoPrompt.Text);
+            _demoPrompt.Text = "";
+            await RunOpenDemoAsync("live");
+            Check("demo-empty-instruction-rejected", _demoError.IsOpen && _demoError.Title == "Instruction needs attention" && _demoResults["translate"].Mode == "rehearsal", _demoError.Message ?? "");
+            _demoError.IsOpen = false;
+            if (FindById(_root, "DemoRestorePrompt") is HyperlinkButton restore) InvokeButton(restore);
+            Check("demo-restore-instruction", _demoPrompt.Text == _demoCatalog.Find("translate")?.PromptFor("ja"));
+
+            OpenDemo("vision");
+            if (_demoOption.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag as string == "receipt") is { } receipt) _demoOption.SelectedItem = receipt;
+            await WaitFor(() => _demoPreviewKey == "receipt.png" && FindById(_root, "DemoInputImage") is Image { Source: not null }, 20);
+            Check("demo-vision-receipt-preview", _demoPreviewKey == "receipt.png" && FindById(_root, "DemoInputImage") is Image { Source: not null }
+                && FindText(_root, "DemoInputStatus")?.StartsWith("Rendered on this laptop") == true, FindText(_root, "DemoInputStatus") ?? "");
+            await RunOpenDemoAsync("rehearsal");
+            await Settle();
+            Check("demo-vision-receipt-rehearsal", _demoResults.GetValueOrDefault("vision") is { Mode: "rehearsal", Option: "receipt", Error: null }
+                && _demoStepViews[0].OutputText.Contains("subtotal"), _demoStepViews.FirstOrDefault()?.OutputText ?? "");
+            await Shot("demo-vision-receipt");
+
+            OpenDemo("brief");
+            await Settle();
+            string? demoExport = ExportDemoRun();
+            if (demoExport is not null)
+            {
+                var json = JsonNode.Parse(File.ReadAllText(demoExport))!;
+                Check("demo-rehearsal-export", json["schema"]?.GetValue<string>() == Brand.SchemaPrefix + ".demo-evidence/1" && json["mode"]?.GetValue<string>() == "rehearsal"
+                    && json["checks"]?.AsArray().Count == 0 && json["mode_label"]!.GetValue<string>().Contains("not model output") && !LeaksToken(demoExport), demoExport);
+            }
+            else Check("demo-rehearsal-export", false, "export failed");
+
+            // One inference at a time: each workspace locks the other while it runs.
+            _running = true;
+            UpdateLiveButtons();
+            Check("demo-interlock-live-workspace-busy", !_demoRunLive.IsEnabled && !_demoRunRehearsal.IsEnabled && !_demoRunAll.IsEnabled
+                && _demoBlocker.Text.Contains("Live GPU workspace"), _demoBlocker.Text);
+            _running = false;
+            _demoRunning = true;
+            UpdateLiveButtons();
+            Check("demo-interlock-demo-busy", !_runLive.IsEnabled && !_runRehearsal.IsEnabled && !_loadModel.IsEnabled && !_modelPicker.IsEnabled);
+            _demoRunning = false;
+            UpdateLiveButtons();
+
+            CloseDemo();
+            SetSalesSelection(["translation"]);
+            Navigate("sizing");
+            await Settle();
+            if (FindById(_root, "SalesLive_translation") is Button salesTranslate) InvokeButton(salesTranslate);
+            await Settle();
+            Check("sales-hands-off-to-demo", _currentSection == "demos" && DemoRunnerVisible && _openDemo?.Id == "translate", $"{_currentSection} {_openDemo?.Id}");
+            SetSalesSelection(SalesSizing.DefaultSelection);
+            CloseDemo();
+
             if (_options.SmokeLive)
             {
                 var deadline = DateTime.UtcNow.AddMinutes(10);
@@ -287,6 +399,53 @@ internal sealed partial class MainWindow
                         Check("live-export-provenance", exported && !LeaksToken(liveExport!), liveExport ?? "");
                     }
                 }
+
+                // Every demo live, through the presenter's own pre-flight button path.
+                if (_status?.Engine.IsReady == true)
+                {
+                    Navigate("demos");
+                    CloseDemo();
+                    await RefreshDemoCatalogAsync();
+                    var blocked = _demoCatalog.Demos.Select(d => _demoCatalog.LiveBlocker(d, _status?.Engine)).OfType<string>().Distinct().ToList();
+                    Check("demos-live-ready", blocked.Count == 0 && _demoRunAll.IsEnabled, string.Join(" ", blocked));
+                    await RunAllDemosAsync();
+                    await Settle();
+                    foreach (var demo in _demoCatalog.Demos)
+                    {
+                        var r = _demoResults.GetValueOrDefault(demo.Id);
+                        bool ok = r is { Live: true, Completed: true } && r.Summary!.StepsFailed == 0 && r.Steps.All(s => s.State == "done")
+                            && r.Steps.Any(s => s.Text.Length > 0 || s.Metrics.Count > 0);
+                        Check($"demo-live-{demo.Id}", ok, r?.Error ?? r?.Outcome ?? "not run");
+                        liveDemos.Add(new JsonObject
+                        {
+                            ["demo"] = demo.Id, ["outcome"] = r?.Outcome, ["error"] = r?.Error, ["total_ms"] = r?.Summary?.TotalMs,
+                            ["checks_passed"] = r?.Summary?.ChecksPassed, ["checks_total"] = r?.Summary?.ChecksTotal,
+                            ["failed_checks"] = new JsonArray((r?.Checks ?? []).Where(c => !c.Pass).Select(c => (JsonNode?)$"{c.Label}: {c.Value} ({c.Detail})").ToArray()),
+                            ["steps"] = new JsonArray((r?.Steps ?? []).Select(s => (JsonNode?)new JsonObject
+                            {
+                                ["title"] = s.Title, ["model"] = s.Model, ["state"] = s.State, ["error"] = s.Error, ["characters"] = s.Text.Length,
+                                ["private_reasoning_characters_withheld"] = s.ReasoningCharacters,
+                                ["metrics"] = new JsonArray(s.Metrics.Select(m => (JsonNode?)$"{m.Label}: {m.Value}").ToArray()),
+                            }).ToArray()),
+                        });
+                    }
+                    Check("demos-preflight-summary", _demoPreflightSummary.Text.Contains("live demos ran end to end on the GPU") && _demoPreflightSummary.Text.Contains("passed every check")
+                        && _demoPreflightList.Children.Count == _demoCatalog.Demos.Count,
+                        _demoPreflightSummary.Text);
+                    await Shot("demos-preflight");
+                    foreach (string id in new[] { "meeting", "voice-memo", "vision", "ask-docs", "redact", "reasoning", "faceoff", "team" })
+                    {
+                        if (!OpenDemo(id)) continue;
+                        await Settle();
+                        await Shot($"demo-live-{id}");
+                    }
+                    OpenDemo("meeting");
+                    string? liveDemoExport = ExportDemoRun();
+                    var liveDemoJson = liveDemoExport is null ? null : JsonNode.Parse(File.ReadAllText(liveDemoExport));
+                    Check("demo-live-export", liveDemoJson?["mode"]?.GetValue<string>() == "live" && liveDemoJson["mode_label"]!.GetValue<string>().StartsWith("LIVE")
+                        && liveDemoJson["steps"]?.AsArray().Count > 0 && !LeaksToken(liveDemoExport!), liveDemoExport ?? "export failed");
+                    CloseDemo();
+                }
             }
 
             Navigate("overview");
@@ -307,6 +466,7 @@ internal sealed partial class MainWindow
             ["checks"] = checks,
             ["failures"] = new JsonArray(failures.Select(f => (JsonNode?)f).ToArray()),
             ["live_runs"] = liveRuns,
+            ["live_demos"] = liveDemos,
             ["screenshots"] = screenshots,
         };
         Directory.CreateDirectory(_options.RuntimeDirectory);
@@ -325,6 +485,20 @@ internal sealed partial class MainWindow
     {
         _root.UpdateLayout();
         await Task.Delay(350);
+    }
+
+    private static async Task<bool> WaitFor(Func<bool> condition, int seconds)
+    {
+        var until = DateTime.UtcNow.AddSeconds(seconds);
+        while (!condition() && DateTime.UtcNow < until) await Task.Delay(250);
+        return condition();
+    }
+
+    /// <summary>Clicks through UI Automation, the same path a screen reader or test driver uses.</summary>
+    private static void InvokeButton(ButtonBase button)
+    {
+        if (FrameworkElementAutomationPeer.CreatePeerForElement(button)?.GetPattern(PatternInterface.Invoke) is IInvokeProvider invoke) invoke.Invoke();
+        else throw new InvalidOperationException("Button has no invoke pattern: " + AutomationProperties.GetAutomationId(button));
     }
 
     private async Task<string?> CaptureAsync(string path)

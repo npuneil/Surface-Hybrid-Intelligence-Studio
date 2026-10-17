@@ -21,6 +21,7 @@ param(
     [ValidateRange(1, 65535)][int]$BrowserPort = 8797
 )
 $ErrorActionPreference = 'Stop'
+$browserPortExplicit = $PSBoundParameters.ContainsKey('BrowserPort')
 $Path = (Resolve-Path -LiteralPath $Path).Path.TrimEnd('\')
 Import-Module (Join-Path $Path 'tools\Edition.psm1') -Force
 $results = [System.Collections.Generic.List[object]]::new()
@@ -111,6 +112,12 @@ if ($Browser) {
     Step 'browser' {
         $python = Find-Python
         $log = Join-Path $runtime 'edition-browser-server.log'
+        $busy = Get-NetTCPConnection -State Listen -LocalPort $BrowserPort -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($busy) {
+            if ($browserPortExplicit) { throw "Port $BrowserPort is already in use (PID $($busy.OwningProcess)); pass a free -BrowserPort." }
+            $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+            $probe.Start(); $BrowserPort = $probe.LocalEndpoint.Port; $probe.Stop()
+        }
         $server = Start-Process -FilePath $python -ArgumentList @('server.py', '--port', $BrowserPort, '--rehearsal-only') -WorkingDirectory $Path `
             -RedirectStandardError $log -RedirectStandardOutput "$log.out" -PassThru -WindowStyle Hidden
         try {

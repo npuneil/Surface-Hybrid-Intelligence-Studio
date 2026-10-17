@@ -171,22 +171,14 @@ internal sealed partial class MainWindow
         foreach (var w in rec.Workloads)
         {
             var actions = Row(8, Pill(w.LiveOnThisLaptop ? "LIVE DEMO HERE" : "GUIDANCE ONLY", w.LiveOnThisLaptop ? GreenTint : Sand, w.LiveOnThisLaptop ? GreenInk : Muted));
-            if (w.LiveScenarioKey is string key)
+            if (w.DemoId is string demoId)
             {
-                var show = Id(Secondary("Show it live"), "SalesLive_" + w.Id);
+                var show = Id(Secondary(w.LiveOnThisLaptop ? "Show it live" : "See a related live demo"), "SalesLive_" + w.Id);
                 show.Padding = new Thickness(10, 4, 10, 5);
                 show.FontSize = 12;
-                show.IsEnabled = _scenarios.ContainsKey(key);
-                show.Click += (_, _) => { if (SelectScenario(key)) Navigate("live"); };
+                show.IsEnabled = DemoCatalog.KnownIds.Contains(demoId);
+                show.Click += (_, _) => OpenDemo(demoId);
                 actions.Children.Add(show);
-            }
-            else if (w.LiveOnThisLaptop)
-            {
-                var open = Id(Secondary("Open Live GPU workspace"), "SalesLive_" + w.Id);
-                open.Padding = new Thickness(10, 4, 10, 5);
-                open.FontSize = 12;
-                open.Click += (_, _) => Navigate("live");
-                actions.Children.Add(open);
             }
             _salesRows.Children.Add(Id(new Border
             {

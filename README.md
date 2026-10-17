@@ -1,8 +1,10 @@
 # Surface Hybrid Intelligence Studio | Surface Laptop Ultra
 
-A native **WinUI 3** executive showcase: live local GPU inference, interactive
-T-shirt model sizing, platform-fit use cases, and an assumption-driven capacity
-calculator. The original web presentation remains available as a companion.
+A native **WinUI 3** executive showcase: live local GPU inference, twelve
+one-click **live demos** (speech, vision, document search, translation, coding
+and reasoning on the RTX GPU), interactive T-shirt model sizing, platform-fit
+use cases, and an assumption-driven capacity calculator. The original web
+presentation remains available as a companion.
 Independent seller-enablement prototype, not a product announcement or endorsement.
 The conceptual device illustration is original, not a product photograph.
 
@@ -48,7 +50,59 @@ actions**, and a plain-English **coding tutor** used by the optional lessons.
 The field and meeting workflows demonstrate portable workflow patterns on the current
 RTX device, not execution on a Snapdragon or Intel accelerator. They consume
 supplied text fixtures; they do not record, transcribe, inspect images or
-connect to business systems.
+connect to business systems. Speech, images and document search are on the
+**Live demos** tab.
+
+### Live demos
+
+The **Live demos** tab has a launch button for each of twelve demos that run
+real models on the RTX GPU (Foundry Local CUDA variants only; no CPU or cloud
+fallback). Every input is synthetic and fictional. The meeting and voice-memo
+audio is spoken by Windows text-to-speech, and the form and receipt images are
+drawn by Windows. Both are rendered once on the laptop by
+`Render-DemoMedia.ps1` into `.runtime\demo-media`. Because the script is known,
+the engine can grade live output against it.
+
+| Demo | Runs on the GPU | Graded by the engine |
+|---|---|---|
+| Meeting to minutes and actions | Whisper medium, then Qwen2.5-Coder 14B | Word accuracy against the spoken script; unowned action marked |
+| Voice memo to work order | Whisper medium, then Qwen2.5-Coder 14B | Valid JSON; fields match the memo |
+| Scanned form to structured data | Qwen3-VL 4B (work order or receipt) | Valid JSON; fields or line-item arithmetic |
+| Ask your documents | Qwen3-Embedding 0.6B, then Qwen2.5-Coder 14B | Right policy retrieved; answer cites only retrieved policies |
+| Translate on the device | Qwen2.5-Coder 14B | Names, references and times kept unchanged |
+| Executive brief from notes | Qwen2.5-Coder 14B | Source citations; no-benefit-claimed sentence |
+| Redact before it leaves the device | Qwen2.5-Coder 14B | No synthetic identifier remains; business wording kept |
+| Inbox triage to structured data | Qwen2.5-Coder 14B | Valid JSON for all six emails; categories match the labels |
+| Local coding assistant | Qwen2.5-Coder 14B | A Python function was drafted (never executed) |
+| Plan it out with a reasoning model | GPT-OSS 20B | Schedule satisfies all six constraints |
+| Model face-off: 14B versus 20B | Both chat models, same prompt | Each answer graded separately |
+| Five models, one laptop | Chat, reasoning, speech, vision, embedding | Each model's task; residency from Foundry Local, memory from Windows counters |
+
+Each step shows its model, load time on first use, time to first token, speed
+and total time. Answers under 20 tokens show *too short to measure* instead
+of a speed. Reasoning is counted but its text is never shown, exported or saved. A wrong
+answer is shown as a graded result, never hidden or replaced. **Play rehearsal**
+replays authored sample output, labelled *Rehearsal: no model ran*. The
+face-off, the five-model demo and non-default translation languages have no
+rehearsal. Editing a live instruction skips checks that depend on the default
+prompt. **Pre-flight: run every demo live** runs all twelve with their default
+inputs and reports how many ran end to end and how many passed every check. On
+this unit a warm pre-flight takes about three minutes. Export saves the
+selected run's evidence as JSON. **Show it live** on the Sales sizing tab opens
+the matching demo.
+
+Demos load extra models beside the selected chat model and keep them resident,
+so later runs skip loading. Selecting a model in the Live GPU workspace still
+unloads the other chat models. Speech, vision and embedding models need two
+items that `Start-Showcase.ps1 -Prepare` downloads once:
+- the model weights;
+- NVIDIA's cuDNN 9.26 and NVRTC 13.4 redistributables, about 210 MB of
+  SHA-256-pinned wheels from PyPI. They go into the app-data folder, because the
+  Foundry Local ARM64 CUDA bundle ships cuDNN without the sub-libraries that
+  convolution and attention graphs need.
+
+Nothing is installed into Python and no NVIDIA DLL is committed. The
+**Ready to present?** panel shows what is still missing before you start.
 
 ### T-shirt sizing and platform fit
 
@@ -137,7 +191,8 @@ model process. Stop the original launch terminal before changing startup mode.
 
 The model selector offers **Qwen2.5-Coder 14B** (default) and **GPT-OSS 20B**
 (reasoning). Select a model, wait for its ready status, then run either AI story.
-Switching unloads the previous model first: one model is resident at a time.
+In this workspace, switching unloads the other chat models first. The Live
+demos tab can load both side by side for the face-off.
 Neither parameter count nor larger memory is presented as proof of better quality.
 
 ```powershell
@@ -208,6 +263,12 @@ App SDK.
   fallback. Its former 7B TensorRT model is no longer the default or a selectable
   fallback. The historical 7B coding benchmark does not establish these larger
   CUDA models' accuracy or speed; every displayed result is from the current run.
+- The Live demos add the pinned CUDA variants `openai-whisper-medium-cuda-gpu:3`,
+  `qwen3-vl-4b-instruct-cuda-gpu:2` and `qwen3-embedding-0.6b-cuda-gpu:1`.
+  The five-model demo reads residency from Foundry Local's loaded-model list and
+  GPU memory from the Windows WDDM counters at that moment: this process's use and
+  the whole adapter's use, which includes other apps. It is a snapshot, not a
+  capacity limit.
 - Every live run measures first visible SDK text and total generation wall time.
   Model loading is excluded; reasoning time is included. Output volume shows
   visible answer characters, with private reasoning activity counted separately, not tokens
@@ -311,9 +372,11 @@ python -m unittest discover -s tests -v
 
 Native checks exercise deterministic sizing boundaries, Sales-to-Technical
 parity, coding-lesson answers and progress storage, scenario parsing,
-platform claims, exports, native navigation, calculator and authored rehearsal.
+platform claims, exports, native navigation, calculator, authored rehearsal,
+and every Live demos launch, rehearsal and hand-off.
 The live option additionally runs every workflow, including the coding tutor,
-on the actual CUDA model.
+on the actual CUDA model, then runs the full live-demo pre-flight. It requires
+all demo models to be prepared and allows up to 40 minutes by default.
 Native reports and render-target screenshots are in `.runtime\native`.
 `tests\Inspect-NativeUI.ps1` provides external Windows UI Automation inspection
 and JSON snapshots for an explicitly selected app process.

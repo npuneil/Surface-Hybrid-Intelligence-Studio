@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -154,8 +155,8 @@ internal static class SelfTest
             Check("sales-core-mapping", SalesSizing.Find("transcription")?.Size == TShirtSize.S && SalesSizing.Find("translation")?.Size == TShirtSize.M
                 && SalesSizing.Find("coding")?.Size == TShirtSize.L && SalesSizing.Find("prototyping")?.Size == TShirtSize.XL);
             Check("sales-every-size-represented", Enum.GetValues<TShirtSize>().All(s => w.Any(x => x.Size == s)));
-            string[] knownLive = ["brief", "code", "field", "meeting"];
-            Check("sales-live-keys-known", w.Where(x => x.LiveScenarioKey is not null).All(x => knownLive.Contains(x.LiveScenarioKey) && x.LiveOnThisLaptop));
+            Check("sales-demo-ids-known", w.Where(x => x.DemoId is not null).All(x => DemoCatalog.KnownIds.Contains(x.DemoId))
+                && w.Where(x => x.LiveOnThisLaptop).All(x => x.DemoId is not null));
             Check("sales-guidance-only-labelled", w.Where(x => !x.LiveOnThisLaptop).All(x => x.LiveNote.Contains("only") || x.LiveNote.Contains("estimate")));
             Check("sales-defaults-match-technical", Sizing.DefaultBits == 4 && Sizing.DefaultContextTokens == 8192 && Sizing.DefaultReserveGiB == 6 && Sizing.DefaultHeadroomGiB == 2);
             Check("sales-empty-selection-null", SalesSizing.Recommend([], device) is null && SalesSizing.Recommend(["unknown"], device) is null);
@@ -387,6 +388,81 @@ internal static class SelfTest
                 typeof(Brand).Assembly.GetName().Name ?? "");
             Check("edition-identity-wired", AppIdentity.AppUserModelId == Brand.AppUserModelId && AppIdentity.Title == Brand.WindowTitle
                 && StatusParser.ExpectedAppId == Brand.ServiceAppId && BackendHost.PythonVariable == Brand.EnvPrefix + "PYTHON");
+        });
+
+        Guard("demos", () =>
+        {
+            Check("demo-known-ids-unique", DemoCatalog.KnownIds.Length == 12 && DemoCatalog.KnownIds.Distinct().Count() == 12);
+            using var doc = JsonDocument.Parse("""
+                {"demos":[
+                  {"id":"meeting","title":"Meeting","category":"Listen","workload":"transcription","pitch":"p","proof":"q",
+                   "input":{"kind":"audio","label":"Recording","media":"meeting.wav"},"source":"script","options":[],"prompt":"Summarise","prompt_label":"Instruction",
+                   "editable":true,"rehearsal":true,"steps":[{"title":"Transcribe","role":"asr"},{"title":"Minutes","role":"chat"}]},
+                  {"id":"vision","title":"Vision","category":"See","input":{"kind":"image","label":"Scan","media":"work-order.png"},"option_label":"Document",
+                   "options":[{"id":"work-order","label":"Work order","prompt":"Read it","media":"work-order.png","rehearsal":true},{"id":"receipt","label":"Receipt","prompt":"Read receipt","media":"receipt.png","rehearsal":false}],
+                   "default_option":"work-order","prompt":"Read it","editable":true,"rehearsal":true,"steps":[{"title":"Read","role":"vision"}]},
+                  {"id":"code","title":"Code","category":"Build","input":{"kind":"text"},"prompt":"Write","editable":true,"rehearsal":true,"steps":[{"title":"Draft","role":"qwen2.5-coder-14b"}]},
+                  {"title":"missing id is skipped"}],
+                 "media":{"state":"ready","detail":""},
+                 "engine":{"state":"ready","media":{"runtime":{"state":"active","detail":"ok"},"models":[
+                   {"role":"asr","label":"Whisper","id":"w","available":true,"cached":true,"loaded":false,"size_mb":800},
+                   {"role":"vision","label":"Qwen VL","id":"v","available":true,"cached":false,"loaded":false,"size_mb":5000}]}}}
+                """);
+            var catalog = DemoParser.ParseCatalog(doc.RootElement);
+            var meeting = catalog.Find("meeting")!;
+            var vision = catalog.Find("vision")!;
+            var code = catalog.Find("code")!;
+            Check("demo-parse-catalog", catalog.Demos.Count == 3 && meeting.InputKind == "audio" && meeting.InputMedia == "meeting.wav"
+                && meeting.Steps.Count == 2 && catalog.RuntimeReady && catalog.MediaModels.Count == 2 && catalog.MediaModels[0].SizeMb == 800);
+            Check("demo-parse-options", vision.Options.Count == 2 && vision.MediaFor("receipt") == "receipt.png" && vision.PromptFor("receipt") == "Read receipt"
+                && vision.RehearsalFor("work-order") && !vision.RehearsalFor("receipt") && vision.MediaFor(null) == "work-order.png");
+
+            var active = new ActiveModel("Phi", "chat", "phi", "CUDAExecutionProvider", false, null);
+            var engine = new EngineState("ready", "", "chat", active, [new ModelChoice("qwen2.5-coder-14b", "q", "Qwen Coder", false, false, 9000, null)], null);
+            Check("demo-blocker-no-engine", catalog.LiveBlocker(meeting, null) is not null);
+            Check("demo-blocker-engine-loading", catalog.LiveBlocker(meeting, engine with { State = "loading" }) is not null);
+            Check("demo-blocker-ready", catalog.LiveBlocker(meeting, engine) is null);
+            Check("demo-blocker-media-model-not-cached", catalog.LiveBlocker(vision, engine)?.Contains("Qwen VL") == true);
+            Check("demo-blocker-chat-model-not-cached", catalog.LiveBlocker(code, engine)?.Contains("Qwen Coder") == true);
+            Check("demo-blocker-runtime-missing", (catalog with { RuntimeState = "missing", RuntimeDetail = "Run -Prepare" }).LiveBlocker(meeting, engine) == "Run -Prepare");
+            Check("demo-blocker-media-rendering", (catalog with { MediaState = "rendering" }).LiveBlocker(meeting, engine) is not null
+                && (catalog with { MediaState = "rendering" }).LiveBlocker(catalog.Find("code")! with { Steps = [new DemoStepInfo("Draft", "chat")] }, engine) is null);
+
+            var step = DemoParser.ParseEvent("""{"type":"step","index":1,"state":"done","model":"Whisper","detail":"d","metrics":[{"label":"Audio","value":"42 s"}]}""");
+            Check("demo-parse-step", step is { Kind: DemoEventKind.Step, Index: 1, State: "done", Model: "Whisper" } && step.Metrics![0].Value == "42 s");
+            var activity = DemoParser.ParseEvent("""{"type":"activity","index":0,"reasoning_characters":321}""");
+            Check("demo-parse-activity-count-only", activity is { Kind: DemoEventKind.Activity, ReasoningCharacters: 321, Text: null });
+            var done = DemoParser.ParseEvent("""{"type":"done","mode":"live","total_ms":1234,"checks_passed":3,"checks_total":4,"steps_failed":0}""");
+            Check("demo-parse-done", done.Summary is { Mode: "live", TotalMs: 1234, ChecksPassed: 3, ChecksTotal: 4, AllPassed: false });
+            Check("demo-parse-check", DemoParser.ParseEvent("""{"type":"check","label":"Owner","value":"Dana","pass":true,"detail":"x"}""").Check is { Pass: true, Value: "Dana" });
+            Check("demo-parse-unknown-ignored", DemoParser.ParseEvent("""{"type":"later"}""").Kind == DemoEventKind.Ignored);
+
+            byte[] wav = new byte[44 + 32000];
+            Encoding.ASCII.GetBytes("RIFF").CopyTo(wav, 0);
+            Encoding.ASCII.GetBytes("WAVEfmt ").CopyTo(wav, 8);
+            BitConverter.GetBytes(16).CopyTo(wav, 16);
+            BitConverter.GetBytes(32000).CopyTo(wav, 28);
+            Encoding.ASCII.GetBytes("data").CopyTo(wav, 36);
+            BitConverter.GetBytes(32000).CopyTo(wav, 40);
+            Check("demo-wav-seconds", DemoParser.WavSeconds(wav) is double secs && Near(secs, 1), $"{DemoParser.WavSeconds(wav)}");
+            Check("demo-wav-rejects-garbage", DemoParser.WavSeconds(new byte[64]) is null);
+
+            var stepRecord = new DemoStepRecord("Transcribe", "Whisper") { State = "done", ReasoningCharacters = 77 };
+            stepRecord.Text.Append("Transcript");
+            var run = new DemoRunRecord(meeting, "live", null, "Summarise", false, DateTimeOffset.Now, [stepRecord],
+                [new DemoCheck("Owner", "Dana", true, "x")], new DemoSummary("live", 1234, 1, 1, 0, null), null);
+            string json = DemoEvidence.Run(run, device, "test").ToJsonString();
+            var node = JsonNode.Parse(json)!;
+            Check("demo-export-schema", node["schema"]?.GetValue<string>() == Brand.SchemaPrefix + ".demo-evidence/1" && node["outcome"]?.GetValue<string>() == "1 of 1 checks passed");
+            Check("demo-export-no-token-or-reasoning", !HasProperty(node, "token") && !json.Contains("reasoning_text")
+                && node["steps"]?[0]?["private_reasoning_characters_withheld"]?.GetValue<long>() == 77);
+            var rehearsalRun = run with { Mode = "rehearsal", Checks = [], Summary = new DemoSummary("rehearsal", null, 0, 0, 0, null) };
+            Check("demo-export-rehearsal-label", JsonNode.Parse(DemoEvidence.Run(rehearsalRun, device, "test").ToJsonString())!["mode_label"]!.GetValue<string>().Contains("not model output")
+                && rehearsalRun.Outcome == "Rehearsal shown");
+            var gradedWrong = run with { Summary = new DemoSummary("live", 900, 1, 2, 0, null) };
+            var stepFailed = run with { Summary = new DemoSummary("live", 900, 0, 0, 1, null) };
+            Check("demo-graded-wrong-still-ran-end-to-end", gradedWrong.RanEndToEnd && !gradedWrong.Passed
+                && !stepFailed.RanEndToEnd && !(run with { Error = "x" }).RanEndToEnd && run.RanEndToEnd && run.Passed);
         });
 
         int failedCount = results.Count(r => !r.Passed);
