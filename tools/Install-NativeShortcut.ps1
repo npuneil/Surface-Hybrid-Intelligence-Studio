@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param(
+    # Optional service port, so two editions can run side by side (the app defaults to 8790).
+    [ValidateRange(1024, 65535)][int]$Port
+)
 # Installs a desktop shortcut for the built native app with this edition's icon and taskbar identity (edition.json).
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -15,6 +18,7 @@ $shell = New-Object -ComObject WScript.Shell
 $link = $shell.CreateShortcut($path)
 $link.TargetPath = $exe
 $link.Arguments = '--root "{0}"' -f $root
+if ($Port) { $link.Arguments += " --port $Port" }
 $link.WorkingDirectory = Split-Path $exe -Parent
 $link.IconLocation = "$icon,0"
 $link.Description = "$($edition.displayName) - native WinUI 3 local AI showcase"

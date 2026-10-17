@@ -286,6 +286,9 @@ regenerates `Brand.cs`, accents and assets. It fails if a forbidden token or any
 source identity token remains in a file name or content, binaries included.
 `-Force` refreshes an existing destination but keeps its `.git` folder, so an
 edition repository can be regenerated from upstream and reviewed as a diff.
+Editions have their own app identity and data folder, so several can be
+installed side by side; give each its own service port, for example
+`.\tools\Install-NativeShortcut.ps1 -Port 8792`.
 
 `Test-Edition.ps1` is the conformance gate: manifest validation (including any
 `editions\*.json` targets), sync check, leak scan, hygiene scan (user-profile
