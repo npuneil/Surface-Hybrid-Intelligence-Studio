@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Surface Laptop Ultra | Surface Hybrid Intelligence Studio</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/" aria-label="Surface Hybrid Intelligence Studio home"><span class="mark">Surface</span><span class="brand-divider"></span><span>HYBRID INTELLIGENCE STUDIO<small>Surface Laptop Ultra</small></span></a>
+    <div class="header-actions"><span id="engine-badge" class="badge"><i></i>Checking local runtime</span><button id="guide-button" class="quiet">Seller playbook</button><button id="fullscreen-button" class="icon-button" aria-label="Toggle full screen" title="Full screen">⛶</button></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy"><div class="eyebrow">THE EXECUTIVE EXPERIENCE / 05 MINUTES</div><h1>The next advantage.<br><em>Runs right here.</em></h1><p class="intro">Put local AI in the hands of the people doing the work.<br>Show the experience. Measure the result. Build the case.</p><div class="hero-foot"><button id="begin-button" class="primary">Begin the showcase ↗</button><span>Three conversations.<br>One scoped customer pilot.</span></div></div>
+      <div class="device-art" aria-label="Original conceptual laptop illustration, not a product photograph">
+        <div class="art-caption">ON-DEVICE INTELLIGENCE</div><div class="laptop-screen"><div class="screen-top"><span class="four-squares"><i></i><i></i><i></i><i></i></span><span>LOCAL WORKSPACE</span><span class="screen-dot"></span></div><div class="screen-content"><div class="spark">✳</div><div class="screen-heading">Your ideas.<br>Your device.</div><div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="screen-tag">RTX GPU inference · Foundry Local</div></div></div><div class="laptop-base"></div><div class="art-note">Concept illustration · Not an official product render</div>
+      </div>
+    </section>
+
+    <section class="proof-strip" aria-label="Observed hardware">
+      <div class="proof-heading"><span class="eyebrow">THIS DEVICE</span><button id="device-button" class="text-button">Inspect the evidence ↗</button></div>
+      <div><strong id="ram-proof">—</strong><span id="ram-detail">Installed physical memory</span></div>
+      <div><strong id="cpu-proof">—</strong><span>CPU cores reported by Windows</span></div>
+      <div><strong id="gpu-proof">Checking GPU</strong><span>Actual inference provider shown per run</span></div>
+    </section>
+
+    <section class="experience">
+      <div class="section-heading"><div><div class="eyebrow">FROM SPECIFICATION TO BUSINESS CONVERSATION</div><h2>Make the value tangible.</h2></div><p>Choose a story. Let the device do the talking.</p></div>
+      <nav class="story-tabs" aria-label="Showcase stories">
+        <button class="story-tab active" data-story="brief" aria-pressed="true"><span class="tab-number">01</span><span><strong>Work where you are.</strong><small>Executive briefing</small></span><span class="tab-arrow">↗</span></button>
+        <button class="story-tab" data-story="code" aria-pressed="false"><span class="tab-number">02</span><span><strong>Build at the edge.</strong><small>Developer acceleration</small></span><span class="tab-arrow">↗</span></button>
+        <button class="story-tab" data-story="value" aria-pressed="false"><span class="tab-number">03</span><span><strong>Make the case.</strong><small>Customer-specific economics</small></span><span class="tab-arrow">↗</span></button>
+      </nav>
+
+      <div id="ai-workspace" class="workspace">
+        <aside class="story-context">
+          <div class="eyebrow" id="story-eyebrow">01 / EXECUTIVE BRIEFING</div>
+          <h3 id="story-title">Your next meeting.<br>Already briefed.</h3>
+          <p id="story-description">Turn a fictional account's discovery notes into a source-aware meeting agenda, using a model running on this laptop.</p>
+          <div class="seller-cue"><span>SAY THIS</span><p id="say-this">"What if the first draft didn't depend on a round trip to a cloud model?"</p></div>
+          <button id="source-button" class="text-button">Inspect the synthetic source ↗</button>
+          <div class="context-boundary" id="story-boundary">A drafting demonstration, not a security certification. Human review remains essential.</div>
+        </aside>
+        <div class="run-panel">
+          <div class="run-toolbar"><span class="workspace-label">LOCAL AI WORKSPACE</span><label class="mode-label" for="mode">Execution <select id="mode"><option value="live">Live local AI</option><option value="rehearsal">Authored rehearsal</option></select></label></div>
+          <div class="model-toolbar"><label for="model">ON-DEVICE MODEL <select id="model" disabled><option>Discovering CUDA models</option></select></label><span id="model-status" role="status" aria-live="polite">One model resident at a time · No CPU or cloud fallback</span></div>
+          <div class="prompt-area"><label for="prompt" id="prompt-label">THE REQUEST</label><textarea id="prompt" maxlength="4000" rows="3"></textarea><div class="prompt-bottom"><span>Synthetic data only · No cloud-model route</span><button id="run-button" class="primary" disabled>Preparing local AI <span>↗</span></button></div></div>
+          <div class="output-area" aria-busy="false">
+            <div class="output-top"><span id="output-label">THE RESULT</span><span id="run-state" role="status" aria-live="polite">Ready when you are</span></div>
+            <div id="empty-state" class="empty-state"><div class="empty-symbol">✳</div><h4>A real moment of proof.</h4><p>Run the request to see the answer generated here.<br>No prewritten answer is substituted in live mode.</p></div>
+            <pre id="output" hidden tabindex="0" aria-label="Generated answer"></pre>
+            <div id="error" class="error" role="alert" hidden></div>
+            <div id="review-note" class="review-note" hidden>AI-generated draft · Review facts and code before use. Code is displayed, not executed.</div>
+          </div>
+          <div class="run-metrics"><div><span>FIRST VISIBLE TEXT</span><strong id="ttft">—</strong></div><div><span>TOTAL RUN TIME</span><strong id="elapsed">—</strong></div><div><span>OUTPUT RECEIVED</span><strong id="received">—</strong></div><div><span>INFERENCE ROUTE</span><strong id="route">Not run</strong></div></div>
+          <div class="run-footer"><span id="model-line">Checking the runtime. First load can take a moment.</span><button id="export-run" class="text-button" disabled>Export evidence ↗</button></div>
+        </div>
+      </div>
+
+      <div id="value-workspace" class="value-workspace" hidden>
+        <div class="value-intro"><div class="eyebrow">03 / CUSTOMER-SPECIFIC ECONOMICS</div><h3>Don't promise ROI.<br><em>Make the assumptions visible.</em></h3><p>Translate a validated workflow improvement into potential capacity. Start with the customer, not a benchmark.</p><div class="seller-cue"><span>ASK THIS</span><p>"Which repeated task would you pilot, and what improvement would make the investment worthwhile?"</p></div></div>
+        <div class="calculator">
+          <div class="calc-inputs">
+            <label>People in scope<input id="users" type="number" min="1" max="100000" step="1" value="100"></label>
+            <label>Tasks / person / day<input id="tasks" type="number" min="0" max="100" step="1" value="4"></label>
+            <label>Minutes gained / task<input id="minutes" type="number" min="0" max="120" step="0.5" value="3"></label>
+            <label>Working days / year<input id="days" type="number" min="1" max="366" step="1" value="220"></label>
+            <label>Effective adoption (%)<input id="adoption" type="number" min="0" max="100" step="1" value="60"></label>
+            <label>Loaded labor value ($/hour)<input id="hourly" type="number" min="0" max="1000" step="1" value="60"></label>
+            <label>Incremental device cost ($/person)<input id="premium" type="number" min="0" max="20000" step="1" value="600"></label>
+            <div class="assumption-tag">Every input is illustrative.<br>Device cost is not a quoted price.</div>
+          </div>
+          <div id="calc-error" class="error" role="alert" hidden></div>
+          <div class="value-results"><div><span>POTENTIAL ANNUAL CAPACITY</span><strong id="hours-result">—</strong><small>hours / year</small></div><div><span>ILLUSTRATIVE CAPACITY VALUE</span><strong id="capacity-result">—</strong><small>not cash savings</small></div><div><span>INCREMENTAL HARDWARE COST</span><strong id="investment-result">—</strong><small>one-time assumed difference</small></div></div>
+          <div class="formula" id="formula"></div><p class="calc-disclaimer">Not an ROI forecast. Excludes software, implementation, support, financing and change-management costs. Time gained and adoption must be validated in a pilot. Cloud subscriptions are held unchanged.</p>
+          <div class="calc-actions"><button id="reset-calc" class="quiet">Reset assumptions</button><button id="export-case" class="primary">Export business case ↗</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="close-strip"><div><span class="eyebrow">THE PILOT CONVERSATION</span><h2>From impressive demo<br>to a scoped customer pilot.</h2></div><div><strong>Discover one workflow.</strong><p>Identify the people, data boundary and current baseline.</p></div><div><strong>Prove it on the target SKU.</strong><p>Measure task time, quality, compatibility and user experience.</p></div><div><strong>Scale what earns its place.</strong><p>Align device, software, deployment and support with your solution partner.</p></div></section>
+  </main>
+
+  <footer><span>Independent seller-enablement prototype · Synthetic scenarios · Not an official Microsoft or NVIDIA product announcement.</span><button id="print-button" class="text-button">Print executive handout ↗</button><span class="privacy-note">Local GPU inference through CUDA. Setup/catalog access may use the network. Non-essential SDK telemetry disabled; a minimal SDK process event may remain. No battery or competitive benchmark claim.</span></footer>
+
+  <dialog id="info-dialog"><div class="dialog-top"><span id="dialog-eyebrow" class="eyebrow">HYBRID INTELLIGENCE STUDIO</span><button id="close-dialog" class="icon-button" aria-label="Close dialog">×</button></div><h2 id="dialog-title"></h2><div id="dialog-content"></div></dialog>
+</body>
+</html>

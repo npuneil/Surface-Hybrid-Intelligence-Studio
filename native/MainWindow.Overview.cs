@@ -1,0 +1,141 @@
+using Microsoft.UI.Text;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using static HybridIntelligenceStudio.Ui;
+
+namespace HybridIntelligenceStudio;
+
+internal sealed partial class MainWindow
+{
+    private TextBlock _ovInstalled = null!, _ovVisible = null!, _ovGpu = null!, _ovModel = null!, _ovModelDetail = null!, _ovDevice = null!;
+
+    private static Border StatCard(out TextBlock value, string initial, string label, string detail, string id, out TextBlock detailText)
+    {
+        value = Id(Set(Text(initial, 30, Ink, FontWeights.SemiBold), t => t.FontFamily = Display), id);
+        detailText = Small(detail);
+        return CardBorder(Stack(4, value, Text(label, 14, Ink, FontWeights.SemiBold), detailText), 20);
+    }
+
+    private FrameworkElement BuildOverview()
+    {
+        _ovDevice = Id(Body("Reading device inventory..."), "OverviewDeviceName");
+        var startLive = Id(Primary("Start the live GPU demo"), "OverviewStartLive");
+        startLive.Click += (_, _) => Navigate("live");
+        var size = Id(Secondary("Size a workload"), "OverviewOpenSizing");
+        size.Click += (_, _) => Navigate("sizing");
+        var evidence = Id(Secondary("Device evidence"), "OverviewDeviceEvidence");
+        evidence.Click += async (_, _) => await ShowDeviceEvidenceAsync();
+
+        var hero = Stack(14,
+            Eyebrow("Executive overview"),
+            H1("Serious local AI, running on the RTX GPU of a Surface Laptop Ultra."),
+            Set(Body("Show a 14B coding model and a 20B reasoning model working on this laptop, size what a customer's workload needs, then frame a measured pilot. Evidence first, no hype."),
+                t => { t.FontSize = 16; t.LineHeight = 24; t.MaxWidth = 820; t.HorizontalAlignment = HorizontalAlignment.Left; }),
+            _ovDevice,
+            Set(Row(10, startLive, size, evidence), r => r.Margin = new Thickness(0, 6, 0, 0)));
+
+        var stats = new AdaptiveGrid(230, 4).With(
+            StatCard(out _ovInstalled, "...", "Installed memory", "Physical, firmware-reported", "OverviewInstalledMemory", out _),
+            StatCard(out _ovVisible, "...", "Windows-visible memory", "Reported by Windows", "OverviewVisibleMemory", out _),
+            StatCard(out _ovGpu, "...", "GPU memory budget", "Driver-reported budget, not dedicated VRAM", "OverviewGpuBudget", out _),
+            StatCard(out _ovModel, "...", "Live model on GPU", "Checking local service", "OverviewLiveModel", out _ovModelDetail));
+        var memoryNote = CardBorder(Lead(12, Glyph("\uE946", 18), Body("These are three different reported views of one machine. They overlap and are never added together; the planner uses one view at a time.")), 14, Sand);
+
+        var story = new AdaptiveGrid(260, 3).With(
+            StoryCard("1", "Prove it live", "Run the executive briefing or code draft on the RTX GPU. Real timing, real model, private reasoning withheld.", "live"),
+            StoryCard("2", "Size it honestly", "Use T-shirt sizes to show what S to XL models need, against one memory budget at a time.", "sizing"),
+            StoryCard("3", "Fit the fleet, frame the pilot", "Match Snapdragon, Intel and RTX devices to workflows, then model capacity with the customer's numbers.", "platforms"));
+
+        var guardrails = CardBorder(Stack(8,
+            H3("What this showcase will not claim"),
+            Body("- No cash savings, ROI forecast or subscription replacement; capacity value is illustrative."),
+            Body("- No battery or speed comparisons with other devices; metrics describe one local run."),
+            Body("- No claim that Snapdragon or Intel workflows ran on this laptop; they are recommended pilots verified per SKU."),
+            Body("- Generated code is shown as text and never executed. Sources are synthetic.")), 22);
+
+        return Page(Stack(26, hero, stats, memoryNote, Stack(14, H2("The five-minute executive story"), story), guardrails));
+    }
+
+    private FrameworkElement StoryCard(string number, string title, string body, string target)
+    {
+        var badge = new Border
+        {
+            Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Accent,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Child = Set(Text(number, 15, White, FontWeights.Bold), t => { t.HorizontalAlignment = HorizontalAlignment.Center; t.VerticalAlignment = VerticalAlignment.Center; })
+        };
+        var go = Id(new HyperlinkButton { Content = "Open", Padding = new Thickness(0), Foreground = Accent }, "OverviewStory_" + target);
+        go.Click += (_, _) => Navigate(target);
+        return CardBorder(Stack(10, badge, H3(title), Body(body), go), 22);
+    }
+
+    private void ApplyOverviewStatus(StatusSnapshot status)
+    {
+        var d = status.Device;
+        _ovDevice.Text = d.Error is null
+            ? $"{d.DisplayName}  |  {d.Cpu}"
+            : "Device inventory unavailable: " + d.Error;
+        _ovInstalled.Text = Gb(d.InstalledGiB);
+        _ovVisible.Text = Gb(d.OsVisibleGiB);
+        _ovGpu.Text = d.PrimaryGpuBudgetMiB is long mib ? $"{mib / 1024d:F1} GiB" : "Unavailable";
+        var engine = status.Engine;
+        _ovModel.Text = engine.Model?.Name ?? (engine.State == "error" ? "Unavailable" : "Loading");
+        _ovModel.FontSize = 24;
+        _ovModelDetail.Text = engine.IsReady ? $"{engine.Model!.Provider} | ready" : engine.Detail;
+    }
+
+    private FrameworkElement BuildPlaybook()
+    {
+        var beats = new AdaptiveGrid(280, 3).With(
+            Beat("Open (30 s)", "\"This laptop runs a 14B coding model and a 20B reasoning model locally on its RTX GPU. Let me show you, then we'll size what your teams need.\""),
+            Beat("Prove (2 min)", "Run the executive briefing live. Point to the model, CUDA provider and timing. Switch to code drafting. Note: rehearsal is labelled and has no metrics."),
+            Beat("Land (2 min)", "Size the workload with T-shirt sizes, map the fleet with Platform fit, then agree a 10-user, two-week pilot with measured baselines."));
+
+        var questions = CardBorder(Stack(8,
+            H3("Discovery questions"),
+            Body("1. Which teams work with sensitive or connectivity-constrained content today?"),
+            Body("2. Which repeatable drafting, summarising or coding tasks would you measure first?"),
+            Body("3. Which approvals (security, licensing, app compatibility) must come before a pilot?"),
+            Body("4. What result would justify scaling beyond a pilot, and who decides?")), 22);
+
+        var objections = Stack(8, H3("Objection handling"),
+            Objection("How is AI accelerated on this device?", "On the RTX GPU through the CUDA execution provider in Foundry Local. The run evidence names the model variant and provider; there is no silent CPU fallback."),
+            Objection("Is it really 128 GB?", "128 GB is installed physical memory. Windows reports about 64 GB visible, and the GPU driver reports a 64,000 MiB budget. These are separate views and are never added."),
+            Objection("Will it save us money?", "This app shows illustrative capacity value only, not cash savings or ROI. Time savings and adoption must be measured in a pilot; cloud subscriptions are unchanged."),
+            Objection("Does this run on our Snapdragon or Intel fleet?", "Those are recommended pilots. Verify the exact model, runtime and accelerator support per SKU; nothing here ran on those devices."),
+            Objection("What about model reasoning text?", "Private reasoning is counted but never displayed, exported or saved. Only the final answer is shown."));
+
+        var doDont = new AdaptiveGrid(300, 2).With(
+            CardBorder(Stack(6, Set(H3("Do"), t => t.Foreground = GreenInk),
+                Body("Use live runs whenever the model is ready."),
+                Body("Name the exact model and provider shown."),
+                Body("Position every estimate as illustrative."),
+                Body("Export evidence only when the customer asks.")), 22),
+            CardBorder(Stack(6, Set(H3("Don't"), t => t.Foreground = AccentDeep),
+                Body("Present rehearsal as live output."),
+                Body("Compare speed or battery with other devices."),
+                Body("Add memory views together or call the GPU budget VRAM."),
+                Body("Promise savings, procurement fit or provider support.")), 22));
+
+        var rampUp = Id(CardBorder(Lead(14, Glyph("\uE7BE", 22, Accent), Stack(8,
+            H3("Optional: ramp up technically"),
+            Body("'Coding as a second language' is eight short lessons that teach you to read code like a new language, with a quick check per lesson and a local coding tutor on the RTX GPU. Progress is saved on this laptop only."),
+            _learnToggle)), 22), "PlaybookLearnCard");
+
+        return Page(Stack(24,
+            Stack(10, Eyebrow("Seller playbook"), H1("Five minutes. Three beats. One pilot."),
+                Body("A concise talk track for an executive conversation, with the guardrails that keep it credible.")),
+            beats, questions, objections, doDont, rampUp));
+    }
+
+    private static FrameworkElement Beat(string title, string body) =>
+        CardBorder(Stack(8, Set(Text(title.ToUpperInvariant(), 12, Accent, FontWeights.SemiBold), t => t.CharacterSpacing = 80), Set(Body(body, Ink), t => t.FontSize = 15)), 22);
+
+    private static FrameworkElement Objection(string question, string answer) => new Expander
+    {
+        Header = Text(question, 14, Ink, FontWeights.SemiBold),
+        Content = Body(answer, Ink),
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        HorizontalContentAlignment = HorizontalAlignment.Left,
+    };
+}

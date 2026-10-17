@@ -1,0 +1,36 @@
+{
+  "schema": "studio-edition/1",
+  "id": "surface",
+  "displayName": "Surface Hybrid Intelligence Studio",
+  "device": "Surface Laptop Ultra",
+  "mark": "Surface",
+  "markSubtitle": "Hybrid Intelligence Studio",
+  "codeName": "HybridIntelligenceStudio",
+  "appUserModelId": "SurfaceHybridIntelligence.Studio",
+  "serviceAppId": "surface-hybrid-intelligence-studio",
+  "schemaPrefix": "hybrid-intelligence-studio",
+  "envPrefix": "HYBRID_STUDIO_",
+  "shortcutName": "Surface Hybrid Intelligence Studio",
+  "repository": "npuneil/Surface-Hybrid-Intelligence-Studio",
+  "visibility": "public",
+  "logo": {
+    "text": "HI",
+    "background": "#0F6CBD",
+    "foreground": "#FFFFFF"
+  },
+  "accent": {
+    "base": "#0F6CBD",
+    "light1": "#2B7FC9",
+    "light2": "#4A94D3",
+    "light3": "#8CBCE6",
+    "dark1": "#0E5FA8",
+    "dark2": "#0C4E8A",
+    "dark3": "#093A66",
+    "tint": "#EAF2FB"
+  },
+  "webAccent": {
+    "base": "#0f6cbd",
+    "deep": "#0c4e8a",
+    "focus": "#4a7fb5"
+  }
+}

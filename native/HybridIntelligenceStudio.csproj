@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+    <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
+    <Platforms>ARM64</Platforms>
+    <PlatformTarget>ARM64</PlatformTarget>
+    <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <EnableCoreMrtTooling>true</EnableCoreMrtTooling>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>HybridIntelligenceStudio</AssemblyName>
+    <RootNamespace>HybridIntelligenceStudio</RootNamespace>
+    <Product>Surface Hybrid Intelligence Studio - Surface Laptop Ultra</Product>
+    <AssemblyTitle>Surface Hybrid Intelligence Studio</AssemblyTitle>
+    <Version>1.0.0</Version>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="Exists('Assets\AppIcon.ico')">
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Assets\**" />
+    <Content Remove="Assets\**" />
+    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="2.5.1" />
+  </ItemGroup>
+</Project>
