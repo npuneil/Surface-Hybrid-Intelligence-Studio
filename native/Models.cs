@@ -2,7 +2,29 @@ using System.Text.Json;
 
 namespace HybridIntelligenceStudio;
 
-internal sealed record ModelChoice(string Alias, string Id, string Label, bool Reasoning, bool Cached, double? SizeMb, string? Provider);
+internal sealed record ModelChoice(string Alias, string Id, string Label, bool Reasoning, bool Cached, double? SizeMb, string? Provider,
+    string? Runtime = null, string? Params = null, bool Available = true, string? Blocker = null, bool Exclusive = false,
+    string? Published = null, string? PublishedSource = null, double? NeedGib = null)
+{
+    internal bool IsLlamaCpp => Runtime == "llama.cpp";
+
+    /// <summary>One-line picker subtitle: runtime, parameters, file size and state. File size is on disk, not runtime memory.</summary>
+    internal string Subtitle
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(Runtime)) parts.Add(Runtime!);
+            if (!string.IsNullOrWhiteSpace(Params)) parts.Add(Params!);
+            if (SizeMb is double mb) parts.Add(IsLlamaCpp ? $"{mb / 1000:N1} GB weights file" : $"{mb:N0} MB catalog file");
+            if (!Available) parts.Add("not available on this PC");
+            else if (Cached) parts.Add("cached");
+            if (Reasoning) parts.Add("reasoning model");
+            if (Exclusive && Available) parts.Add("needs the GPU to itself");
+            return string.Join(" | ", parts);
+        }
+    }
+}
 
 internal sealed record ActiveModel(string Name, string Alias, string Id, string Provider, bool Reasoning, string? License);
 
@@ -39,7 +61,8 @@ internal sealed record DeviceFacts(
 internal sealed record StatusSnapshot(string AppId, EngineState Engine, DeviceFacts Device,
     IReadOnlyDictionary<string, double> Assumptions);
 
-internal sealed record Scenario(string Key, string Title, string Label, string Prompt, string Source);
+internal sealed record Scenario(string Key, string Title, string Label, string Prompt, string Source,
+    string? Industry = null, string? Client = null, string? DeckObjective = null);
 
 internal static class StatusParser
 {
@@ -70,7 +93,9 @@ internal static class StatusParser
             foreach (var c in list.EnumerateArray())
                 if (c.ValueKind == JsonValueKind.Object && Str(c, "alias") is string alias)
                     models.Add(new ModelChoice(alias, Str(c, "id") ?? "", Str(c, "label") ?? alias, Bool(c, "reasoning"),
-                        Bool(c, "cached"), Num(c, "size_mb"), Str(c, "provider")));
+                        Bool(c, "cached"), Num(c, "size_mb"), Str(c, "provider"), Str(c, "runtime"), Str(c, "params"),
+                        !c.TryGetProperty("available", out var av) || av.ValueKind != JsonValueKind.False, Str(c, "blocker"),
+                        Bool(c, "exclusive"), Str(c, "published"), Str(c, "published_source"), Num(c, "need_gib")));
         return new EngineState(Str(e, "state") ?? "unknown", Str(e, "detail") ?? "", Str(e, "selected_model"), model, models, Str(e, "error"));
     }
 
@@ -107,7 +132,7 @@ internal static class StatusParser
             string? prompt = Str(p.Value, "prompt");
             if (string.IsNullOrWhiteSpace(prompt)) continue;
             result[p.Name] = new Scenario(p.Name, Str(p.Value, "title") ?? p.Name, Str(p.Value, "label") ?? p.Name,
-                prompt, Str(p.Value, "source") ?? "");
+                prompt, Str(p.Value, "source") ?? "", Str(p.Value, "industry"), Str(p.Value, "client"), Str(p.Value, "deck_objective"));
         }
         return result;
     }

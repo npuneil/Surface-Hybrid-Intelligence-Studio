@@ -40,7 +40,8 @@ From the repository root:
 The native application uses real WinUI controls, not an embedded browser.
 Its C# interface talks to the existing loopback Python inference service so the
 verified CUDA model selection, stream filtering, and calculation rules stay
-consistent. **Qwen2.5-Coder 14B** and **GPT-OSS 20B** are the live model choices;
+consistent. **Qwen2.5-Coder 14B** and **GPT-OSS 20B** are the featured live models;
+larger llama.cpp models are offered when their weights are installed (see *Larger models*).
 Snapdragon and Intel recommendations are separate planning content, not
 claims of having run those platforms on this machine. This build targets
 Windows ARM64; platform guidance is not a cross-platform deployment package.
@@ -109,8 +110,11 @@ rehearsal. Editing a live instruction skips checks that depend on the default
 prompt. **Pre-flight: run every demo live** runs all twelve with their default
 inputs and reports how many ran end to end and how many passed every check. On
 this unit a warm pre-flight takes about three minutes. Export saves the
-selected run's evidence as JSON. **Show it live** on the Sales sizing tab opens
-the matching demo.
+selected run's evidence as JSON. On the Sales sizing tab, each blue **Run live
+demo** button with a play icon opens the matching demo and starts a live GPU
+run. The separate checkboxes select workloads for sizing; the buttons do not
+change that selection. If the GPU is busy or
+not ready, the demo opens with the reason it cannot start; no rehearsal is substituted.
 
 Demos load extra models beside the selected chat model and keep them resident,
 so later runs skip loading. Selecting a model in the Live GPU workspace still
@@ -208,12 +212,88 @@ default assumptions; print again from the app after changing those inputs.
 Launching again opens the existing showcase rather than starting a second
 model process. Stop the original launch terminal before changing startup mode.
 
+### Industry scenarios and Offline PPTX Forge
+
+The **Industries** page adds four fictional customer stories, each a live workflow on
+the local GPU model: Fabrikam Components (manufacturing), Beacon Mutual (insurance
+operations), Northwind Retail (retail) and Cedar Borough (public sector). Names and
+data are invented for demonstration; no real customer appears.
+
+Each card offers:
+
+- **Run live workflow**: opens the Live GPU workspace with the scenario's prompt.
+- **Prepare deck in Forge**: writes a deck brief to Offline PPTX Forge's
+  `briefs\custom\studio_<key>.json` and opens Forge. In Forge's Pre-staged mode select
+  *<Client> - sales (custom)*, review the facts and template, then choose **Build deck**.
+  Nothing is generated until you do. If Forge is already open, it is not launched again
+  (Forge lists briefs at startup): use **Open another brief (.json)...** in that window.
+- **Export deck brief (JSON)**: saves the same brief under the export folder's
+  `forge-briefs` directory for use on another PC.
+
+Forge is found beside this repository (`..\Offline-PPTX-Forge`) or at
+`HYBRID_STUDIO_FORGE_ROOT`. Forge is started through Explorer, so closing the studio does
+not close Forge. `.\Start-NativeShowcase.ps1 -Section industries` opens the page directly.
+
 ### Larger models
 
-The model selector offers **Qwen2.5-Coder 14B** (default) and **GPT-OSS 20B**
-(reasoning). Select a model, wait for its ready status, then run either AI story.
-In this workspace, switching unloads the other chat models first. The Live
-demos tab can load both side by side for the face-off.
+The model selector has two tiers, all running on the RTX GPU:
+
+| Model | Runtime | Notes |
+|---|---|---|
+| **Qwen2.5-Coder 14B** (default), **GPT-OSS 20B** (reasoning) | Foundry Local CUDA | Featured models; already cached |
+| **Qwen3-Coder 30B-A3B** | llama.cpp CUDA | Speech, vision and second-model demos can still run beside it |
+| **Llama 3.3 70B**, **GPT-OSS 120B** | llama.cpp CUDA | Need the GPU to themselves: Foundry Local closes while selected |
+| **MAI Code 1.1 Flash** (137B MoE) | Not available | Listed, disabled; see below |
+
+30B+ weights come from the checksum-verified Local-AI-Bench collection
+(`%USERPROFILE%\Local-AI-Bench\models\installed.json`) and its pinned `tools\llama\llama-server.exe`.
+Set `HYBRID_STUDIO_LLAMA_HOME` if Local-AI-Bench is not in your user folder. Rules:
+
+- **Dedicated GPU memory only.** Before anything unloads, the app checks free dedicated
+  GPU memory (nvidia-smi) and Windows commit against the weights file plus an estimated
+  context overhead. Memory the app itself would release counts toward the fit. If the
+  model cannot fit, the switch is refused and the current model stays loaded. The
+  message names any other llama-server holding memory; the app never stops another
+  app's server.
+- **Every layer on the GPU or no load.** The server runs with `-ngl all -fit off`; the app
+  reads `offloaded N/N layers to GPU` from its log and measures the process's dedicated
+  and shared GPU memory with Windows performance counters. More than 2 GiB of shared GPU
+  memory is refused.
+- **Attach, don't duplicate.** If a llama-server is already serving the same weights with
+  every layer on the GPU (for example a local coding-model stack on port 8090), the app uses
+  it and leaves it running. Otherwise it starts its own server, which stops when another
+  model is selected or the app closes. Logs: `.runtime\llama-<alias>.log`.
+- **After sleep.** Windows can page a llama-server's GPU memory out while the PC sleeps:
+  nvidia-smi then reports 3.6 GiB used while the 30B server still holds 30.7 GiB. The
+  app counts that paged-out memory as in use. Before attaching, it sends the server a
+  one-token request to move its weights back onto the GPU, then measures (4.4 s for the
+  30B here).
+
+**Why shared GPU memory is not used.** This GPU reports 63,986 MB dedicated plus
+49,132 MB shared (Windows RAM it can borrow), so CUDA lists about 110 GB. Measured on this
+Surface Laptop Ultra (Oct 18, 2026, on battery power, llama.cpp b11573): Llama 3.3 70B with
+28.3 GiB dedicated and 14.3 GiB shared loaded all 81/81 layers but decoded at
+2.6–3.2 tok/s, and the load took Windows commit from 44.8 GiB available to 1.3 GiB.
+
+**Measured in this app** (Oct 18, 2026): Qwen3-Coder 30B-A3B, all layers on the GPU,
+29.6 GiB dedicated and 0.4 GiB shared. On AC power: decode 83–91 tok/s across the code,
+insurance and manufacturing scenarios, prompt processing about 2,010 tok/s, TTFT
+178–183 ms where the prompt was not already cached. Earlier on battery power the same
+code scenario decoded at 48–75 tok/s, slower at lower charge. Plug in before a demo.
+
+**Llama 3.3 70B** needs about 43.6 GiB of free dedicated memory and **GPT-OSS 120B**
+about 61.5 GiB. The Windows desktop held about 7 GiB of the 62.5 GiB in these tests, so
+the 120B is refused on this memory configuration; it does not fit in dedicated memory.
+
+**MAI Code 1.1 Flash** is not installed: Microsoft delivers its local build through
+GitHub Copilot's Windows ML provider, with no standalone download for this app. The app
+shows Microsoft's published figures (137B total and 6.8B active parameters, a 53 GB
+quantized build, 75.5 GB peak memory at 256K context) labelled **Not measured by this app**, with the
+[source](https://commandline.microsoft.com/local-models-sandboxed-tools-github-windows/).
+
+Select a model, wait for its ready status, then run either AI story. In this
+workspace, switching unloads the other chat models first. The Live demos tab can
+load both Foundry models side by side for the face-off.
 Neither parameter count nor larger memory is presented as proof of better quality.
 
 ```powershell

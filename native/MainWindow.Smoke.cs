@@ -44,7 +44,7 @@ internal sealed partial class MainWindow
             Check("titlebar-logo", FindById(_root, "TitleBarLogo") is Image { Source: not null });
             Check("brand-mark", FindById(_root, "NavMark") is TextBlock { Text: Brand.Mark } && Title == Brand.WindowTitle, Title);
 
-            foreach (string tag in new[] { "overview", "live", "demos", "sizing", "platforms", "business", "playbook", "learn" })
+            foreach (string tag in new[] { "overview", "live", "demos", "industries", "sizing", "platforms", "business", "playbook", "learn" })
             {
                 Navigate(tag);
                 await Settle();
@@ -64,6 +64,41 @@ internal sealed partial class MainWindow
             foreach (string id in new[] { "LiveModelPicker", "LiveLoadModel", "LiveScenarioPicker", "LivePrompt", "LiveSourceExpander", "LiveRunButton", "LiveRehearsalButton", "LiveStopButton", "LiveOutput", "LiveModeBanner", "LiveExportButton" })
                 Check("automation-id-" + id, FindById(_root, id) is not null);
             Check("scenarios-loaded", _scenarioKeys.Count >= 2 && _scenarioKeys.Contains("brief") && _scenarioKeys.Contains("code"), string.Join(",", _scenarioKeys));
+
+            // Larger models: every catalog row is in the picker, unavailable ones are disabled and explained.
+            var choices = _status?.Engine.Models ?? [];
+            Check("models-foundry-and-llama", choices.Any(m => m.Runtime == "Foundry Local") && choices.Any(m => m.IsLlamaCpp),
+                string.Join(",", choices.Select(m => $"{m.Alias}:{m.Runtime}")));
+            foreach (var m in choices)
+                Check("model-picker-" + m.Alias, _modelPicker.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag as string == m.Alias) is { } item
+                    && item.IsEnabled == m.Available && (m.Available || !string.IsNullOrWhiteSpace(m.Blocker)),
+                    $"available={m.Available} blocker={m.Blocker}");
+            if (choices.FirstOrDefault(m => m.Alias == "mai-code-1.1-flash") is { } mai)
+                Check("model-mai-honest", mai.Available
+                    || (_modelNote.Visibility == Visibility.Visible && _modelNote.Text.Contains("MAI Code 1.1 Flash") && _modelNote.Text.Contains("Not measured by this app")),
+                    _modelNote.Text);
+            else Check("model-mai-honest", false, "MAI row missing from the catalog");
+
+            // Industry scenarios and the PPTX Offline Generator hand-off.
+            Navigate("industries");
+            await Settle();
+            var industries = _scenarios.Values.Where(s => s.Industry is not null).ToList();
+            Check("industry-scenarios-loaded", industries.Count >= 4, string.Join(",", industries.Select(s => s.Key)));
+            foreach (var s in industries)
+                Check("industry-card-" + s.Key, FindById(_root, "IndustryCard_" + s.Key) is not null
+                    && FindById(_root, "IndustryRun_" + s.Key) is Button { IsEnabled: true }
+                    && FindById(_root, "IndustryForge_" + s.Key) is Button && FindById(_root, "IndustryExport_" + s.Key) is HyperlinkButton
+                    && _scenarioKeys.Contains(s.Key));
+            if (industries.FirstOrDefault() is { } first)
+            {
+                ExportIndustryBrief(first);
+                string briefPath = Path.Combine(ExportDirectory, "forge-briefs", "studio_" + first.Key.Replace('-', '_') + ".json");
+                var brief = File.Exists(briefPath) ? JsonNode.Parse(File.ReadAllText(briefPath)) : null;
+                Check("industry-brief-export", _industryInfo.IsOpen && _industryInfo.Severity == InfoBarSeverity.Success && brief is not null
+                    && brief["client"]?.GetValue<string>() == first.Client && brief["pitch_type"]?.GetValue<string>() == "sales"
+                    && brief["facts"]?.AsArray().Count > 0 && brief["guardrails"]?.AsArray().Count > 0 && !LeaksToken(briefPath), briefPath);
+            }
+            await Shot("industries");
 
             // Sales sizing view (default tab) through the real check boxes.
             Navigate("sizing");
@@ -87,6 +122,17 @@ internal sealed partial class MainWindow
                 && FindText(_root, "SalesDeviceFit_laptop32") == "Comfortable", $"{FindText(_root, "SalesDeviceFit_this")} / {FindText(_root, "SalesDeviceFit_laptop32")} / {FindText(_root, "SalesDeviceFit_laptop16")}");
             Check("sales-talk-track-shown", _salesTalkTrack.Text == _lastSales?.TalkTrack && _salesTalkTrack.Text.Contains("Surface Laptop Ultra stands out"), _salesTalkTrack.Text);
             Check("sales-live-buttons", FindById(_root, "SalesLive_coding") is Button { IsEnabled: true } && FindById(_root, "SalesLive_translation") is Button { IsEnabled: true });
+            foreach (var workload in SalesSizing.Workloads.Where(w => w.LiveOnThisLaptop))
+            {
+                var launch = FindById(_root, "SalesDemo_" + workload.Id) as Button;
+                Check("sales-obvious-launch-button-" + workload.Id, launch is
+                    {
+                        MinHeight: >= 40, HorizontalAlignment: HorizontalAlignment.Stretch,
+                        Content: StackPanel { Children.Count: 2 } content
+                    } && content.Children[0] is FontIcon
+                    && content.Children[1] is TextBlock { Text: "Run live demo" }
+                    && launch.Style == (Style)Application.Current.Resources["AccentButtonStyle"]);
+            }
             await Shot("sizing-sales-view");
             if (FindById(_root, "SalesResults") is FrameworkElement salesResults)
             {
@@ -358,9 +404,29 @@ internal sealed partial class MainWindow
             SetSalesSelection(["translation"]);
             Navigate("sizing");
             await Settle();
+            _running = true;
             if (FindById(_root, "SalesLive_translation") is Button salesTranslate) InvokeButton(salesTranslate);
             await Settle();
-            Check("sales-hands-off-to-demo", _currentSection == "demos" && DemoRunnerVisible && _openDemo?.Id == "translate", $"{_currentSection} {_openDemo?.Id}");
+            Check("sales-hands-off-to-demo", _currentSection == "demos" && DemoRunnerVisible && _openDemo?.Id == "translate"
+                && _demoError.IsOpen && _demoError.Message?.Contains("Live GPU workspace") == true, $"{_currentSection} {_openDemo?.Id}");
+            foreach (var workload in SalesSizing.Workloads.Where(w => w.LiveOnThisLaptop))
+            {
+                Navigate("sizing");
+                ShowSizingTab(technical: false);
+                await Settle();
+                var selection = _salesSelected.ToHashSet(StringComparer.Ordinal);
+                var launch = FindById(_root, "SalesDemo_" + workload.Id) as Button;
+                if (launch is not null) InvokeButton(launch);
+                await Settle();
+                Check("sales-badge-launch-" + workload.Id, launch is { IsEnabled: true }
+                    && DemoRunnerVisible && _openDemo?.Id == workload.DemoId
+                    && _salesSelected.SetEquals(selection) && _demoError.IsOpen
+                    && _demoError.Message?.Contains("Live GPU workspace") == true, $"{_currentSection} {_openDemo?.Id}");
+            }
+            Navigate("sizing");
+            Check("sales-guidance-not-launchable", FindById(_root, "SalesDemo_prototyping") is null);
+            _running = false;
+            UpdateLiveButtons();
             SetSalesSelection(SalesSizing.DefaultSelection);
             CloseDemo();
 

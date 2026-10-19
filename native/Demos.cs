@@ -46,6 +46,10 @@ internal sealed record DemoCatalog(
         if (!engine.IsReady) return "Waiting for the chat model to finish loading on the GPU.";
         var roles = demo.Roles.ToHashSet(StringComparer.Ordinal);
         bool needsMedia = roles.Overlaps(["asr", "vision"]) || demo.InputKind is "audio" or "image";
+        if (engine.Models.FirstOrDefault(m => m.Alias == engine.Model?.Alias) is { Exclusive: true } large
+            && (needsMedia || roles.Overlaps(MediaRoles) || roles.Any(r => engine.Models.Any(m => m.Alias == r && m.Alias != large.Alias))))
+            return $"{large.Label} is using most of the GPU memory, so this demo's other models cannot load beside it. " +
+                   "Select Qwen2.5-Coder 14B, GPT-OSS 20B or Qwen3-Coder 30B in the Live GPU workspace first.";
         if (roles.Overlaps(MediaRoles) && !RuntimeReady)
             return string.IsNullOrWhiteSpace(RuntimeDetail) ? "The GPU speech and vision libraries are not prepared." : RuntimeDetail;
         foreach (string role in roles.Where(MediaRoles.Contains))

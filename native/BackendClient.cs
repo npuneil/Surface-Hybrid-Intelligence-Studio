@@ -108,8 +108,9 @@ internal sealed class BackendClient : IDisposable
 
     internal async Task SwitchModelAsync(string alias, CancellationToken cancellationToken)
     {
+        // 30 s: a larger model is pre-checked against live GPU memory and other model servers before it is accepted.
         using var response = await PostAsync("/api/model", new Dictionary<string, object> { ["model"] = alias },
-            HttpCompletionOption.ResponseContentRead, cancellationToken, TimeSpan.FromSeconds(15));
+            HttpCompletionOption.ResponseContentRead, cancellationToken, TimeSpan.FromSeconds(30));
         using var _ = await ReadJsonAsync(response, cancellationToken);
     }
 

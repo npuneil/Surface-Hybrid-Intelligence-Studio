@@ -39,11 +39,30 @@ internal sealed partial class MainWindow
                 MinWidth = 0,
                 Content = Stack(4,
                     Row(8, Glyph(w.Glyph, 16, Accent), Set(Text(w.Name, 14, Ink, FontWeights.SemiBold), t => t.TextWrapping = TextWrapping.Wrap)),
-                    Set(Small(w.Plain), t => t.TextWrapping = TextWrapping.Wrap),
-                    Row(6, Pill(w.Size.ToString(), AccentTint, AccentDeep), Pill(w.LiveOnThisLaptop ? "LIVE DEMO HERE" : "GUIDANCE ONLY", w.LiveOnThisLaptop ? GreenTint : Sand, w.LiveOnThisLaptop ? GreenInk : Muted)))
+                    Set(Small(w.Plain), t => t.TextWrapping = TextWrapping.Wrap))
             }, "SalesWorkload_" + w.Id);
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(box, w.Name);
-            var card = CardBorder(box, 14);
+            var sizeBadge = Pill(w.Size.ToString(), AccentTint, AccentDeep);
+            FrameworkElement actions;
+            if (w.LiveOnThisLaptop && w.DemoId is string demoId)
+            {
+                var launch = Id(Primary("Run live demo"), "SalesDemo_" + w.Id);
+                launch.Content = Row(8, Glyph("\uE768", 14, White), Text("Run live demo", 13, White, FontWeights.SemiBold));
+                launch.MinHeight = 40;
+                launch.Padding = new Thickness(12, 8, 12, 8);
+                launch.HorizontalAlignment = HorizontalAlignment.Stretch;
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(launch, "Run live demo: " + w.Name);
+                ToolTipService.SetToolTip(launch, "Open and run the matching demo on the GPU");
+                launch.Click += async (_, _) => await LaunchSalesDemoAsync(demoId);
+                actions = Lead(10, sizeBadge, launch);
+                sizeBadge.VerticalAlignment = VerticalAlignment.Center;
+            }
+            else
+            {
+                actions = Row(6, sizeBadge, Pill("GUIDANCE ONLY", Sand, Muted));
+            }
+            actions.Margin = new Thickness(28, 4, 0, 0);
+            var card = CardBorder(Stack(8, box, actions), 14);
             string id = w.Id;
             box.Checked += (_, _) => { _salesSelected.Add(id); RecomputeSales(); };
             box.Unchecked += (_, _) => { _salesSelected.Remove(id); RecomputeSales(); };
@@ -89,6 +108,7 @@ internal sealed partial class MainWindow
                 Body("Pick the everyday workloads the customer cares about. The studio picks the model size they need and shows where it fits, with no technical inputs.")),
             CardBorder(Stack(12,
                 Lead(12, H3("Pick the customer's workloads"), Set(Row(12, _salesSelectionCount, clear), r => r.HorizontalAlignment = HorizontalAlignment.Right)),
+                Small("Check workloads to size them. Use Run live demo to see one working on this laptop."),
                 tiles), 22),
             results);
     }
@@ -112,6 +132,25 @@ internal sealed partial class MainWindow
         ResetSizing();
         _sizePicker.SelectedIndex = Array.FindIndex(Sizing.Profiles, p => p.Size == _lastSales.Profile.Size);
         ShowSizingTab(technical: true);
+    }
+
+    private async Task LaunchSalesDemoAsync(string demoId)
+    {
+        if (_demoCatalog.Find(demoId) is null) await RefreshDemoCatalogAsync();
+        if (!OpenDemo(demoId))
+        {
+            ShowServiceError("Live demo unavailable", _demoCatalogError ?? "The local service has not provided this demo. Check the service and try again.");
+            return;
+        }
+        if (_activeDemo?.Demo.Id == demoId && _demoRunning) return;
+        if (!_demoRunLive.IsEnabled)
+        {
+            ShowDemoError("Live demo cannot start", _demoBlocker.Text.Length > 0
+                ? _demoBlocker.Text
+                : "The local GPU service is unavailable. Check the service and try again.");
+            return;
+        }
+        await RunOpenDemoAsync("live");
     }
 
     internal void RecomputeSales()
@@ -173,11 +212,10 @@ internal sealed partial class MainWindow
             var actions = Row(8, Pill(w.LiveOnThisLaptop ? "LIVE DEMO HERE" : "GUIDANCE ONLY", w.LiveOnThisLaptop ? GreenTint : Sand, w.LiveOnThisLaptop ? GreenInk : Muted));
             if (w.DemoId is string demoId)
             {
-                var show = Id(Secondary(w.LiveOnThisLaptop ? "Show it live" : "See a related live demo"), "SalesLive_" + w.Id);
-                show.Padding = new Thickness(10, 4, 10, 5);
-                show.FontSize = 12;
+                var show = Id(Primary(w.LiveOnThisLaptop ? "Run live demo" : "Run related live demo"), "SalesLive_" + w.Id);
+                show.MinHeight = 40;
                 show.IsEnabled = DemoCatalog.KnownIds.Contains(demoId);
-                show.Click += (_, _) => OpenDemo(demoId);
+                show.Click += async (_, _) => await LaunchSalesDemoAsync(demoId);
                 actions.Children.Add(show);
             }
             _salesRows.Children.Add(Id(new Border

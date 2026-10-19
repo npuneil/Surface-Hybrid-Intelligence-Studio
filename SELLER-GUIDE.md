@@ -32,6 +32,18 @@ face-off loads both. GPT-OSS can spend longer reasoning
 before the answer appears; activity counts are real, while private reasoning text
 is neither displayed nor saved. A larger parameter count is not an accuracy claim.
 
+**Going bigger (30B and up):** When Local-AI-Bench weights are installed, the
+selector also lists **Qwen3-Coder 30B-A3B**, **Llama 3.3 70B** and **GPT-OSS 120B**
+on llama.cpp CUDA. Plugged in, the 30B ran the code and industry stories here at
+83–91 tok/s decode (48–75 on battery), with every layer on the GPU. The app checks free dedicated GPU memory *before*
+unloading anything: if another app's model server holds the memory, the switch is
+refused, the current model keeps running and the message names the server to close.
+The 70B needs about 43.6 GiB free, so close other local model stacks first. Say plainly
+that the 120B (about 61.5 GiB) does not fit in this device's dedicated GPU memory.
+**MAI Code 1.1 Flash** appears disabled with Microsoft's published figures, labelled
+*Not measured by this app*. It ships through GitHub Copilot's local model support, not
+this app. Plug in before showing large models.
+
 ## Show it live: the Live demos tab
 
 **Before the customer arrives**, open **Live demos** and press **Pre-flight:
@@ -67,8 +79,24 @@ Rules for live demos:
   device or with cloud AI.
 - **Export** saves the run's evidence as JSON (models, timings, checks), with
   no reasoning text.
-- On the **T-shirt sizing** Sales tab, **Show it live** jumps straight to the
-  demo for the workload the customer picked.
+- On the **T-shirt sizing** Sales tab, click the blue **Run live demo** button
+  with the play icon to open and run the matching demo on the GPU. Use the
+  separate checkboxes to select workloads for sizing. If the GPU is busy or
+  not ready, the demo explains why it cannot start.
+
+## Industry stories and a leave-behind deck
+
+The **Industries** page has four fictional customers: Fabrikam Components
+(manufacturing), Beacon Mutual (insurance operations), Northwind Retail (retail)
+and Cedar Borough (public sector). Pick the one closest to the customer, then:
+
+1. **Run live workflow** to run its prompt on the GPU in front of them.
+2. **Prepare deck in Forge** to stage a matching brief in Offline PPTX Forge. In
+   Forge, select *<Client> - sales (custom)*, review the facts, then **Build deck**.
+   Forge builds the deck locally; nothing is generated until you choose Build deck.
+
+Say these are illustrative customers. Replace the fictional facts in Forge
+with real ones only after the customer agrees.
 
 ## Questions that qualify an opportunity
 

@@ -4,7 +4,7 @@ param(
     [switch]$Rebuild,
     [switch]$Windowed,
     [switch]$NoBackendStart,
-    [ValidateSet('overview', 'live', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
+    [ValidateSet('overview', 'live', 'industries', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
     [switch]$Wait
 )
 # Launches the native WinUI 3 Surface Hybrid Intelligence Studio (never a browser).

@@ -243,6 +243,182 @@ SCENARIOS = {
     },
 }
 
+SCENARIOS.update({
+    "manufacturing": {
+        "industry": "Manufacturing",
+        "client": "Fabrikam Components",
+        "deck_objective": "Explain a human-reviewed local drafting pilot for quality shift handovers, using only the fictional fixture.",
+        "title": "Quality notes to a reviewable shift handover.",
+        "label": "Manufacturing: quality handover",
+        "prompt": (
+            "Draft a shift handover with three headings: Recorded facts, Agreed follow-up, "
+            "Open questions. Cite every bullet [A], [B] or [C]. Preserve the counts and "
+            "recorded status. Do not infer a cause, prescribe a repair, release a lot, "
+            "invent a deadline or claim a productivity gain. Keep it under 180 words. "
+            "End with: Draft only; quality staff must review before any action."
+        ),
+        "source": (
+            "FICTIONAL SYNTHETIC FIXTURE | Fabrikam Components | Quality shift notes\n\n"
+            "[A] Lot FC-204 has 24 inspection records: 22 marked complete and 2 awaiting "
+            "a reviewer signature. No product defect is recorded in these notes.\n\n"
+            "[B] The quality coordinator agreed to check the two unsigned records. "
+            "No due time was agreed. Lot release has not been approved.\n\n"
+            "[C] The next shift asked whether the inspection template changed. "
+            "The template version and any cause of the missing signatures are unknown. "
+            "No machine telemetry, image or repair instruction was supplied."
+        ),
+        "system": (
+            "Draft a source-cited handover from synthetic manufacturing notes only. "
+            "Separate recorded facts, commitments and unknowns. Do not diagnose equipment, "
+            "provide repair instructions, infer defects, authorize release or invent "
+            "owners, dates or benefits. Human review by quality staff is required."
+        ),
+        "rehearsal": (
+            "Recorded facts\n"
+            "- FC-204 has 24 records: 22 complete and 2 awaiting a reviewer signature. "
+            "No defect is recorded in the notes. [A]\n\n"
+            "Agreed follow-up\n"
+            "- Quality coordinator: check the two unsigned records; no due time agreed. "
+            "Lot release is not approved. [B]\n\n"
+            "Open questions\n"
+            "- Did the template change? Its version and the cause of the missing signatures "
+            "are unknown. No telemetry or image was supplied. [C]\n\n"
+            "Draft only; quality staff must review before any action."
+        ),
+    },
+    "insurance": {
+        "industry": "Insurance operations",
+        "client": "Beacon Mutual",
+        "deck_objective": "Explain a human-reviewed local drafting pilot for claims intake administration, not claims adjudication.",
+        "title": "Claims intake notes to an administrative checklist.",
+        "label": "Insurance: claims intake",
+        "prompt": (
+            "Create a claims intake checklist under Received, Missing information, "
+            "Agreed next step. Cite each bullet [A], [B] or [C]. Distinguish a received "
+            "document from a verified document. Do not decide coverage, eligibility, "
+            "payment, liability or fraud, request sensitive identifiers, or invent "
+            "a deadline or business benefit. Keep it under 180 words. "
+            "End with: Administrative draft only; an authorized claims professional must review."
+        ),
+        "source": (
+            "FICTIONAL SYNTHETIC FIXTURE | Beacon Mutual | Intake case BM-318\n\n"
+            "[A] The intake desk recorded receipt of a notification form and an attachment "
+            "list. Neither has been verified. No real claimant information is included.\n\n"
+            "[B] The incident date is absent from the form. An attachment on the list "
+            "has not been received. The policy wording is not supplied; coverage is unknown.\n\n"
+            "[C] The intake coordinator agreed to reconcile the attachment list and flag "
+            "the missing date for an authorized reviewer. No due date or payment decision "
+            "was agreed. No claim outcome or service-time baseline is available."
+        ),
+        "system": (
+            "Use only synthetic insurance intake notes to draft an administrative checklist. "
+            "Cite the sources and preserve unverified and missing statuses. Do not infer "
+            "coverage, eligibility, liability, fraud or payment, provide advice, or ask for "
+            "sensitive identifiers. Human review by an authorized claims professional is "
+            "required. Do not invent outcomes, deadlines or measured benefits."
+        ),
+        "rehearsal": (
+            "Received\n"
+            "- Notification form and attachment list received, but neither verified. [A]\n\n"
+            "Missing information\n"
+            "- Incident date absent; one listed attachment not received. Policy wording "
+            "not supplied; coverage unknown. [B]\n\n"
+            "Agreed next step\n"
+            "- Intake coordinator: reconcile the attachment list and flag the missing "
+            "date for an authorized reviewer. No due date or payment decision agreed. [C]\n\n"
+            "Administrative draft only; an authorized claims professional must review."
+        ),
+    },
+    "retail": {
+        "industry": "Retail",
+        "client": "Northwind Retail",
+        "deck_objective": "Explain a local drafting pilot for store exception briefings, preserving inventory discrepancies until reconciliation.",
+        "title": "Store exception notes to a manager briefing.",
+        "label": "Retail: store exceptions",
+        "prompt": (
+            "Draft a store manager briefing with Reported discrepancy, Agreed follow-up, "
+            "and Still unknown. Cite each bullet [A], [B] or [C]. Preserve both counts "
+            "rather than choosing a correct one. Do not infer theft, stock loss, demand "
+            "or a cause, approve an inventory adjustment, or predict sales or savings. "
+            "Keep it under 180 words. End with: Draft only; the store manager must review."
+        ),
+        "source": (
+            "FICTIONAL SYNTHETIC FIXTURE | Northwind Retail | Store NW-12\n\n"
+            "[A] A closing note lists 18 units of item NW-42. The inventory screen lists "
+            "21 units. Neither count has been reconciled; the reason is unknown.\n\n"
+            "[B] The stock lead agreed to compare the count sheet with the screen at "
+            "09:00. No inventory adjustment is approved.\n\n"
+            "[C] A delivery reference is absent from the handover. Arrival time and "
+            "delivery contents are not confirmed. The manager requested that this "
+            "uncertainty be included; no customer impact or sales effect was measured."
+        ),
+        "system": (
+            "Draft a cited store briefing using only synthetic notes. Separate reported "
+            "counts, agreed commitments and unknowns. Do not infer theft, employee "
+            "misconduct, stock loss, demand or delivery details. Do not adjust inventory "
+            "or invent business outcomes. Human review by the store manager is required."
+        ),
+        "rehearsal": (
+            "Reported discrepancy\n"
+            "- NW-42: closing note lists 18 units; inventory screen lists 21. "
+            "Neither is reconciled and the reason is unknown. [A]\n\n"
+            "Agreed follow-up\n"
+            "- Stock lead: compare the count sheet and screen at 09:00. "
+            "No inventory adjustment is approved. [B]\n\n"
+            "Still unknown\n"
+            "- Delivery reference is absent; arrival and contents are unconfirmed. "
+            "No customer impact or sales effect was measured. [C]\n\n"
+            "Draft only; the store manager must review."
+        ),
+    },
+    "public-sector": {
+        "industry": "Public sector",
+        "client": "Cedar Borough",
+        "deck_objective": "Explain a human-reviewed local drafting pilot for public-service request administration without eligibility decisions.",
+        "title": "Service request notes to a reviewable case brief.",
+        "label": "Public sector: service requests",
+        "prompt": (
+            "Create an administrative case brief with Recorded requests, Agreed next "
+            "steps, and Open questions. Cite each bullet [A], [B] or [C]. Distinguish "
+            "receipt from acceptance. Do not decide eligibility, priority, funding or "
+            "legal rights, infer personal circumstances, or invent response deadlines "
+            "or benefits. Keep it under 180 words. End with: Administrative draft only; "
+            "an authorized service officer must review."
+        ),
+        "source": (
+            "FICTIONAL SYNTHETIC FIXTURE | Cedar Borough | Service desk CB-71\n\n"
+            "[A] The desk logged 3 requests about a community-room booking. "
+            "Receipt is acknowledged; no booking has been accepted. No resident "
+            "identifiers or personal circumstances are included.\n\n"
+            "[B] The service coordinator agreed to compare the requested dates with "
+            "the room calendar. No completion date was agreed. The calendar is not supplied.\n\n"
+            "[C] The applicable booking policy and any fee approval are not supplied. "
+            "The next officer must verify those points before a response is approved. "
+            "No eligibility, funding or legal decision has been made."
+        ),
+        "system": (
+            "Use only synthetic service-desk notes for an administrative brief. "
+            "Cite facts and distinguish requests, commitments and unknowns. Do not "
+            "infer personal circumstances, determine eligibility, priority, funding "
+            "or legal rights, or approve a booking. Human review by an authorized "
+            "officer is required. Do not invent policies, deadlines or benefits."
+        ),
+        "rehearsal": (
+            "Recorded requests\n"
+            "- Three booking requests logged; receipt acknowledged, none accepted. [A]\n\n"
+            "Agreed next steps\n"
+            "- Service coordinator: compare requested dates with the room calendar; "
+            "no completion date agreed and calendar not supplied. [B]\n"
+            "- Next officer: verify the applicable policy and fee approval before "
+            "a response is approved. [C]\n\n"
+            "Open questions\n"
+            "- What does the calendar allow? [B] Which policy and fee approval apply? "
+            "No eligibility, funding or legal decision has been made. [C]\n\n"
+            "Administrative draft only; an authorized service officer must review."
+        ),
+    },
+})
+
 DEFAULT_ASSUMPTIONS = {
     "users": 100,
     "tasks": 4,

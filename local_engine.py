@@ -11,8 +11,10 @@ import warnings
 from pathlib import Path
 
 import gpu_runtime
+import llama_engine
 import media
 from edition import APP_ID
+from llama_engine import LARGE_MODELS
 
 DEFAULT_MODEL = "qwen2.5-coder-14b"
 PROVIDER = "CUDAExecutionProvider"
@@ -21,10 +23,15 @@ PENDING_MARKER = re.compile(r"<\|[a-z_]{0,24}\|?")
 UNKNOWN_MARKER = re.compile(r"<\|[a-z_]{1,24}\|>")
 MODELS = {
     DEFAULT_MODEL: {"id": "qwen2.5-coder-14b-instruct-cuda-gpu:4",
-                    "label": "Qwen2.5-Coder 14B", "reasoning": False},
+                    "label": "Qwen2.5-Coder 14B", "reasoning": False, "params": "14B dense"},
     "gpt-oss-20b": {"id": "gpt-oss-20b-cuda-gpu:1",
-                    "label": "GPT-OSS 20B", "reasoning": True},
+                    "label": "GPT-OSS 20B", "reasoning": True, "params": "21B MoE, 3.6B active"},
 }
+
+
+def model_spec(alias):
+    """Chat model spec from Foundry Local (MODELS) or the llama.cpp larger-model path (LARGE_MODELS)."""
+    return MODELS.get(alias) or LARGE_MODELS[alias]
 # Specialist models for the live demos. All CUDA; they load on first use and stay resident beside the chat model.
 # Whisper large-v3-turbo is deliberately not used: its catalog package caps output at 20 tokens (max_length).
 MEDIA_MODELS = {
@@ -115,13 +122,15 @@ class LocalEngine:
         self.manager = None
         self.allow_download = False
         self.app_data = None
+        self.model_cache = None
+        self.large = llama_engine.LargeModelHost(Path(__file__).resolve().parent / ".runtime")
 
     def start(self, allow_download=False, model_ref=DEFAULT_MODEL):
         try:
             shared = Path(os.environ["LOCALAPPDATA"]) / "ASUAgenticShowcase"
             reuse = (shared / "models").is_dir()
             app_data = shared if reuse else Path.home() / f".{APP_ID}"
-            model_cache = shared / "models" if reuse else app_data / "cache"
+            self.model_cache = shared / "models" if reuse else app_data / "cache"
             self.app_data = app_data
             self.allow_download = allow_download
             # The cuDNN supplement must be loaded before Foundry Local loads the CUDA provider.
@@ -134,41 +143,80 @@ class LocalEngine:
                 runtime = {"state": "error", "version": gpu_runtime.TAG, "path": None,
                            "detail": f"GPU media libraries unavailable: {exc}"}
             self.state["media"] = {"runtime": runtime, "models": []}
-            from foundry_local_sdk import Configuration, FoundryLocalManager
-            logs = Path(__file__).resolve().parent / ".runtime" / "foundry-logs"
-            logs.mkdir(parents=True, exist_ok=True)
-            if FoundryLocalManager.instance is None:
-                FoundryLocalManager.initialize(Configuration(
-                    app_name=APP_ID,
-                    app_data_dir=str(app_data),
-                    model_cache_dir=str(model_cache),
-                    logs_dir=str(logs),
-                    disable_nonessential_telemetry=True,
-                ))
-            self.manager = manager = FoundryLocalManager.instance
-            providers = manager.discover_eps()
-            if not any(ep.is_registered and ep.name == PROVIDER for ep in providers):
-                if not allow_download and not (app_data / "ep" / "cuda-ep" / "active").is_file():
-                    raise RuntimeError("GPU provider is not prepared. Run Start-Showcase.ps1 -Prepare to acquire it.")
-                self.state.update(detail="Registering the CUDA GPU provider from the SDK cache")
-                result = manager.download_and_register_eps(names=[PROVIDER])
-                if not result.success:
-                    raise RuntimeError(f"GPU provider registration failed: {result.status}")
-                if not any(ep.name == PROVIDER and ep.is_registered for ep in manager.discover_eps()):
-                    raise RuntimeError("CUDA provider did not register; refusing silent fallback.")
+            manager = self._open_manager()
             choices = []
             for alias, spec in MODELS.items():
                 variant = manager.catalog.get_model_variant(spec["id"])
                 if variant is None or variant.info.runtime.execution_provider != PROVIDER:
                     raise RuntimeError(f"Required CUDA variant is absent: {spec['id']}")
                 choices.append({"alias": alias, **spec, "cached": variant.is_cached,
-                                "size_mb": variant.info.file_size_mb, "provider": PROVIDER})
+                                "size_mb": variant.info.file_size_mb, "provider": PROVIDER,
+                                "runtime": "Foundry Local", "available": True, "blocker": None, "exclusive": False})
+            try:
+                choices += self.large.catalog()
+            except Exception:
+                logging.exception("Larger-model discovery failed; Foundry Local models remain available")
             self.state.update(models=choices)
             self._refresh_media_state()
             self.switch(model_ref)
         except Exception as exc:
             logging.exception("Local model preparation failed")
             self.state.update(state="error", detail="Local inference unavailable", error=str(exc))
+
+    def _open_manager(self):
+        """Initialize Foundry Local and register the CUDA provider; also used to reopen it after a larger model."""
+        from foundry_local_sdk import Configuration, FoundryLocalManager
+        logs = Path(__file__).resolve().parent / ".runtime" / "foundry-logs"
+        logs.mkdir(parents=True, exist_ok=True)
+        if FoundryLocalManager.instance is None:
+            FoundryLocalManager.initialize(Configuration(
+                app_name=APP_ID,
+                app_data_dir=str(self.app_data),
+                model_cache_dir=str(self.model_cache),
+                logs_dir=str(logs),
+                disable_nonessential_telemetry=True,
+            ))
+        self.manager = manager = FoundryLocalManager.instance
+        providers = manager.discover_eps()
+        if not any(ep.is_registered and ep.name == PROVIDER for ep in providers):
+            if not self.allow_download and not (self.app_data / "ep" / "cuda-ep" / "active").is_file():
+                raise RuntimeError("GPU provider is not prepared. Run Start-Showcase.ps1 -Prepare to acquire it.")
+            self.state.update(detail="Registering the CUDA GPU provider from the SDK cache")
+            result = manager.download_and_register_eps(names=[PROVIDER])
+            if not result.success:
+                raise RuntimeError(f"GPU provider registration failed: {result.status}")
+            if not any(ep.name == PROVIDER and ep.is_registered for ep in manager.discover_eps()):
+                raise RuntimeError("CUDA provider did not register; refusing silent fallback.")
+        return manager
+
+    def _foundry(self):
+        """The Foundry Local manager, reopened if a larger model closed it."""
+        if self.manager is None:
+            if self.app_data is None:
+                raise RuntimeError("Foundry Local is not initialized")
+            detail = self.state.get("detail")
+            logging.info("Reopening Foundry Local")
+            self._open_manager()
+            if self.state.get("state") == "ready":
+                self.state["detail"] = detail
+        return self.manager
+
+    def _close_foundry(self):
+        """Unload every Foundry Local model and close the manager.
+
+        Unloading alone leaves about 7 GiB of CUDA memory held by this process (measured with Qwen2.5-Coder 14B);
+        closing the manager returns it, which the largest models need.
+        """
+        for other in (self.model, *self.guests.values(), *self.media.values()):
+            if other is not None:
+                other.unload()
+        self.model = None
+        self.guests.clear()
+        self.media.clear()
+        if self.manager is not None:
+            self.manager.close()
+            self.manager = None
+        self._refresh_media_state()
 
     def _variant(self, variant_id):
         model = self.manager.catalog.get_model_variant(variant_id)
@@ -188,15 +236,20 @@ class LocalEngine:
         return (self.state.get("model") or {}).get("alias")
 
     def switch(self, model_ref):
+        if model_ref in LARGE_MODELS:
+            return self._switch_large(model_ref)
         if model_ref not in MODELS:
-            raise ValueError("Choose a supported larger GPU model.")
+            raise ValueError("Choose a supported GPU model.")
         try:
             spec = MODELS[model_ref]
             with self.lock:
-                if self.manager is None:
-                    raise RuntimeError("Foundry Local is not initialized")
                 self.state.update(state="loading", selected_model=model_ref, error=None,
                                   detail=f"Preparing {spec['label']} on the RTX GPU")
+                if self.large.loaded():
+                    self.state.update(detail=f"Stopping {self.large.info['name']}; one chat model stays selected")
+                    self.large.stop()
+                    self.state["model"] = None
+                self._foundry()
                 keep = self.guests.pop(model_ref, None)
                 if keep is None and self.model is not None and self._chat_alias() == model_ref:
                     keep = self.model
@@ -226,6 +279,52 @@ class LocalEngine:
             logging.exception("Model switch failed")
             self.state.update(state="error", detail="Selected model unavailable", error=str(exc))
 
+    def precheck_large(self, alias):
+        """Raise RuntimeError, before anything is unloaded, when a larger model cannot fit. Counts the GPU memory
+        this app would release: its own llama-server, plus Foundry Local for models that need the GPU to itself."""
+        pids = [self.large.owned_pid()]
+        if LARGE_MODELS[alias]["exclusive"]:
+            pids.append(os.getpid())
+        releasable = 0
+        for pid in filter(None, pids):
+            split = llama_engine.gpu_process_memory(pid)
+            releasable += split[0] if split else 0
+        self.large.precheck(alias, releasable)
+
+    def _switch_large(self, alias):
+        spec = LARGE_MODELS[alias]
+        try:
+            with self.lock:
+                row = next((m for m in self.state.get("models") or [] if m.get("alias") == alias), None)
+                if row is None or not row.get("available"):
+                    raise RuntimeError((row or {}).get("blocker") or f"{spec['label']} is not available on this PC.")
+                self.state.update(state="loading", selected_model=alias, error=None,
+                                  detail=f"Preparing {spec['label']} on the RTX GPU")
+                if not self.large.loaded(alias):
+                    if spec["exclusive"]:
+                        self.state.update(detail="Closing Foundry Local to give the GPU to this model; one chat model stays selected")
+                        self._close_foundry()
+                    else:
+                        release = [m for m in (self.model, *self.guests.values()) if m is not None]
+                        if release:
+                            self.state.update(detail="Releasing Foundry Local chat models; one chat model stays selected")
+                            for other in release:
+                                other.unload()
+                        self.model = None
+                        self.guests.clear()
+                    self.state["model"] = None
+                    self.large.load(alias, lambda detail: self.state.update(state="loading", detail=detail))
+                self.state.update(model=dict(self.large.info))
+            self.state.update(state="warming", detail=f"Warming {spec['label']}")
+            self._warm_chat(alias)
+            info = self.large.info
+            self.state.update(state="ready", detail=f"{spec['label']} ready for live local inference "
+                                                    f"({info['offload']}, {llama_engine.PROVIDER}"
+                                                    + (f"; {info['gpu_memory']}" if info.get("gpu_memory") else "") + ")")
+        except Exception as exc:
+            logging.exception("Larger model switch failed")
+            self.state.update(state="error", detail="Selected model unavailable", error=str(exc))
+
     @staticmethod
     def _chat_info(alias, model):
         spec = MODELS[alias]
@@ -235,7 +334,7 @@ class LocalEngine:
     def _warm_chat(self, alias):
         try:
             for _ in self.stream("Reply with READY only.", "Keep the response brief.",
-                                 max_tokens=1024 if MODELS[alias]["reasoning"] else 16, alias=alias):
+                                 max_tokens=1024 if model_spec(alias)["reasoning"] else 16, alias=alias):
                 pass
         except RuntimeError as exc:
             # A warm-up only has to exercise the GPU path; an empty or truncated reply is not a failure.
@@ -243,22 +342,31 @@ class LocalEngine:
                 raise
 
     def generation_budget(self, scenario):
-        reasoning = MODELS[self.state["selected_model"]]["reasoning"]
+        reasoning = model_spec(self.state["selected_model"])["reasoning"]
         return (4096 if scenario == "code" else 3072) if reasoning else (1600 if scenario == "code" else 650)
 
     def is_resident(self, alias):
         return (alias in self.guests or (self.model is not None and self._chat_alias() == alias)
-                or alias in self.media)
+                or alias in self.media or self.large.loaded(alias))
+
+    def _exclusive_blocker(self):
+        """Message when the selected larger model needs the GPU to itself, else None."""
+        if self.large.loaded() and LARGE_MODELS[self.large.alias]["exclusive"]:
+            return (f"{self.large.info['name']} is using most of the GPU memory, so this demo's Foundry Local models "
+                    "cannot load beside it. Select Qwen2.5-Coder 14B, GPT-OSS 20B or Qwen3-Coder 30B in the "
+                    "Live GPU workspace, then run the demo again.")
+        return None
 
     def ensure_chat(self, alias):
         """Keep another supported chat model resident beside the selected one; returns load timings or None."""
         if alias not in MODELS:
             raise ValueError("Unsupported chat model.")
         with self.lock:
-            if self.manager is None:
-                raise RuntimeError("Foundry Local is not initialized")
             if self.is_resident(alias):
                 return None
+            if blocker := self._exclusive_blocker():
+                raise RuntimeError(blocker)
+            self._foundry()
             spec = MODELS[alias]
             started = time.perf_counter()
             model = self._variant(spec["id"])
@@ -271,6 +379,8 @@ class LocalEngine:
 
     def chat_info(self, alias=None):
         with self.lock:
+            if self.large.loaded() and alias in (None, self.large.alias):
+                return dict(self.large.info)
             return self._chat(alias)[2]
 
     def _chat(self, alias=None):
@@ -284,6 +394,10 @@ class LocalEngine:
         return model, MODELS[alias], self._chat_info(alias, model)
 
     def _refresh_media_state(self):
+        if self.manager is None and self.state.get("media", {}).get("models"):
+            # Foundry Local is closed while a larger model holds the GPU; catalog facts are unchanged.
+            self.state["media"]["models"] = [{**row, "loaded": False} for row in self.state["media"]["models"]]
+            return
         rows = []
         for role, spec in MEDIA_MODELS.items():
             row = {"role": role, "label": spec["label"], "id": spec["id"], "provider": PROVIDER,
@@ -309,8 +423,9 @@ class LocalEngine:
         with self.lock:
             if role in self.media:
                 return None
-            if self.manager is None:
-                raise RuntimeError("Foundry Local is not initialized")
+            if blocker := self._exclusive_blocker():
+                raise RuntimeError(blocker)
+            self._foundry()
             runtime = self.state.get("media", {}).get("runtime") or {}
             if runtime.get("state") not in ("active", "not_needed"):
                 raise RuntimeError(runtime.get("detail") or "GPU media libraries are unavailable.")
@@ -409,12 +524,17 @@ class LocalEngine:
 
     def resident(self):
         with self.lock:
+            large = [self.large.info["id"]] if self.large.loaded() else []
             if self.manager is None:
-                return []
-            return sorted(m.id for m in self.manager.catalog.get_loaded_models())
+                return large
+            return sorted([m.id for m in self.manager.catalog.get_loaded_models()] + large)
 
     def stream(self, prompt, system, max_tokens=650, alias=None):
         with self.lock:
+            if self.large.loaded() and alias in (None, self.large.alias):
+                reasoning = LARGE_MODELS[self.large.alias]["reasoning"]
+                yield from self.large.stream(system, prompt, max_tokens, HarmonyFilter() if reasoning else None)
+                return
             model, spec, info = self._chat(alias)
             yield from self._generate(model, info, spec["reasoning"], system, prompt, max_tokens)
 

@@ -18,7 +18,7 @@ from pathlib import Path
 import demos
 import gpu_runtime
 import media
-from local_engine import MEDIA_MODELS, MODELS
+from local_engine import LARGE_MODELS, MEDIA_MODELS, MODELS
 
 ROOT = Path(__file__).resolve().parent
 MEDIA_DIR = ROOT / ".runtime" / "demo-media"
@@ -492,6 +492,10 @@ class DemoRunner:
         budget = sum(item.get("reported_budget_mib", 0) for item in self.device.get("gpu_memory") or []) or None
         lines = [f"{'Loaded' if model_id in loaded else 'Not loaded'}: {label} ({model_id})"
                  for label, model_id in expected]
+        large = (self.engine.state.get("model") or {}) if self.engine.state.get("selected_model") in LARGE_MODELS else {}
+        if large.get("id") in loaded:
+            lines.append(f"Also loaded: {large['name']} ({large['id']}, {large.get('provider')}, {large.get('offload')}"
+                         + (f"; at load: {large['gpu_memory']}" if large.get("gpu_memory") else "") + ")")
         if usage:
             lines.append("Whole-GPU figures include every app using the GPU on this PC. Shared usage is system "
                          "memory the GPU borrows when dedicated memory is full.")

@@ -261,11 +261,15 @@ internal sealed partial class MainWindow
         foreach (var m in status.Engine.Models)
         {
             bool loaded = status.Engine.Model?.Alias == m.Alias;
+            string size = m.SizeMb is double mb ? (m.IsLlamaCpp ? $"{mb / 1000:N1} GB weights file" : $"{mb:N0} MB catalog file size") : "no local file";
+            string detail = $"{m.Label}  |  {size}  |  {m.Provider}" + (m.Available ? "" : $"  |  {m.Blocker}") +
+                (string.IsNullOrWhiteSpace(m.Published) ? "" : $"  {m.Published}");
             _observed.Children.Add(Lead(10,
-                Pill(loaded ? "Loaded" : m.Cached ? "Cached" : "Not cached", loaded ? GreenTint : Sand, loaded ? GreenInk : Muted),
-                Set(Text($"{m.Label}  |  {m.SizeMb:N0} MB catalog file size  |  {m.Provider}", 13, Ink), t => t.TextWrapping = TextWrapping.Wrap)));
+                Pill(loaded ? "Loaded" : !m.Available ? "Unavailable" : m.Cached ? "Cached" : "Not cached",
+                    loaded ? GreenTint : Sand, loaded ? GreenInk : Muted),
+                Set(Text(detail, 13, Ink), t => t.TextWrapping = TextWrapping.Wrap)));
         }
-        _observed.Children.Add(Small("Catalog file size is the model package on disk, not measured runtime memory. This app does not measure runtime memory use; the planner above remains an estimate. Only one model is loaded at a time."));
+        _observed.Children.Add(Small("File size is the model on disk, not measured runtime memory. This app does not measure runtime memory use; the planner above remains an estimate. One chat model is selected at a time."));
     }
 
     private SizingInput ReadSizingInput()

@@ -14,7 +14,7 @@ import demos
 from content import DEFAULT_ASSUMPTIONS, SCENARIOS, calculate
 from demo_runner import DemoRunner, MediaStore
 from edition import APP_ID, DISPLAY_NAME
-from local_engine import DEFAULT_MODEL, MODELS, LocalEngine
+from local_engine import DEFAULT_MODEL, LARGE_MODELS, MODELS, LocalEngine, model_spec
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 24000
@@ -137,7 +137,7 @@ class Handler(BaseHTTPRequestHandler):
                                        "engine": dict(self.server.engine.state), "device": self.server.device,
                                        "token": self.server.token, "assumptions": DEFAULT_ASSUMPTIONS})
         if path == "/api/scenarios":
-            return self.json_out(200, {k: {n: v[n] for n in ("title", "label", "prompt", "source")}
+            return self.json_out(200, {k: {n: v[n] for n in ("title", "label", "prompt", "source", "industry", "client", "deck_objective") if n in v}
                                       for k, v in SCENARIOS.items()})
         if path == "/api/demos":
             engine = self.server.engine.state
@@ -196,14 +196,24 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json_out(400, {"error": str(exc)})
         if self.path == "/api/model":
             selected = body.get("model")
-            if not isinstance(selected, str) or selected not in MODELS:
-                return self.json_out(400, {"error": "Select Qwen2.5-Coder 14B or GPT-OSS 20B."})
+            if not isinstance(selected, str) or (selected not in MODELS and selected not in LARGE_MODELS):
+                return self.json_out(400, {"error": "Select one of the listed GPU models."})
+            if selected in LARGE_MODELS:
+                row = next((m for m in self.server.engine.state.get("models") or [] if m.get("alias") == selected), {})
+                if not row.get("available"):
+                    return self.json_out(400, {"error": row.get("blocker") or
+                                               f"{LARGE_MODELS[selected]['label']} is not available on this PC."})
             if self.server.engine.state["state"] not in ("ready", "error"):
                 return self.json_out(503, {"error": self.server.engine.state["detail"]})
+            if selected in LARGE_MODELS:
+                try:
+                    self.server.engine.precheck_large(selected)
+                except RuntimeError as exc:
+                    return self.json_out(409, {"error": str(exc)})
             if not self.server.run_lock.acquire(blocking=False):
                 return self.json_out(409, {"error": "A generation or model switch is active."})
             self.server.engine.state.update(state="loading", selected_model=selected, error=None,
-                                            detail=f"Preparing {MODELS[selected]['label']}")
+                                            detail=f"Preparing {model_spec(selected)['label']}")
 
             def switch():
                 try:

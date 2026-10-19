@@ -15,6 +15,7 @@ internal sealed partial class MainWindow
     private readonly ComboBox _modelPicker = Id(new ComboBox { Header = "Model on the RTX GPU", HorizontalAlignment = HorizontalAlignment.Stretch }, "LiveModelPicker");
     private readonly Button _loadModel = Id(Secondary("Load selected model"), "LiveLoadModel");
     private readonly TextBlock _engineText = Id(Small("Connecting to the local service"), "LiveEngineState");
+    private readonly TextBlock _modelNote = Id(Set(Small(""), t => { t.TextWrapping = TextWrapping.Wrap; t.Visibility = Visibility.Collapsed; }), "LiveModelNote");
     private readonly ProgressRing _engineRing = new() { Width = 16, Height = 16, IsActive = false };
     private readonly RadioButtons _scenarioPicker = Id(new RadioButtons { Header = "Workflow" }, "LiveScenarioPicker");
     private readonly TextBlock _scenarioNote = Id(Small(""), "LiveScenarioNote");
@@ -71,6 +72,7 @@ internal sealed partial class MainWindow
         _runLive.IsEnabled = _runRehearsal.IsEnabled = _loadModel.IsEnabled = false;
 
         _loadModel.Click += async (_, _) => await SwitchModelAsync();
+        _modelPicker.SelectionChanged += (_, _) => UpdateModelNote();
         _scenarioPicker.SelectionChanged += (_, _) => OnScenarioChanged();
         _restorePrompt.Click += (_, _) => { if (SelectedScenario is { } s) _prompt.Text = s.Prompt; };
         _runLive.Click += async (_, _) => await RunScenarioAsync("live");
@@ -102,7 +104,8 @@ internal sealed partial class MainWindow
         var controls = CardBorder(Stack(14,
             modelRow,
             Lead(8, _engineRing, _engineText),
-            Small("One model is resident at a time; loading another unloads the current one. Both are CUDA variants run through Foundry Local."),
+            Small("One chat model is selected at a time; loading another unloads the current one. Qwen2.5-Coder 14B and GPT-OSS 20B run through Foundry Local; the 30B+ models run through llama.cpp CUDA."),
+            _modelNote,
             new Border { Height = 1, Background = Line },
             _scenarioPicker,
             _scenarioNoteCard,
@@ -173,6 +176,7 @@ internal sealed partial class MainWindow
             _scenarioPicker.Items.Add(Id(new RadioButton { Content = _scenarios[key].Label, Tag = key }, "LiveScenario_" + key));
         _scenarioPicker.SelectedIndex = Math.Max(0, previous is null ? 0 : _scenarioKeys.IndexOf(previous));
         UpdatePlatformTryButtons();
+        PopulateIndustryScenarios();
         RecomputeSales();
         UpdateTutorButton();
     }
@@ -217,17 +221,44 @@ internal sealed partial class MainWindow
         {
             _modelPicker.Items.Clear();
             foreach (var m in engine.Models)
-                _modelPicker.Items.Add(Id(new ComboBoxItem
+            {
+                var item = Id(new ComboBoxItem
                 {
                     Content = Stack(0, Text(m.Label, 14, Ink, FontWeights.SemiBold),
-                        Small($"{m.SizeMb:N0} MB catalog file{(m.Cached ? " | cached" : "")}{(m.Reasoning ? " | reasoning model" : "")}")),
-                    Tag = m.Alias
-                }, "LiveModel_" + m.Alias));
+                        Set(Small(m.Subtitle), t => t.TextWrapping = TextWrapping.Wrap)),
+                    Tag = m.Alias,
+                    IsEnabled = m.Available,
+                }, "LiveModel_" + m.Alias);
+                if (!m.Available && !string.IsNullOrWhiteSpace(m.Blocker)) ToolTipService.SetToolTip(item, m.Blocker);
+                _modelPicker.Items.Add(item);
+            }
             _modelsPopulated = true;
             SelectModelInPicker(engine.SelectedModel);
         }
         else if (engine.IsBusy) SelectModelInPicker(engine.SelectedModel);
+        UpdateModelNote();
         UpdateLiveButtons();
+    }
+
+    private void UpdateModelNote()
+    {
+        var models = _status?.Engine.Models ?? [];
+        string alias = _modelPicker.SelectedItem is ComboBoxItem { Tag: string tag } ? tag : "";
+        var lines = new List<string>();
+        if (models.FirstOrDefault(m => m.Alias == alias) is { } selected)
+            lines.Add(selected.IsLlamaCpp
+                ? $"{selected.Label} runs through llama.cpp CUDA from the Local-AI-Bench weights, with every layer on the GPU or it refuses to load. " +
+                  (selected.NeedGib is double need
+                      ? $"It needs about {need:N1} GiB of free dedicated GPU memory (weights plus context); shared GPU memory borrowed from Windows RAM is not used. "
+                      : "") +
+                  (selected.Exclusive
+                      ? "It needs the GPU to itself: Foundry Local models unload while it is selected, so multi-model and speech or vision demos wait until you switch back."
+                      : "Speech, vision and second-model demos can still load Foundry Local models beside it.")
+                : $"{selected.Label} is a CUDA variant run through Foundry Local.");
+        foreach (var m in models.Where(m => !m.Available))
+            lines.Add($"{m.Label}: {m.Blocker}" + (string.IsNullOrWhiteSpace(m.Published) ? "" : $" {m.Published}"));
+        _modelNote.Text = string.Join("\n", lines);
+        _modelNote.Visibility = lines.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void SelectModelInPicker(string? alias)
@@ -267,7 +298,9 @@ internal sealed partial class MainWindow
         {
             _switching = true;
             UpdateLiveButtons();
-            _engineText.Text = "Requesting model switch...";
+            _engineText.Text = _status?.Engine.Models.FirstOrDefault(m => m.Alias == alias)?.IsLlamaCpp == true
+                ? "Checking free GPU memory and other model servers before switching..."
+                : "Requesting model switch...";
             await _client.SwitchModelAsync(alias, _lifetime.Token);
             _statusTimer.Interval = TimeSpan.FromSeconds(1.5);
             await RefreshStatusAsync();

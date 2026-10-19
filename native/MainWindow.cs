@@ -117,6 +117,7 @@ internal sealed partial class MainWindow : Window
         AddNav("overview", "Executive overview", "\uE80F", "NavOverview");
         AddNav("live", "Live GPU workspace", "\uE945", "NavLive");
         AddNav("demos", "Live demos", "\uE768", "NavDemos");
+        AddNav("industries", "Industry scenarios", "\uE821", "NavIndustries");
         AddNav("sizing", "T-shirt sizing", "\uE9D9", "NavSizing");
         AddNav("platforms", "Platform fit", "\uE7F8", "NavPlatforms");
         AddNav("business", "Business case", "\uE8EF", "NavBusiness");
@@ -137,6 +138,7 @@ internal sealed partial class MainWindow : Window
         _pages["overview"] = BuildOverview();
         _pages["live"] = BuildLive();
         _pages["demos"] = BuildDemos();
+        _pages["industries"] = BuildIndustries();
         _pages["sizing"] = BuildSizing();
         _pages["platforms"] = BuildPlatforms();
         _pages["business"] = BuildBusiness();
