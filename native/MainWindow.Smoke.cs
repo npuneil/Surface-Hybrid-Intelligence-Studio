@@ -280,6 +280,64 @@ internal sealed partial class MainWindow
                 $"visible={SizingTechnicalVisible} size={_sizePicker.SelectedIndex} {_lastSizing?.RequiredGiB} vs {salesRequired}");
             SetSalesSelection(SalesSizing.DefaultSelection);
 
+            // Surface Laptop Ultra configuration planner through the real controls.
+            ShowSizingTab(technical: false);
+            _ultraTogether.IsOn = false;
+            _ultraLong.IsOn = false;
+            _ultraBasis.SelectedIndex = 0;
+            SetSalesSelection(["coding"]);
+            await Settle();
+            Check("ultra-coding-48", _lastUltra?.Recommended?.Config.MemoryGB == 48 && _ultraRecommendation.Text == "Recommended: 48 GB Surface Laptop Ultra"
+                && FindText(_root, "UltraFit_24") == "Won't fit" && FindText(_root, "UltraFit_32") == "Little room" && FindText(_root, "UltraFit_48") == "Recommended"
+                && FindText(_root, "UltraFit_64") == "Plenty of room" && _ultraPillText.Text.StartsWith("RECOMMENDED") && _ultraTalkTrack.Text == _lastUltra.TalkTrack
+                && _ultraCopy.IsEnabled && _ultraCustom.Visibility == Visibility.Collapsed,
+                $"{_ultraRecommendation.Text} / {FindText(_root, "UltraFit_32")} / {FindText(_root, "UltraFit_48")}");
+            Check("ultra-cards-show-split", FindText(_root, "UltraDetail_128")?.StartsWith("GPU about 79.9 GB, Windows about 48.1 GB.") == true
+                && _ultraBasisNote.Text.Contains("79.9 GB") && FindById(_root, "UltraSpecLink") is HyperlinkButton, FindText(_root, "UltraDetail_128") ?? "");
+            int? thisPc = UltraSizing.ThisPcConfig(_status?.Device);
+            Check("ultra-this-pc-marker", thisPc is null || (FindById(_root, $"UltraHere_{thisPc}") is TextBlock { Visibility: Visibility.Visible }
+                && UltraSizing.Configurations.Where(c => c.MemoryGB != thisPc).All(c => FindById(_root, $"UltraHere_{c.MemoryGB}") is TextBlock { Visibility: Visibility.Collapsed })),
+                $"{thisPc}");
+            _ultraBasis.SelectedIndex = 1;
+            await Settle();
+            bool measurable = UltraSizing.MeasuredShare(_status?.Device) is not null;
+            Check("ultra-measured-basis", !measurable || (_lastUltra?.Basis == SplitBasis.MeasuredThisPc && _ultraBasisNote.Text.StartsWith("GPU share: this PC's driver reports")
+                && _lastUltra.Configs.Any(c => c.MeasuredHere) == (thisPc is not null)), _ultraBasisNote.Text);
+            _ultraBasis.SelectedIndex = 2;
+            await Settle();
+            Check("ultra-custom-basis", _ultraCustom.Visibility == Visibility.Visible && _lastUltra?.Basis == SplitBasis.Custom
+                && Math.Abs(_lastUltra.GpuShare - UltraSizing.DefaultCustomPercent / 100) < 1e-9, $"{_lastUltra?.GpuShare}");
+            _ultraBasis.SelectedIndex = 0;
+            SetSalesSelection(["frontier"]);
+            await Settle();
+            Check("ultra-frontier-128", _lastUltra?.Recommended?.Config.MemoryGB == 128 && FindText(_root, "UltraFit_64") == "Won't fit"
+                && FindText(_root, "UltraFit_128") == "Recommended" && FindById(_root, "SalesDemo_frontier") is null, _ultraRecommendation.Text);
+            SetSalesSelection(["coding", "reasoning"]);
+            _ultraTogether.IsOn = true;
+            await Settle();
+            Check("ultra-together-64", _lastUltra is { Together: true, Recommended.Config.MemoryGB: 64 } && FindText(_root, "UltraFit_48") == "Little room"
+                && _ultraTalkTrack.Text.StartsWith("Keeping Local coding assistant and Analysis & reasoning ready at the same time"), _ultraTalkTrack.Text);
+            _ultraLong.IsOn = true;
+            await Settle();
+            Check("ultra-long-together-128", _lastUltra is { LongDocuments: true, Recommended.Config.MemoryGB: 128 } && FindText(_root, "UltraFit_64") == "Little room", _ultraRecommendation.Text);
+            if (FindById(_root, "UltraPlanner") is FrameworkElement ultraPlanner)
+            {
+                ultraPlanner.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = false });
+                await Shot("sizing-ultra-planner");
+            }
+            SetSalesSelection(SalesSizing.Workloads.Select(w => w.Id));
+            await Settle();
+            Check("ultra-none-holds-everything-together", _lastUltra is { Recommended: null, SmallestThatHolds: null } && _ultraPillText.Text.StartsWith("NO CONFIGURATION"), _ultraPillText.Text);
+            SetSalesSelection([]);
+            await Settle();
+            Check("ultra-empty-state", _lastUltra is null && _ultraBody.Visibility == Visibility.Collapsed && !_ultraCopy.IsEnabled
+                && _ultraRecommendation.Text.StartsWith("Pick at least one"), _ultraRecommendation.Text);
+            _ultraTogether.IsOn = false;
+            _ultraLong.IsOn = false;
+            SetSalesSelection(SalesSizing.DefaultSelection);
+            await Settle();
+            Check("ultra-default-coding-48", _lastUltra?.Recommended?.Config.MemoryGB == 48, _ultraRecommendation.Text);
+
             // T-shirt sizing (technical view) through the real controls.
             Navigate("sizing");
             ShowSizingTab(technical: true);

@@ -1,6 +1,6 @@
 namespace HybridIntelligenceStudio;
 
-internal enum TShirtSize { S, M, L, XL }
+internal enum TShirtSize { S, M, L, XL, XXL }
 
 internal enum BudgetSource { GpuDriverBudget, WindowsVisibleMemory, Custom }
 
@@ -76,6 +76,9 @@ internal static class Sizing
             "Code drafting, reasoning, longer briefing work"),
         new(TShirtSize.XL, "Extra large", 24, 32, 32, "~24-32B dense class (e.g. Qwen2.5 32B)", 0.25, 2.5,
             "Prototyping heavier models; plan memory carefully"),
+        // KV: 80 layers x 8 KV heads x 128 dims x 2 (K and V) x 2 bytes = 0.31 GiB per 1,000 tokens.
+        new(TShirtSize.XXL, "Double extra large", 65, 72, 70, "~65-72B dense class (e.g. Llama 3.3 70B)", 0.31, 3.0,
+            "Evaluating the largest open models; needs a high-memory configuration"),
     ];
 
     internal static readonly int[] SupportedBits = [4, 8, 16];
@@ -125,6 +128,32 @@ internal static class Sizing
         double working = weight + allowance;
         double usable = input.BudgetGiB - input.ReserveGiB;
         double required = working + input.HeadroomGiB;
+        double margin = usable - required;
+        if (!double.IsFinite(working) || !double.IsFinite(margin)) return Invalid("The estimate is not a finite number.");
+        var verdict = margin < -Tolerance ? SizingVerdict.DoesNotFit
+            : margin < TightMarginGiB ? SizingVerdict.Tight
+            : SizingVerdict.Fits;
+        return new SizingResult(verdict, null, weight, kv, allowance, working, usable, required, margin);
+    }
+
+    /// <summary>
+    /// Several models resident at the same time against one shared budget: working sets add, while the
+    /// reserve and headroom count once. All inputs must share the same budget, reserve and headroom.
+    /// One input gives exactly the same result as <see cref="Estimate"/>.
+    /// </summary>
+    internal static SizingResult EstimateTogether(IReadOnlyList<SizingInput> inputs)
+    {
+        if (inputs.Count == 0) return Invalid("Pick at least one model.");
+        var first = inputs[0];
+        if (inputs.Any(i => i.BudgetGiB != first.BudgetGiB || i.ReserveGiB != first.ReserveGiB || i.HeadroomGiB != first.HeadroomGiB))
+            return Invalid("Models sized together must share one budget, reserve and headroom.");
+        var parts = inputs.Select(Estimate).ToArray();
+        if (parts.FirstOrDefault(p => !p.IsValid) is { } bad) return bad;
+        if (parts.Length == 1) return parts[0];
+        double weight = parts.Sum(p => p.WeightGiB), kv = parts.Sum(p => p.KvGiB), allowance = parts.Sum(p => p.AllowanceGiB);
+        double working = parts.Sum(p => p.WorkingSetGiB);
+        double usable = first.BudgetGiB - first.ReserveGiB;
+        double required = working + first.HeadroomGiB;
         double margin = usable - required;
         if (!double.IsFinite(working) || !double.IsFinite(margin)) return Invalid("The estimate is not a finite number.");
         var verdict = margin < -Tolerance ? SizingVerdict.DoesNotFit

@@ -22,10 +22,11 @@ internal static class ApprovedLinks
     internal const string OpenVinoRequirements = "https://docs.openvino.ai/2026/about-openvino/release-notes-openvino/system-requirements.html";
     internal const string FoundryLocalSdk = "https://learn.microsoft.com/en-us/azure/foundry-local/reference/reference-sdk-current";
     internal const string QualcommWhisperBase = "https://github.com/qualcomm/ai-hub-models/tree/main/src/qai_hub_models/models/whisper_base";
+    internal const string SurfaceLaptopUltraSpecs = "https://learn.microsoft.com/en-us/surface/tech-specs/surface-laptop-ultra-1stedition";
 
     internal static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        QualcommGenie, OpenVinoGenAi, OpenVinoRequirements, FoundryLocalSdk, QualcommWhisperBase
+        QualcommGenie, OpenVinoGenAi, OpenVinoRequirements, FoundryLocalSdk, QualcommWhisperBase, SurfaceLaptopUltraSpecs
     };
 
     /// <summary>Only exact, allow-listed HTTPS documentation URLs may be opened.</summary>

@@ -69,7 +69,11 @@ internal static class SalesSizing
         new("prototyping", "Bigger-model prototyping", "\uE950",
             "Try larger open models for prototypes and evaluation.", TShirtSize.XL,
             "24-32B model class", "faceoff", false,
-            "Memory estimate only: no 24-32B model is installed in this app. The related face-off demo runs two large models side by side here."),
+            "Memory estimate only on this page. When its weights are installed, Qwen3-Coder 30B-A3B also runs in the Live model selector. The related face-off demo runs two large models side by side here."),
+        new("frontier", "Largest open models (70B class)", "\uE81E",
+            "Evaluate the biggest open models that still fit on a laptop's GPU.", TShirtSize.XXL,
+            "Llama 3.3 70B class", null, false,
+            "Memory estimate only on this page. When its weights are installed, Llama 3.3 70B also runs in the Live model selector; it needs the GPU to itself and about 43.6 GiB of free GPU memory on this laptop."),
     ];
 
     internal static readonly string[] DefaultSelection = ["coding"];
@@ -152,7 +156,7 @@ internal static class SalesSizing
         IReadOnlyList<SalesDeviceFit> others, bool pilot)
     {
         string verb = workloads.Count == 1 ? "needs" : "need";
-        string first = $"{JoinNames(workloads)} {verb} a {profile.Name} ({profile.Size}) AI model.";
+        string first = $"{JoinNames(workloads)} {verb} {Article(profile.Name)} {profile.Name} ({profile.Size}) AI model.";
         string second = thisLaptop.Fit switch
         {
             SalesFit.Comfortable => $"This Surface Laptop Ultra has room for that size on its RTX GPU, using about {Math.Round(thisLaptop.PercentUsed):0}% of the memory available for AI (estimate).",
@@ -175,6 +179,8 @@ internal static class SalesSizing
             third = "Check the technical view before committing to a device.";
         return $"{first} {second} {third}";
     }
+
+    internal static string Article(string word) => word.Length > 0 && "AEIOUaeiou".Contains(word[0]) ? "an" : "a";
 
     internal static IEnumerable<string> AllText() =>
         Workloads.SelectMany(w => new[] { w.Name, w.Plain, w.ModelClass, w.LiveNote, PlatformFit(w) })

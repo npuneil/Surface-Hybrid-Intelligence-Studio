@@ -137,12 +137,43 @@ Nothing is installed into Python and no NVIDIA DLL is committed. The
 
 The **T-shirt sizing** page has two tabs. **Sales** (the default) is a
 100-level view: pick broad workloads such as transcription and meeting notes,
-translation, writing, a local coding assistant or reasoning. The app recommends
+translation, writing, a local coding assistant, reasoning or the largest open
+models (70B class). The app recommends
 the largest size those workloads need, shows the fit on this unit's RTX GPU
 budget versus illustrative 32 GB and 16 GB laptops, and gives a jargon-free
 talk track whose percentages come from the same engine. **Technical** is the
 full planner described below; *See the technical sizing* hands the selected
 size across with identical results.
+
+#### Which Surface Laptop Ultra configuration?
+
+Below the Sales results, the **Surface Laptop Ultra configurations** planner
+turns the picked workloads into a memory recommendation across the 24, 32, 48,
+64 and 128 GB options in Microsoft's tech specs. Each card runs the same
+estimate (4-bit weights, 8,192-token context, 6 GiB reserve, 2 GiB headroom)
+against that configuration's dedicated GPU memory and shows **Recommended**,
+**Plenty of room**, **Little room** or **Won't fit**, plus a copyable talk track.
+
+- **Recommended** is the smallest configuration whose estimate uses at most 80%
+  of the memory left for AI. Real 4-bit model files are larger than the
+  estimate (the Llama 3.3 70B file the app loads is 39.6 GiB against 32.6 GiB
+  estimated), so a "Little room" fit is flagged rather than recommended.
+- **AI models in use**: *One at a time* sizes for the largest model;
+  *All open together* adds the models up. Writing, translation and documents
+  share one general model.
+- **Document length**: *Long documents* raises the context to 32,768 tokens.
+- **GPU share**: the default is Microsoft's launch Task Manager image of a
+  128 GB unit (79.9 GB dedicated GPU memory, 62%), applied to every
+  configuration. *This PC's measured split* uses this unit's driver report
+  instead (62.5 GB of 128 GB here, 49%); *Custom share* accepts 10-90%.
+  Microsoft has not published the split for the smaller configurations.
+- Processor pairings (24 GB entry with the 18-core CPU, 128 GB with the
+  20-core CPU) come from launch coverage; confirm them in the configurator.
+
+It is a memory-only estimate: no pricing, response-time, battery or support
+claims. Sources: [Surface Laptop Ultra tech specs](https://learn.microsoft.com/en-us/surface/tech-specs/surface-laptop-ultra-1stedition),
+Microsoft's launch Task Manager image of a 128 GB unit, and this unit's driver
+report on the Device evidence page.
 
 Sizing is a transparent planning estimate, not a benchmark or procurement
 guarantee. Start with a model band, then adjust precision, context, working-set
@@ -154,6 +185,7 @@ allowances, reserve and headroom against **one** appropriate memory budget.
 | M | 7-8B | Service-desk drafts, richer document assistance |
 | L | 14-20B | Code drafting and structured reasoning pilots |
 | XL | 24-32B | Larger-model evaluation on a qualified configuration |
+| XXL | 65-72B | Largest open models (Llama 3.3 70B class) on a large-memory configuration |
 
 Raw weight estimate in GiB = billions of parameters × 1,000,000,000 ×
 weight bits ÷ 8 ÷ 1,073,741,824. Runtime, context/KV cache, reserve and

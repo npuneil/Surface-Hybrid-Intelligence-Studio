@@ -102,10 +102,21 @@ internal static class SelfTest
             Check("band-M-7-8B", bands[TShirtSize.M] is { MinBillions: 7, MaxBillions: 8 });
             Check("band-L-14-20B", bands[TShirtSize.L] is { MinBillions: 14, MaxBillions: 20 });
             Check("band-XL-24-32B", bands[TShirtSize.XL] is { MinBillions: 24, MaxBillions: 32 });
+            Check("band-XXL-65-72B", bands[TShirtSize.XXL] is { MinBillions: 65, MaxBillions: 72, DefaultBillions: 70 } && Near(bands[TShirtSize.XXL].KvGiBPer1kTokens, 0.31));
             Check("band-defaults-in-range", Sizing.Profiles.All(p => p.DefaultBillions >= p.MinBillions && p.DefaultBillions <= p.MaxBillions));
             Check("classify-boundaries", Sizing.Classify(1) == TShirtSize.S && Sizing.Classify(4) == TShirtSize.S && Sizing.Classify(7) == TShirtSize.M
-                && Sizing.Classify(20) == TShirtSize.L && Sizing.Classify(32) == TShirtSize.XL);
-            Check("classify-gaps-and-invalid", Sizing.Classify(5) is null && Sizing.Classify(10) is null && Sizing.Classify(40) is null && Sizing.Classify(double.NaN) is null);
+                && Sizing.Classify(20) == TShirtSize.L && Sizing.Classify(32) == TShirtSize.XL && Sizing.Classify(65) == TShirtSize.XXL && Sizing.Classify(72) == TShirtSize.XXL);
+            Check("classify-gaps-and-invalid", Sizing.Classify(5) is null && Sizing.Classify(10) is null && Sizing.Classify(40) is null
+                && Sizing.Classify(120) is null && Sizing.Classify(double.NaN) is null);
+            var one = Sizing.EstimateTogether([baseInput]);
+            var single = Sizing.Estimate(baseInput);
+            Check("together-one-equals-estimate", one.Verdict == single.Verdict && Near(one.RequiredGiB, single.RequiredGiB) && Near(one.UsableGiB, single.UsableGiB));
+            var second = baseInput with { ParameterBillions = 8, KvGiBPer1kTokens = 0.13, RuntimeOverheadGiB = 1.5 };
+            var pair = Sizing.EstimateTogether([baseInput, second]);
+            Check("together-adds-working-sets-headroom-once", Near(pair.WorkingSetGiB, single.WorkingSetGiB + Sizing.Estimate(second).WorkingSetGiB)
+                && Near(pair.RequiredGiB, pair.WorkingSetGiB + baseInput.HeadroomGiB) && Near(pair.UsableGiB, single.UsableGiB), $"{pair.RequiredGiB}");
+            Check("together-mixed-budgets-invalid", !Sizing.EstimateTogether([baseInput, second with { BudgetGiB = 30 }]).IsValid);
+            Check("together-empty-invalid", !Sizing.EstimateTogether([]).IsValid);
             Check("estimate-language-is-illustrative", r.Summary.Contains("Illustrative estimate") && !r.Summary.Contains("guarantee", StringComparison.OrdinalIgnoreCase)
                 && Sizing.Caveat.Contains("not a procurement guarantee") && Sizing.Caveat.Contains("does not imply") && Sizing.Caveat.Contains("one model resident"));
         });
@@ -153,7 +164,8 @@ internal static class SelfTest
             var w = SalesSizing.Workloads;
             Check("sales-workload-ids-unique", w.Select(x => x.Id).Distinct().Count() == w.Length && w.Length >= 8, $"{w.Length}");
             Check("sales-core-mapping", SalesSizing.Find("transcription")?.Size == TShirtSize.S && SalesSizing.Find("translation")?.Size == TShirtSize.M
-                && SalesSizing.Find("coding")?.Size == TShirtSize.L && SalesSizing.Find("prototyping")?.Size == TShirtSize.XL);
+                && SalesSizing.Find("coding")?.Size == TShirtSize.L && SalesSizing.Find("prototyping")?.Size == TShirtSize.XL
+                && SalesSizing.Find("frontier") is { Size: TShirtSize.XXL, LiveOnThisLaptop: false, DemoId: null });
             Check("sales-every-size-represented", Enum.GetValues<TShirtSize>().All(s => w.Any(x => x.Size == s)));
             Check("sales-demo-ids-known", w.Where(x => x.DemoId is not null).All(x => DemoCatalog.KnownIds.Contains(x.DemoId))
                 && w.Where(x => x.LiveOnThisLaptop).All(x => x.DemoId is not null));
@@ -201,6 +213,110 @@ internal static class SelfTest
                 var hits = SalesSizing.AllText().Concat(tracks).Where(t => Regex.IsMatch(t, $@"\b{Regex.Escape(term)}", RegexOptions.IgnoreCase)).ToArray();
                 Check($"sales-no-claim-{term.Replace(' ', '-')}", hits.Length == 0, string.Join(" | ", hits));
             }
+            Check("sales-article-an-extra-large", xl.TalkTrack.Contains("needs an Extra large (XL) AI model"), xl.TalkTrack);
+            var frontier = SalesSizing.Recommend(["frontier"], device)!;
+            Check("sales-xxl-here-not-32gb", frontier.Profile.Size == TShirtSize.XXL && frontier.ThisLaptop.Fit == SalesFit.Comfortable
+                && frontier.Comparisons.All(c => c.Fit == SalesFit.WontFit) && frontier.TalkTrack.Contains("a Double extra large (XXL)"), frontier.TalkTrack);
+        });
+
+        Guard("ultra", () =>
+        {
+            var configs = UltraSizing.Configurations;
+            Check("ultra-published-configurations", configs.Select(c => c.MemoryGB).SequenceEqual([24, 32, 48, 64, 128]));
+            Check("ultra-launch-share", Near(UltraSizing.LaunchShare, 79.9 / 128) && Math.Round(UltraSizing.LaunchShare * 100) == 62, $"{UltraSizing.LaunchShare}");
+            Check("ultra-measured-share", UltraSizing.MeasuredShare(device) is double ms && Near(ms, 62.5 / 128), $"{UltraSizing.MeasuredShare(device)}");
+            Check("ultra-measured-share-missing", UltraSizing.MeasuredShare(null) is null && UltraSizing.MeasuredShare(device with { GpuBudgets = [] }) is null
+                && UltraSizing.MeasuredShare(device with { InstalledBytes = null }) is null);
+            Check("ultra-this-pc-config", UltraSizing.ThisPcConfig(device) == 128 && UltraSizing.ThisPcConfig(device with { InstalledBytes = 96L << 30 }) is null);
+            Check("ultra-custom-share-bounds", UltraSizing.Share(SplitBasis.Custom, device, 50) is double c50 && Near(c50, 0.5)
+                && UltraSizing.Share(SplitBasis.Custom, device, 5) is null && UltraSizing.Share(SplitBasis.Custom, device, 95) is null
+                && UltraSizing.Share(SplitBasis.Custom, device, double.NaN) is null);
+            Check("ultra-model-sharing", UltraSizing.Models(SalesSizing.Workloads.Where(w => w.Id is "writing" or "translation" or "documents")).Count == 1
+                && UltraSizing.Models(SalesSizing.Workloads).Count == SalesSizing.Workloads.Length - 2);
+            Check("ultra-empty-null", UltraSizing.Plan([], false, false, SplitBasis.MicrosoftLaunch, 50, device) is null
+                && UltraSizing.Plan(["unknown"], false, false, SplitBasis.MicrosoftLaunch, 50, device) is null);
+
+            UltraPlan P(string[] ids, SplitBasis basis = SplitBasis.MicrosoftLaunch, bool together = false, bool longDocs = false) =>
+                UltraSizing.Plan(ids, together, longDocs, basis, UltraSizing.DefaultCustomPercent, device)!;
+            string Ladder(UltraPlan p) => string.Join(",", p.Configs.Select(c => $"{c.Config.MemoryGB}:{c.Fit}"));
+
+            // Microsoft launch split (62%), one model at a time, 8K context.
+            var coding = P(["coding"]);
+            var codingEngine = Sizing.Estimate(SalesSizing.InputFor(TShirtSize.L, 48 * UltraSizing.LaunchShare));
+            Check("ultra-same-engine", coding.For(48).Result is { } r48 && Near(r48.RequiredGiB, codingEngine.RequiredGiB) && Near(r48.UsableGiB, codingEngine.UsableGiB)
+                && Near(coding.For(48).GpuGiB, 48 * 79.9 / 128) && Near(coding.For(128).GpuGiB, 79.9));
+            Check("ultra-ms-S-24", P(["transcription"]).Recommended?.Config.MemoryGB == 24, Ladder(P(["transcription"])));
+            Check("ultra-ms-M-32-24-little", P(["translation"]) is { Recommended.Config.MemoryGB: 32 } m && m.For(24).Fit == UltraFit.LittleRoom, Ladder(P(["translation"])));
+            Check("ultra-ms-L-48-32-little", coding.Recommended?.Config.MemoryGB == 48 && coding.For(32).Fit == UltraFit.LittleRoom && coding.For(24).Fit == UltraFit.WontFit
+                && coding.For(64).Fit == UltraFit.Roomy, Ladder(coding));
+            Check("ultra-ms-XL-64-48-little", P(["prototyping"]) is { Recommended.Config.MemoryGB: 64 } x && x.For(48).Fit == UltraFit.LittleRoom, Ladder(P(["prototyping"])));
+            Check("ultra-ms-XXL-128", P(["frontier"]) is { Recommended.Config.MemoryGB: 128 } f && f.For(64).Fit == UltraFit.WontFit, Ladder(P(["frontier"])));
+            Check("ultra-one-at-a-time-largest-wins", P(["transcription", "translation", "coding"]).Recommended?.Config.MemoryGB == 48);
+
+            // This PC's measured split (62.5 of 128 GiB); the 128 GB card uses the measured budget itself.
+            var mt = P(["transcription"], SplitBasis.MeasuredThisPc);
+            Check("ultra-measured-S-32", mt.Recommended?.Config.MemoryGB == 32 && mt.For(24).Fit == UltraFit.WontFit, Ladder(mt));
+            Check("ultra-measured-128-is-this-pc", mt.For(128) is { MeasuredHere: true } here && Near(here.GpuGiB, 62.5) && !mt.For(64).MeasuredHere);
+            Check("ultra-measured-XL-128", P(["prototyping"], SplitBasis.MeasuredThisPc) is { Recommended.Config.MemoryGB: 128 } mx && mx.For(64).Fit == UltraFit.LittleRoom);
+            Check("ultra-measured-waits-without-device", UltraSizing.Plan(["coding"], false, false, SplitBasis.MeasuredThisPc, 50, null) is
+                { Recommended: null, Headline: "Waiting for this PC's memory report", TalkTrack.Length: 0 } wait && wait.Configs.All(c => c.Fit == UltraFit.Unknown));
+            Check("ultra-custom-tiny-share-no-room", P(["transcription"], SplitBasis.Custom) is { } cu
+                && UltraSizing.Plan(["transcription"], false, false, SplitBasis.Custom, 10, device)!.For(24).Fit == UltraFit.WontFit && cu.Recommended is not null);
+
+            // Together: shared models count once; distinct models add up.
+            var shared = P(["writing", "translation", "documents"], together: true);
+            Check("ultra-together-shared-model", shared.Models.Count == 1 && shared.Recommended?.Config.MemoryGB == 32
+                && shared.TalkTrack.Contains("can share one AI model"), shared.TalkTrack);
+            var both = P(["coding", "reasoning"], together: true);
+            var bothEngine = Sizing.EstimateTogether([SalesSizing.InputFor(TShirtSize.L, 64 * UltraSizing.LaunchShare), SalesSizing.InputFor(TShirtSize.L, 64 * UltraSizing.LaunchShare)]);
+            Check("ultra-together-sums", both.Models.Count == 2 && both.Recommended?.Config.MemoryGB == 64 && both.For(48).Fit == UltraFit.LittleRoom
+                && Near(both.For(64).Result!.RequiredGiB, bothEngine.RequiredGiB), Ladder(both));
+            Check("ultra-one-at-a-time-same-pair", P(["coding", "reasoning"]).Recommended?.Config.MemoryGB == 48);
+            var everything = P(SalesSizing.Workloads.Select(w => w.Id).ToArray(), together: true);
+            Check("ultra-together-everything-none", everything.Recommended is null && everything.SmallestThatHolds is null
+                && everything.Headline == "No configuration holds all of these open together" && everything.TalkTrack.Contains("one at a time"), everything.TalkTrack);
+
+            // Long documents (32K context).
+            Check("ultra-long-coding-48", P(["coding"], longDocs: true) is { Recommended.Config.MemoryGB: 48 } lc && lc.For(32).Fit == UltraFit.WontFit);
+            Check("ultra-long-xl-128", P(["prototyping"], longDocs: true) is { Recommended.Config.MemoryGB: 128 } lx && lx.For(64).Fit == UltraFit.LittleRoom, Ladder(P(["prototyping"], longDocs: true)));
+            Check("ultra-long-pair-128", P(["coding", "reasoning"], together: true, longDocs: true).Recommended?.Config.MemoryGB == 128);
+
+            // Recommendations never skip: every configuration above a roomy one is roomy too.
+            foreach (var basis in Enum.GetValues<SplitBasis>())
+                foreach (var w in SalesSizing.Workloads)
+                {
+                    var plan = P([w.Id], basis);
+                    var fits = plan.Configs.Select(c => c.Fit).ToArray();
+                    int first = Array.IndexOf(fits, UltraFit.Roomy);
+                    Check($"ultra-monotone-{basis}-{w.Id}", first < 0 || fits.Skip(first).All(f => f == UltraFit.Roomy), Ladder(plan));
+                }
+
+            // Talk tracks: personalized step-up, no jargon, no unsupported claims.
+            Check("ultra-step-up-coding", coding.TalkTrack.Contains("Plan on the 48 GB Surface Laptop Ultra") && coding.TalkTrack.Contains("The 32 GB configuration also holds it")
+                && coding.TalkTrack.Contains("Step up to 64 GB to also cover Bigger-model prototyping"), coding.TalkTrack);
+            var small = P(["transcription"]);
+            Check("ultra-step-up-small", small.TalkTrack.Contains("Even the smallest configuration has room")
+                && small.TalkTrack.Contains("Step up to 32 GB to also cover Translation, Writing & summaries, Ask your documents and Photos & scanned forms"), small.TalkTrack);
+            Check("ultra-largest-no-step-up", !P(["frontier"]).TalkTrack.Contains("Step up"));
+            Check("ultra-step-up-together", P(["transcription"], together: true).TalkTrack.Contains("Step up to 32 GB to also keep"), P(["transcription"], together: true).TalkTrack);
+            var ultraTracks = Enum.GetValues<SplitBasis>().SelectMany(b => SalesSizing.Workloads.SelectMany(w => new[] { P([w.Id], b), P([w.Id], b, true, true) }))
+                .Concat([both, shared, everything, P(["coding", "reasoning"], together: true, longDocs: true)])
+                .Select(p => p.TalkTrack).ToArray();
+            Check("ultra-tracks-say-estimate", ultraTracks.All(t => t.Contains("estimate") && t.Contains("confirm on the shipping configuration")));
+            foreach (string term in new[] { "GiB", "KV", "bit", "token", "quantiz", "parameter", "CUDA", "context window" })
+            {
+                var hits = ultraTracks.Where(t => Regex.IsMatch(t, $@"\b{Regex.Escape(term)}", RegexOptions.IgnoreCase)).ToArray();
+                Check($"ultra-no-jargon-{term.Replace(' ', '-')}", hits.Length == 0, string.Join(" | ", hits.Take(2)));
+            }
+            foreach (string term in PlatformGuide.ForbiddenClaims.Concat(["price of", "cheaper", "costs", "$"]))
+            {
+                var hits = UltraSizing.AllText().Concat(ultraTracks).Where(t => Regex.IsMatch(t, $@"(?<!\w){Regex.Escape(term)}", RegexOptions.IgnoreCase)).ToArray();
+                Check($"ultra-no-claim-{term.Replace(' ', '-')}", hits.Length == 0, string.Join(" | ", hits.Take(2)));
+            }
+            Check("ultra-basis-notes-labelled", UltraSizing.BasisNote(SplitBasis.MicrosoftLaunch, device, 50).Contains("has not published")
+                && UltraSizing.BasisNote(SplitBasis.MeasuredThisPc, device, 50).Contains("62.5 GB of its 128 GB")
+                && UltraSizing.Footnote.Contains("Shared GPU memory is never counted") && UltraSizing.Footnote.Contains("39.6 GiB"));
+            Check("ultra-spec-link-approved", ApprovedLinks.IsApproved(ApprovedLinks.SurfaceLaptopUltraSpecs));
         });
 
         Guard("learn", () =>

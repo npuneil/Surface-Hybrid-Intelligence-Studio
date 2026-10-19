@@ -120,7 +120,7 @@ internal sealed partial class MainWindow
         Id(_neededBar, "SizingNeededBar");
         Id(_usableBar, "SizingUsableBar");
 
-        var compare = new AdaptiveGrid(200, 4, 12);
+        var compare = new AdaptiveGrid(180, 5, 12);
         foreach (var p in Sizing.Profiles)
         {
             var weight = Id(Text("-", 22, Ink, FontWeights.SemiBold), "SizingCompare_" + p.Size);
@@ -141,7 +141,7 @@ internal sealed partial class MainWindow
             Stack(10, Eyebrow("T-shirt sizing planner - technical view"), H1("How much model fits? Size it with real arithmetic."),
                 Body("Pick an illustrative size band, adjust precision, context and allowances, and check the working set against one memory budget view. Every number is visible and editable.")),
             TwoPane(inputs, results, 440, 1000),
-            Stack(12, H2("All four sizes at these settings"), Small("Each size uses its default parameter count and KV allowance with your precision, context, runtime, budget, reserve and headroom."), compare),
+            Stack(12, H2("All five sizes at these settings"), Small("Each size uses its default parameter count and KV allowance with your precision, context, runtime, budget, reserve and headroom."), compare),
             observedCard), "SizingTechnicalView");
         _salesView = Id(BuildSalesSizing(), "SizingSalesView");
 

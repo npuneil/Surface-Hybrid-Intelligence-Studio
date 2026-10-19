@@ -153,11 +153,36 @@ Use the native **T-shirt sizing** planner to start the conversation, not to
 declare a winning device. With executives, stay on the **Sales** tab: tick the
 workloads they mention (coding, transcription, translation and so on) and read
 the "Say it like this" line. Switch to **Technical** only when an architect
-wants the arithmetic. S (1-4B), M (7-8B), L (14-20B), and XL (24-32B)
+wants the arithmetic. S (1-4B), M (7-8B), L (14-20B), XL (24-32B) and
+XXL (65-72B)
 describe nominal model-size bands, not accuracy tiers. Show how precision,
 context, runtime/KV allowances and operating headroom change the estimated
 working set. A model whose weights fit may still fail to load or be unsuitable.
 Never sum the unit's installed, OS-visible and driver-reported memory views.
+
+### Which memory configuration should they order?
+
+Scroll below the Sales results to **Surface Laptop Ultra configurations**. It
+uses the same ticked workloads and marks one of the 24, 32, 48, 64 or 128 GB
+options **Recommended**.
+
+1. Tick what the customer will actually run. Ask whether those AI tools stay
+   open together; if so, turn on **All open together**.
+2. Turn on **Long documents** if they will work with long contracts, reports
+   or transcripts.
+3. Leave the GPU share on **Microsoft launch unit** for a customer
+   conversation. Switch to **This PC's measured split** to show what this
+   demo unit reports (it is more conservative).
+4. Read or copy **Say it like this**. It names the recommended configuration,
+   any smaller one that only just holds the workload, and what stepping up
+   would add.
+
+Examples on the default settings: a coding assistant points to 48 GB; coding
+plus reasoning open together points to 64 GB; a 70B-class model points to
+128 GB. A "Little room" card is a warning, not a recommendation: real model
+files are larger than the estimate. The planner is memory-only. Do not quote
+it for price, response time or battery life, and confirm the configuration
+and processor pairing in the configurator before an order.
 
 | Platform | Pilot use case | What must be qualified |
 |---|---|---|

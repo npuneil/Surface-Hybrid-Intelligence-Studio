@@ -101,6 +101,7 @@ internal sealed partial class MainWindow
             _salesVerdictPill, _salesRecommendation, _salesModelClass, _salesDetails,
             Small(SalesSizing.Footnote)), 24);
         Id(results, "SalesResults");
+        var planner = BuildUltraPlanner();
 
         RecomputeSales();
         return Stack(22,
@@ -110,7 +111,8 @@ internal sealed partial class MainWindow
                 Lead(12, H3("Pick the customer's workloads"), Set(Row(12, _salesSelectionCount, clear), r => r.HorizontalAlignment = HorizontalAlignment.Right)),
                 Small("Check workloads to size them. Use Run live demo to see one working on this laptop."),
                 tiles), 22),
-            results);
+            results,
+            planner);
     }
 
     internal void SetSalesSelection(IEnumerable<string> ids)
@@ -163,6 +165,7 @@ internal sealed partial class MainWindow
             card.Background = on ? Paper : Card;
         }
         _salesSelectionCount.Text = _salesSelected.Count == 1 ? "1 selected" : $"{_salesSelected.Count} selected";
+        RecomputeUltra();
         var rec = SalesSizing.Recommend(_salesSelected, _status?.Device);
         _lastSales = rec;
         if (rec is null)
