@@ -501,9 +501,11 @@ class LargeModelHost:
             raise RuntimeError("Model returned no visible answer")
         decode = (timings or {}).get("predicted_per_second")
         prefill = (timings or {}).get("prompt_per_second")
+        prompt_tokens = (usage or {}).get("prompt_tokens") or (timings or {}).get("prompt_n")
         yield {"type": "done", "mode": "live", "model": info,
                "ttft_ms": round((first - started) * 1000), "total_ms": round(elapsed * 1000),
                "characters": chars, "reasoning_characters": reasoning_chars, "output_tokens": tokens,
+               "prompt_tokens": prompt_tokens,
                "tokens_per_second": round(tokens / elapsed, 1) if tokens else None,
                "decode_tokens_per_second": round(decode, 1) if decode else None,
                "prompt_tokens_per_second": round(prefill, 1) if prefill else None,

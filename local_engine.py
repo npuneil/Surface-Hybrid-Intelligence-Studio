@@ -13,7 +13,7 @@ from pathlib import Path
 import gpu_runtime
 import llama_engine
 import media
-from edition import APP_ID
+from edition import APP_ID, ENV_PREFIX
 from llama_engine import LARGE_MODELS
 
 DEFAULT_MODEL = "qwen2.5-coder-14b"
@@ -110,7 +110,7 @@ class HarmonyFilter:
 
 
 class LocalEngine:
-    def __init__(self):
+    def __init__(self, endpoint_port=None):
         self.state = {"state": "starting", "detail": "Starting Foundry Local", "model": None,
                       "selected_model": DEFAULT_MODEL, "models": [], "error": None,
                       "media": {"runtime": None, "models": []}}
@@ -123,6 +123,9 @@ class LocalEngine:
         self.allow_download = False
         self.app_data = None
         self.model_cache = None
+        # Loopback port for Foundry Local's OpenAI-compatible web service; it stays off until a builder starts it.
+        self.endpoint_port = endpoint_port
+        self.endpoint_note = None
         self.large = llama_engine.LargeModelHost(Path(__file__).resolve().parent / ".runtime")
 
     def start(self, allow_download=False, model_ref=DEFAULT_MODEL):
@@ -169,12 +172,16 @@ class LocalEngine:
         logs = Path(__file__).resolve().parent / ".runtime" / "foundry-logs"
         logs.mkdir(parents=True, exist_ok=True)
         if FoundryLocalManager.instance is None:
+            # Configuring the web service URL does not start it; start_endpoint() does, on request.
+            web = (Configuration.WebService(urls=f"http://127.0.0.1:{self.endpoint_port}")
+                   if self.endpoint_port else None)
             FoundryLocalManager.initialize(Configuration(
                 app_name=APP_ID,
                 app_data_dir=str(self.app_data),
                 model_cache_dir=str(self.model_cache),
                 logs_dir=str(logs),
                 disable_nonessential_telemetry=True,
+                web=web,
             ))
         self.manager = manager = FoundryLocalManager.instance
         providers = manager.discover_eps()
@@ -214,6 +221,10 @@ class LocalEngine:
         self.guests.clear()
         self.media.clear()
         if self.manager is not None:
+            if self._endpoint_urls():
+                self.endpoint_note = ("The Foundry Local endpoint stopped when Foundry Local closed to give a larger "
+                                      "model the GPU. Use the llama.cpp endpoint, or select a Foundry Local model "
+                                      "and start it again.")
             self.manager.close()
             self.manager = None
         self._refresh_media_state()
@@ -529,6 +540,63 @@ class LocalEngine:
                 return large
             return sorted([m.id for m in self.manager.catalog.get_loaded_models()] + large)
 
+    # ------------------------------------------------------------ OpenAI-compatible endpoints for builders
+    def _endpoint_urls(self):
+        try:
+            return list(self.manager.urls or []) if self.manager is not None else []
+        except Exception:
+            logging.exception("Could not read the Foundry Local web service state")
+            return []
+
+    def endpoint_info(self):
+        """Loopback OpenAI-compatible endpoints a builder can call. Never takes the engine lock (a run may hold it)."""
+        large = None
+        if self.large.loaded() and self.large.info:
+            info = self.large.info
+            large = {"runtime": "llama.cpp", "state": "running", "base_url": f"http://127.0.0.1:{self.large.port}/v1",
+                     "model": self.large.alias, "model_name": info.get("name"), "owner": info.get("endpoint"),
+                     "detail": "llama-server's OpenAI-compatible API on loopback. It runs while this larger model "
+                               "is loaded."}
+        urls = self._endpoint_urls()
+        model, alias = self.model, self._chat_alias()
+        if urls:
+            state, base = "running", urls[0].rstrip("/") + "/v1"
+        else:
+            state = "stopped" if self.manager is not None else "closed"
+            base = f"http://127.0.0.1:{self.endpoint_port}/v1" if self.endpoint_port else None
+        detail = {"running": "Foundry Local's OpenAI-compatible web service on loopback. It stops when you stop it "
+                             "or close the studio.",
+                  "stopped": "Off. Start it to call the loaded Foundry Local model from your own code.",
+                  "closed": "Foundry Local is closed while a larger model has the GPU to itself." if large else
+                            "Foundry Local is not running yet."}[state]
+        foundry = {"runtime": "Foundry Local", "state": state, "base_url": base, "port": self.endpoint_port,
+                   "model": model.id if model is not None else None,
+                   "model_name": MODELS[alias]["label"] if model is not None and alias in MODELS else None,
+                   "detail": self.endpoint_note if state != "running" and self.endpoint_note else detail}
+        return {"foundry": foundry, "large": large, "active": "large" if large else "foundry"}
+
+    def start_endpoint(self):
+        if not self.endpoint_port:
+            raise RuntimeError("No loopback port is configured for the Foundry Local endpoint.")
+        if self.manager is None:
+            raise RuntimeError("Foundry Local is closed while a larger model has the GPU to itself. Use its "
+                               "llama.cpp endpoint, or select a Foundry Local model first.")
+        if not self._endpoint_urls():
+            try:
+                self.manager.start_web_service()
+            except Exception as exc:
+                raise RuntimeError(f"Foundry Local could not start its web service on 127.0.0.1:{self.endpoint_port} "
+                                   f"({exc}). If another app uses that port, set {ENV_PREFIX}ENDPOINT_PORT and "
+                                   "restart the studio.") from None
+            self.endpoint_note = None
+        return self.endpoint_info()
+
+    def stop_endpoint(self):
+        if self._endpoint_urls():
+            self.manager.stop_web_service()
+        self.endpoint_note = None
+        return self.endpoint_info()
+
     def stream(self, prompt, system, max_tokens=650, alias=None):
         with self.lock:
             if self.large.loaded() and alias in (None, self.large.alias):
@@ -590,6 +658,7 @@ class LocalEngine:
                         usage = final.get_usage()
                         finish = final.finish_reason.name
                         tokens = usage.completion_tokens if usage else None
+                        prompt_tokens = getattr(usage, "prompt_tokens", None) if usage else None
         elapsed = time.perf_counter() - started
         if not chars:
             if allow_empty:
@@ -604,6 +673,7 @@ class LocalEngine:
             "total_ms": round(elapsed * 1000), "characters": chars,
             "reasoning_characters": reasoning_chars,
             "output_tokens": tokens,
+            "prompt_tokens": prompt_tokens,
             "tokens_per_second": round(tokens / elapsed, 1) if tokens else None,
             "finish_reason": finish,
         }

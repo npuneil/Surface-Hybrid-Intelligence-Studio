@@ -2,6 +2,7 @@
 import argparse
 import json
 import logging
+import os
 import secrets
 import socket
 import subprocess
@@ -10,10 +11,13 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import builder
 import demos
+import hybrid
+import workbench
 from content import DEFAULT_ASSUMPTIONS, SCENARIOS, calculate
 from demo_runner import DemoRunner, MediaStore
-from edition import APP_ID, DISPLAY_NAME
+from edition import APP_ID, DISPLAY_NAME, ENV_PREFIX
 from local_engine import DEFAULT_MODEL, LARGE_MODELS, MODELS, LocalEngine, model_spec
 
 ROOT = Path(__file__).resolve().parent
@@ -67,6 +71,13 @@ def read_device():
                 "installed_ram_gb": None, "os_visible_ram_gb": None, "cores": None, "accelerators": []}
 
 
+def endpoint_port(server_port):
+    """Loopback port for the builder endpoint: <prefix>ENDPOINT_PORT, else the studio port + 1000."""
+    raw = os.environ.get(f"{ENV_PREFIX}ENDPOINT_PORT", "").strip()
+    port = int(raw) if raw.isdigit() else server_port + 1000
+    return port if 1024 <= port <= 65535 and port != server_port else None
+
+
 class ShowcaseServer(ThreadingHTTPServer):
     daemon_threads = True
     # Windows SO_REUSEADDR lets a second instance bind a port that is already listening.
@@ -76,7 +87,7 @@ class ShowcaseServer(ThreadingHTTPServer):
         # Inventory before binding so a listening socket can always answer status probes.
         self.device = read_device() if device is None else device
         super().__init__(address, Handler)
-        self.engine = engine or LocalEngine()
+        self.engine = engine or LocalEngine(endpoint_port=endpoint_port(self.server_port))
         self.media = media_store or MediaStore()
         self.demos = DemoRunner(self.engine, self.media, self.device)
         self.token = secrets.token_urlsafe(32)
@@ -144,6 +155,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_out(200, {"demos": demos.public(), "media": dict(self.server.media.state),
                                        "engine": {"state": engine.get("state"), "model": engine.get("model"),
                                                   "media": engine.get("media")}})
+        if path == "/api/hybrid":
+            return self.json_out(200, hybrid.public())
+        if path == "/api/builder":
+            return self.json_out(200, self.builder_state())
         if path.startswith("/api/demo-media/"):
             file = self.server.media.path(path.rsplit("/", 1)[1])
             if file is None:
@@ -233,6 +248,8 @@ class Handler(BaseHTTPRequestHandler):
             if not self.server.run_lock.acquire(blocking=False):
                 return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
             return self.stream_events(lambda: self.server.demos.run(demo_id, mode, prompt, option, edited))
+        if self.path.startswith(("/api/hybrid/", "/api/builder/", "/api/speedtest")):
+            return self.workbench_post(body)
         if self.path != "/api/run":
             return self.json_out(404, {"error": "Not found"})
         scenario = SCENARIOS.get(body.get("scenario")) if isinstance(body.get("scenario"), str) else None
@@ -257,6 +274,71 @@ class Handler(BaseHTTPRequestHandler):
         return self.stream_events(lambda: self.server.engine.stream(
             prompt.strip() + "\n\n" + scenario["source"], scenario["system"],
             max_tokens=self.server.engine.generation_budget(body["scenario"])))
+
+    # ------------------------------------------------------------ hybrid router, builder hub, speedometer
+    def builder_state(self):
+        info, endpoint, base_url, model = workbench.active_target(self.server.engine)
+        snippets, snippet_note = [], None
+        try:
+            snippets = builder.snippets(base_url, model)
+        except ValueError as exc:
+            snippet_note = str(exc)
+        return {**builder.public(), "endpoints": info, "target": {"base_url": base_url, "model": model,
+                                                                   "runtime": endpoint.get("runtime"),
+                                                                   "state": endpoint.get("state")},
+                "snippets": snippets, "snippet_note": snippet_note}
+
+    def workbench_post(self, body):
+        engine = self.server.engine
+        if self.path in ("/api/hybrid/route", "/api/hybrid/run"):
+            network, scale = body.get("network", "online"), body.get("scale", "fits")
+            try:
+                decision = hybrid.route(body.get("text"), network, scale)
+            except ValueError as exc:
+                return self.json_out(400, {"error": str(exc)})
+            if self.path == "/api/hybrid/route":
+                return self.json_out(200, decision)
+            if decision["lane"] != "cloud" and engine.state["state"] != "ready":
+                return self.json_out(503, {"error": engine.state["detail"]})
+            if not self.server.run_lock.acquire(blocking=False):
+                return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
+            return self.stream_events(lambda: workbench.hybrid_run(engine, body["text"], network, scale))
+        if self.path == "/api/speedtest":
+            if engine.state["state"] != "ready":
+                return self.json_out(503, {"error": engine.state["detail"]})
+            if not self.server.run_lock.acquire(blocking=False):
+                return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
+            return self.stream_events(lambda: workbench.speedtest(engine))
+        if self.path == "/api/builder/starter":
+            kit = body.get("kit")
+            _, _, base_url, model = workbench.active_target(engine)
+            if not isinstance(kit, str) or kit not in builder.KITS:
+                return self.json_out(400, {"error": "Choose one of the listed starter kits."})
+            try:
+                files = builder.files(kit, base_url, model)
+            except ValueError as exc:
+                return self.json_out(409, {"error": str(exc)})
+            return self.json_out(200, {"kit": kit, "title": builder.KITS[kit]["title"], "base_url": base_url,
+                                       "model": model, "files": files})
+        if self.path not in ("/api/builder/endpoint", "/api/builder/test"):
+            return self.json_out(404, {"error": "Not found"})
+        action = body.get("action")
+        if self.path == "/api/builder/endpoint" and action not in ("start", "stop"):
+            return self.json_out(400, {"error": "Action must be start or stop."})
+        if self.path == "/api/builder/test" and engine.state["state"] != "ready":
+            return self.json_out(503, {"error": engine.state["detail"]})
+        # The run lock keeps endpoint changes and test calls from racing a model switch or a GPU run.
+        if not self.server.run_lock.acquire(blocking=False):
+            return self.json_out(409, {"error": "A run or model switch is active. Wait for it to finish."})
+        try:
+            if self.path == "/api/builder/test":
+                return self.json_out(200, workbench.endpoint_test(engine))
+            getattr(engine, f"{action}_endpoint")()
+            return self.json_out(200, self.builder_state())
+        except RuntimeError as exc:
+            return self.json_out(409, {"error": str(exc)})
+        finally:
+            self.server.run_lock.release()
 
     def stream_events(self, factory):
         """Write NDJSON events; the caller has acquired run_lock, which is always released here."""

@@ -117,7 +117,10 @@ internal sealed partial class MainWindow : Window
         AddNav("overview", "Executive overview", "\uE80F", "NavOverview");
         AddNav("live", "Live GPU workspace", "\uE945", "NavLive");
         AddNav("demos", "Live demos", "\uE768", "NavDemos");
+        AddNav("hybrid", "Hybrid router", "\uE8AB", "NavHybrid");
         AddNav("industries", "Industry scenarios", "\uE821", "NavIndustries");
+        AddNav("showoff", "Show it off", "\uEC4A", "NavShowOff");
+        AddNav("build", "Build on Surface", "\uE943", "NavBuild");
         AddNav("sizing", "T-shirt sizing", "\uE9D9", "NavSizing");
         AddNav("platforms", "Platform fit", "\uE7F8", "NavPlatforms");
         AddNav("business", "Business case", "\uE8EF", "NavBusiness");
@@ -138,7 +141,10 @@ internal sealed partial class MainWindow : Window
         _pages["overview"] = BuildOverview();
         _pages["live"] = BuildLive();
         _pages["demos"] = BuildDemos();
+        _pages["hybrid"] = BuildHybrid();
         _pages["industries"] = BuildIndustries();
+        _pages["showoff"] = BuildShowOff();
+        _pages["build"] = BuildBuild();
         _pages["sizing"] = BuildSizing();
         _pages["platforms"] = BuildPlatforms();
         _pages["business"] = BuildBusiness();
@@ -174,6 +180,9 @@ internal sealed partial class MainWindow : Window
         _currentSection = tag;
         if (!ReferenceEquals(_nav.Content, _pages[tag])) _nav.Content = _pages[tag];
         if (tag == "demos" && _status is not null) _ = RefreshDemoCatalogAsync();
+        if (tag == "hybrid" && _status is not null) _ = LoadHybridCatalogAsync();
+        if (tag == "build" && _status is not null && !_labRunning) _ = RefreshBuilderAsync();
+        if (tag == "showoff") _ = RefreshToolsAsync();
     }
 
     private static Image Logo(double size, string id)
@@ -202,6 +211,7 @@ internal sealed partial class MainWindow : Window
             PopulateScenarios();
             await RefreshStatusAsync();
             await RefreshDemoCatalogAsync();
+            await LoadHybridCatalogAsync();
             _statusTimer.Start();
         }
         catch (Exception exception) when (!_lifetime.IsCancellationRequested)
@@ -246,7 +256,7 @@ internal sealed partial class MainWindow : Window
         finally
         {
             _refreshing = false;
-            _statusTimer.Interval = TimeSpan.FromSeconds(_status?.Engine.IsReady == true && !_running && !_demoRunning ? 5 : 1.5);
+            _statusTimer.Interval = TimeSpan.FromSeconds(_status?.Engine.IsReady == true && !_running && !_demoRunning && !_labRunning ? 5 : 1.5);
         }
     }
 
@@ -262,6 +272,7 @@ internal sealed partial class MainWindow : Window
         ApplyDemosStatus(status);
         ApplySizingStatus(status);
         ApplyBusinessStatus(status);
+        ApplyLabStatus(status);
     }
 
     private void SetEnginePill(string text, Brush background, Brush foreground)
@@ -288,6 +299,7 @@ internal sealed partial class MainWindow : Window
         StopDemoAudio();
         try { _runCts?.Cancel(); } catch (ObjectDisposedException) { }
         try { _demoCts?.Cancel(); } catch (ObjectDisposedException) { }
+        StopLab();
         _lifetime.Cancel();
         _host.Dispose();
         _client.Dispose();

@@ -2,9 +2,12 @@
 
 A native **WinUI 3** executive showcase: live local GPU inference, twelve
 one-click **live demos** (speech, vision, document search, translation, coding
-and reasoning on the RTX GPU), interactive T-shirt model sizing, platform-fit
-use cases, and an assumption-driven capacity calculator. The original web
-presentation remains available as a companion.
+and reasoning on the RTX GPU), a **Hybrid router** that shows what stays on the
+PC and what would go to the cloud, a **GPU speedometer** and run of show, a
+**Build on Surface** hub with a loopback OpenAI-compatible endpoint and starter
+kits, interactive T-shirt model sizing, platform-fit use cases, and an
+assumption-driven capacity calculator. The original web presentation remains
+available as a companion.
 Independent seller-enablement prototype, not a product announcement or endorsement.
 The conceptual device illustration is original, not a product photograph.
 
@@ -51,7 +54,8 @@ The app reuses an identified showcase service already running on
 If none exists, it starts the local Python service itself and stops that
 owned service on exit; a Windows job object also prevents an orphan if the
 app crashes. Startup logs are in `.runtime\native\backend-*.log`.
-`-Port`, `-Windowed`, `-Section sizing`, and `-Rebuild` are supported by
+`-Port`, `-Windowed`, `-Section <page>` (overview, live, demos, hybrid, industries,
+showoff, build, sizing, platforms, business, playbook, learn), and `-Rebuild` are supported by
 `Start-NativeShowcase.ps1`; no browser or extra terminal must remain open.
 The launcher builds the native executable if it is missing. A .NET 10 SDK
 and Windows App SDK NuGet packages are required for a build, not for every launch.
@@ -234,6 +238,73 @@ Forge is found beside this repository (`..\Offline-PPTX-Forge`) or at
 `HYBRID_STUDIO_FORGE_ROOT`. Forge is started through Explorer, so closing the studio does
 not close Forge. `.\Start-NativeShowcase.ps1 -Section industries` opens the page directly.
 
+### Hybrid Intelligence: router, show-off tools and builder hub
+
+Three pages turn "Hybrid Intelligence on Surface" from a slide into something people can
+see, measure and build on. The Executive overview links to all three.
+
+**Hybrid router** (`-Section hybrid`) shows where a request should run and why. A published,
+deterministic policy (`hybrid.py`, standard library only) scans the text for identifiers and
+credentials and for needs only a cloud service meets (current information, organisation-wide
+data, beyond-device scale). It then picks one lane:
+
+- **On this PC**: private data and nothing that needs the cloud, or credentials (cloud blocked),
+  or the *offline* what-if (the cloud step is queued, never sent).
+- **Hybrid**: personal data *and* a cloud need. The on-device model redacts first, then
+  the policy re-scans the result and checks that the request itself survived (a model that
+  answers or rewrites the request instead of redacting it is blocked). Only a payload that passes both checks is shown.
+- **Cloud**: nothing sensitive and a real cloud need.
+
+Six fictional presets cover each lane. **Route** is policy only (no model runs); **Run it on
+this PC** streams the local answer or the redaction from the RTX GPU. Cloud payloads are
+displayed and marked **NOT SENT**: the studio never calls a cloud service. A gallery of seven
+hybrid patterns (local-first, redact-then-cloud, private knowledge, field, high volume,
+right-size, same API) links each pattern to a demo or page you can run now. The rules catch
+structured identifiers, not every name or context clue; they are not a data-loss-prevention product.
+
+**Show it off** (`-Section showoff`) has:
+
+- **GPU speedometer**: measures the loaded model's generation speed (output tokens after the
+  first, over streaming time, or llama.cpp's own timings), first visible text, and reading speed
+  (an estimate that includes request setup). One run on this PC, not a benchmark. **Export
+  results (JSON)** saves timings and counts only, never generated text.
+- **Session leaderboard**: one row per run, ranked by generation speed; cleared when the studio closes.
+- **Five-minute run of show**: decision → number → endpoint → industry → deck, one button per step.
+- **Companion tools**: finds and opens Offline PPTX Forge, Local AI Tokenomics, Local AI
+  Headroom, Local AI Bench and HydraFusion autorouting when they are cloned beside the studio
+  (or at `HYBRID_STUDIO_FORGE_ROOT`, `_TOKENOMICS_ROOT`, `_HEADROOM_ROOT`, `_BENCH_ROOT`,
+  `_HYDRAFUSION_ROOT`); otherwise it links to their GitHub repositories. Tools start through
+  Explorer, so they outlive the studio. Headroom and Bench open existing reports only.
+
+**Build on Surface** (`-Section build`) is for developers:
+
+- **Local endpoint**: an OpenAI-compatible API for the loaded model on
+  `http://127.0.0.1:<studio port + 1000>/v1` (set `HYBRID_STUDIO_ENDPOINT_PORT` to change it).
+  It is **off by default**, loopback only and unauthenticated (any app on this PC can call it
+  while it runs), stops when you stop it or close the studio, and shares the GPU with the
+  studio. Larger llama.cpp models already serve this API while loaded. **Send a test call**
+  makes a real loopback request and shows the HTTP status and timing; private reasoning is never shown.
+- **Code snippets**: copy-ready calls for the current endpoint and model (PowerShell, curl,
+  Python, the OpenAI Python SDK, JavaScript, C# and the models list).
+- **Starter kits**: five small projects written to
+  `Documents\Surface Hybrid Intelligence Studio\Exports\Starters\<kit>-<time>`:
+
+  | Kit | Run | Shows |
+  |---|---|---|
+  | Streaming chat (Python) | `python chat.py "..."` | Streaming from the local model |
+  | Ask private documents (Python) | `python ask_docs.py "..."` | Retrieval with cited answers over synthetic policies |
+  | Redact, then cloud (Python) | `python redact_then_cloud.py sample.txt` | The router policy, on-device redaction, both checks; `send_to_cloud()` is a stub |
+  | Tool-using agent (Python) | `python agent.py` | A JSON-action agent with an allow-listed calculator, policy lookup and date |
+  | Streaming chat (C# / .NET 10) | `dotnet run -- "..."` | `HttpClient` and `System.Text.Json`, no NuGet packages |
+
+  Python kits need Python 3.10+ and the standard library only. Every kit reads
+  `LOCAL_AI_BASE_URL` and `LOCAL_AI_MODEL` when set, so the same code can target another
+  loopback model or, after your own review, an approved cloud endpoint. The studio writes
+  the files and never runs them; it refuses to overwrite a non-empty folder.
+
+One GPU job runs at a time: while a speed test, hybrid run or endpoint change is active, the
+Live, Demos and Industries runs wait, and the other way round.
+
 ### Larger models
 
 The model selector has two tiers, all running on the RTX GPU:
@@ -407,7 +478,9 @@ The server binds only to 127.0.0.1 and rejects non-loopback Host headers.
 POSTs require a per-process token and same-origin requests. Model text is
 rendered as text, never HTML. No inputs or outputs are persisted automatically;
 evidence and business-case JSON are saved only through explicit exports.
-The runtime may maintain its own model caches and logs.
+The runtime may maintain its own model caches and logs. The optional builder
+endpoint is a separate, unauthenticated loopback API that is off until started;
+starter kits are written only when you create one and are never executed by the studio.
 
 Capacity value is not cash savings or an ROI forecast. Software, implementation,
 support, financing and change-management costs are excluded. Adoption and time
@@ -483,9 +556,12 @@ python -m unittest discover -s tests -v
 Native checks exercise deterministic sizing boundaries, Sales-to-Technical
 parity, coding-lesson answers and progress storage, scenario parsing,
 platform claims, exports, native navigation, calculator, authored rehearsal,
-and every Live demos launch, rehearsal and hand-off.
+every Live demos launch, rehearsal and hand-off, every Hybrid router preset's
+lane, the starter-kit writer's path guards, companion-tool discovery and the
+interlock between GPU jobs.
 The live option additionally runs every workflow, including the coding tutor,
-on the actual CUDA model, then runs the full live-demo pre-flight. It requires
+on the actual CUDA model, then runs the full live-demo pre-flight, a speed test,
+a real call to the builder endpoint and a live hybrid redaction. It requires
 all demo models to be prepared and allows up to 40 minutes by default.
 Native reports and render-target screenshots are in `.runtime\native`.
 `tests\Inspect-NativeUI.ps1` provides external Windows UI Automation inspection

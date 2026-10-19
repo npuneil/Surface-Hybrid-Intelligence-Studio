@@ -55,7 +55,7 @@ internal sealed class BackendException(string message, HttpStatusCode? status = 
     internal HttpStatusCode? Status { get; } = status;
 }
 
-internal sealed class BackendClient : IDisposable
+internal sealed partial class BackendClient : IDisposable
 {
     private readonly HttpClient _http;
     private string? _token;

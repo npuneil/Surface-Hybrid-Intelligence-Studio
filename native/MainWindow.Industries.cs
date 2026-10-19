@@ -65,7 +65,7 @@ internal sealed partial class MainWindow
 
     private async Task LaunchIndustryAsync(string key)
     {
-        if (_running || _demoRunning || _switching)
+        if (_running || _demoRunning || _switching || _labRunning)
         {
             ShowIndustryInfo("Workflow cannot start", "Another run or model switch is in progress. Wait for it to finish.", InfoBarSeverity.Warning);
             return;

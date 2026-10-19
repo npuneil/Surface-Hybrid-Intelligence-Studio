@@ -402,7 +402,7 @@ internal sealed partial class MainWindow
     private void UpdateDemoButtons()
     {
         bool online = _status is not null && !_serviceInfo.IsOpen;
-        bool otherBusy = _running || _switching;
+        bool otherBusy = _running || _switching || _labRunning;
         _demoRunAll.IsEnabled = online && !otherBusy && !_demoRunning && _status!.Engine.IsReady && _demoCatalog.Demos.Count > 0;
         _demoRunAllStop.IsEnabled = _preflightRunning && !_preflightStop;
         if (_openDemo is not { } demo) return;
@@ -416,6 +416,7 @@ internal sealed partial class MainWindow
         _demoBlocker.Text = _preflightRunning ? "Pre-flight is running every demo. Wait for it, or stop it from the demo list."
             : _demoRunning ? ""
             : _running ? "The Live GPU workspace is running. Wait for it to finish."
+            : _labRunning ? _labActivity + " is running. Wait for it to finish."
             : _switching ? "A chat model switch is in progress."
             : blocker ?? "";
         Show(_demoBlocker, _demoBlocker.Text.Length > 0);
@@ -426,7 +427,7 @@ internal sealed partial class MainWindow
 
     private async Task RunOpenDemoAsync(string mode)
     {
-        if (_openDemo is not { } demo || _demoRunning || _running || _switching) return;
+        if (_openDemo is not { } demo || _demoRunning || _running || _switching || _labRunning) return;
         string? option = SelectedDemoOption;
         string authored = demo.PromptFor(option);
         bool live = mode == "live";
@@ -497,7 +498,7 @@ internal sealed partial class MainWindow
 
     private async Task RunAllDemosAsync()
     {
-        if (_demoRunning || _running || _switching || _demoCatalog.Demos.Count == 0) return;
+        if (_demoRunning || _running || _switching || _labRunning || _demoCatalog.Demos.Count == 0) return;
         _preflightRunning = true;
         _preflightStop = false;
         _demoPreflightList.Children.Clear();

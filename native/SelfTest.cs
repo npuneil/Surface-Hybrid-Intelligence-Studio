@@ -465,6 +465,80 @@ internal static class SelfTest
                 && !stepFailed.RanEndToEnd && !(run with { Error = "x" }).RanEndToEnd && run.RanEndToEnd && run.Passed);
         });
 
+        Guard("starter-writer", () =>
+        {
+            string temp = Path.Combine(Path.GetTempPath(), "hybrid-studio-selftest-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string ok = Path.Combine(temp, "ok");
+                using var good = JsonDocument.Parse("""{"files":{"chat.py":"print('hi')\n","docs/a.md":"# A\n"}}""");
+                Check("starter-writes-files", MainWindow.WriteStarter(ok, good.RootElement) == 2
+                    && File.ReadAllText(Path.Combine(ok, "docs", "a.md")) == "# A\n" && File.ReadAllBytes(Path.Combine(ok, "chat.py"))[0] == (byte)'p');
+                bool refused;
+                try { MainWindow.WriteStarter(ok, good.RootElement); refused = false; }
+                catch (IOException) { refused = true; }
+                Check("starter-refuses-existing-folder", refused);
+                string[] unsafePaths = ["../escape.py", "..\\escape.py", "C:\\Windows\\escape.py", "/escape.py", "docs/../../escape.py", "", "docs//a.py"];
+                for (int i = 0; i < unsafePaths.Length; i++)
+                {
+                    using var doc = JsonDocument.Parse(JsonSerializer.Serialize(new { files = new Dictionary<string, string> { ["safe.py"] = "x", [unsafePaths[i]] = "x" } }));
+                    bool rejected;
+                    try { MainWindow.WriteStarter(Path.Combine(temp, "bad" + i), doc.RootElement); rejected = false; }
+                    catch (FormatException) { rejected = true; }
+                    Check($"starter-rejects-unsafe-path-{i}", rejected && !Directory.Exists(Path.Combine(temp, "bad" + i)) && !File.Exists(Path.Combine(temp, "escape.py")), unsafePaths[i]);
+                }
+                using var empty = JsonDocument.Parse("""{"files":{}}""");
+                bool emptyRejected;
+                try { MainWindow.WriteStarter(Path.Combine(temp, "empty"), empty.RootElement); emptyRejected = false; }
+                catch (FormatException) { emptyRejected = true; }
+                Check("starter-rejects-empty", emptyRejected);
+            }
+            finally
+            {
+                try { if (Directory.Exists(temp)) Directory.Delete(temp, recursive: true); } catch (IOException) { }
+            }
+        });
+
+        Guard("toolkit", () =>
+        {
+            var tools = Toolkit.Tools;
+            Check("toolkit-five-unique-tools", tools.Length == 5 && tools.Select(t => t.Id).Distinct().Count() == 5
+                && tools.All(t => t.Repository.StartsWith("github.com/npuneil/", StringComparison.Ordinal) && t.Boundary.Length > 0));
+            Check("toolkit-no-unbacked-claims", tools.All(t => !Regex.IsMatch(t.Summary + " " + t.Story, @"\bsav(e|es|ing|ings)\b|guarantee|TOPS|battery", RegexOptions.IgnoreCase)));
+            string temp = Path.Combine(Path.GetTempPath(), "hybrid-studio-toolkit-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string studio = Path.Combine(temp, "Studio");
+                Directory.CreateDirectory(studio);
+                var bench = tools.Single(t => t.Id == "bench");
+                bool configured = Environment.GetEnvironmentVariable(Brand.EnvPrefix + bench.EnvKey) is { Length: > 0 };
+                if (!configured)
+                {
+                    var missing = Toolkit.Inspect(bench, studio);
+                    Check("toolkit-missing-links-to-repo", !missing.Found && missing.Status == "Not found" && missing.Actions.Count == 1
+                        && missing.Actions[0].Target == "https://" + bench.Repository && missing.Detail?.Contains(Brand.EnvPrefix + bench.EnvKey) == true);
+                    string benchRoot = Path.Combine(temp, bench.Folder);
+                    Directory.CreateDirectory(benchRoot);
+                    File.WriteAllText(Path.Combine(benchRoot, bench.Marker), "");
+                    var noResults = Toolkit.Inspect(bench, studio);
+                    Check("toolkit-found-without-results", noResults.Found && noResults.Status == "No results yet" && noResults.Actions.Single().Id == "folder");
+                    Directory.CreateDirectory(Path.Combine(benchRoot, "results"));
+                    File.WriteAllText(Path.Combine(benchRoot, "results", "index.html"), "<html></html>");
+                    var withResults = Toolkit.Inspect(bench, studio);
+                    Check("toolkit-opens-existing-results", withResults.Status == "Found" && withResults.Actions[0] is { Id: "report", Primary: true }
+                        && withResults.Actions[0].Target == Path.Combine(benchRoot, "results", "index.html"));
+                }
+                bool blocked;
+                try { Toolkit.Open("https://example.com/not-allowed"); blocked = false; }
+                catch (FileNotFoundException) { blocked = true; }
+                Check("toolkit-open-rejects-unknown-targets", blocked);
+            }
+            finally
+            {
+                try { if (Directory.Exists(temp)) Directory.Delete(temp, recursive: true); } catch (IOException) { }
+            }
+        });
+
         int failedCount = results.Count(r => !r.Passed);
         var report = new JsonObject
         {

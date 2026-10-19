@@ -46,6 +46,11 @@ internal sealed partial class MainWindow
             StoryCard("2", "Size it honestly", "Use T-shirt sizes to show what S to XL models need, against one memory budget at a time.", "sizing"),
             StoryCard("3", "Fit the fleet, frame the pilot", "Match Snapdragon, Intel and RTX devices to workflows, then model capacity with the customer's numbers.", "platforms"));
 
+        var hybridWays = new AdaptiveGrid(260, 3).With(
+            WayCard("\uE8AB", "See the split", "Route a request and watch what stays on this PC, what is redacted here first and what would go to the cloud, with every reason shown.", "Open the Hybrid router", "hybrid"),
+            WayCard("\uEC4A", "Show it off", "Measure the loaded model live, rank models over the session and follow a five-minute run of show that ends with a deck.", "Open Show it off", "showoff"),
+            WayCard("\uE943", "Build on it", "Start a loopback, OpenAI-compatible endpoint, copy working code and create starter projects that run against this GPU.", "Open Build on Surface", "build"));
+
         var guardrails = CardBorder(Stack(8,
             H3("What this showcase will not claim"),
             Body("- No cash savings, ROI forecast or subscription replacement; capacity value is illustrative."),
@@ -53,7 +58,19 @@ internal sealed partial class MainWindow
             Body("- No claim that Snapdragon or Intel workflows ran on this laptop; they are recommended pilots verified per SKU."),
             Body("- Generated code is shown as text and never executed. Sources are synthetic.")), 22);
 
-        return Page(Stack(26, hero, stats, memoryNote, Stack(14, H2("The five-minute executive story"), story), guardrails));
+        return Page(Stack(26, hero, stats, memoryNote, Stack(14, H2("The five-minute executive story"), story),
+            Stack(14, H2("Hybrid Intelligence: see it, show it, build on it"),
+                Body("The PC does what it does best - private, fast, always available - and the cloud does what only it can. These pages make that split visible, measurable and buildable."),
+                hybridWays),
+            guardrails));
+    }
+
+    private FrameworkElement WayCard(string glyph, string title, string body, string action, string target)
+    {
+        var go = Id(Secondary(action + "  \u2192"), "OverviewWay_" + target);
+        go.HorizontalAlignment = HorizontalAlignment.Left;
+        go.Click += (_, _) => Navigate(target);
+        return CardBorder(Stack(10, Glyph(glyph, 24, Accent), H3(title), Body(body), go), 22);
     }
 
     private FrameworkElement StoryCard(string number, string title, string body, string target)
@@ -103,7 +120,9 @@ internal sealed partial class MainWindow
             Objection("Is it really 128 GB?", "128 GB is installed physical memory. Windows reports about 64 GB visible, and the GPU driver reports a 64,000 MiB budget. These are separate views and are never added."),
             Objection("Will it save us money?", "This app shows illustrative capacity value only, not cash savings or ROI. Time savings and adoption must be measured in a pilot; cloud subscriptions are unchanged."),
             Objection("Does this run on our Snapdragon or Intel fleet?", "Those are recommended pilots. Verify the exact model, runtime and accelerator support per SKU; nothing here ran on those devices."),
-            Objection("What about model reasoning text?", "Private reasoning is counted but never displayed, exported or saved. Only the final answer is shown."));
+            Objection("What about model reasoning text?", "Private reasoning is counted but never displayed, exported or saved. Only the final answer is shown."),
+            Objection("Does local AI replace the cloud?", "No. Hybrid Intelligence keeps private, fast and offline work on the PC and uses the cloud for current information, organisation-wide data and frontier scale. The Hybrid router shows the split and its reasons; the studio itself never calls a cloud service."),
+            Objection("Can our developers build on this?", "Yes. Build on Surface starts an OpenAI-compatible endpoint on loopback (off by default, this PC only) and creates small starter projects in Python and C#. Your code reviews and runs them; the studio never executes generated code."));
 
         var doDont = new AdaptiveGrid(300, 2).With(
             CardBorder(Stack(6, Set(H3("Do"), t => t.Foreground = GreenInk),

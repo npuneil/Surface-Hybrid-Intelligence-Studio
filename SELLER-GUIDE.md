@@ -98,6 +98,47 @@ and Cedar Borough (public sector). Pick the one closest to the customer, then:
 Say these are illustrative customers. Replace the fictional facts in Forge
 with real ones only after the customer agrees.
 
+## Hybrid Intelligence: show it, then hand it to the builders
+
+**Positioning:** Hybrid Intelligence means each request runs where it fits. Private,
+fast and offline work stays on the PC; current information, organisation-wide data and
+frontier scale go to the cloud. The PC does not replace the cloud.
+
+The **Show it off** page has a five-step run of show, one button per step:
+
+| Step | Button | Say |
+|---|---|---|
+| 1. Show the decision | Open the router (loads *Reply with today's rates*) | "This request has a customer's details *and* needs today's rates. The PC redacts the details first, so only the clean request would go to the cloud." |
+| 2. Put a number on it | Run speed test | "That's how fast this model is generating on this laptop's GPU right now. One run here, not a benchmark." |
+| 3. Prove it's an endpoint | Open Build on Surface | "Your developers call this like a cloud API, but it's on 127.0.0.1." Start the endpoint, then **Send a test call**. |
+| 4. Make it theirs | Industry scenarios | Run the customer's closest industry workflow. |
+| 5. Leave with a deck | Open PPTX Forge | Stage the matching brief and build the leave-behind locally. |
+
+On the **Hybrid router**, press **Route** for the decision and its reasons (no model
+runs), then **Run it on this PC** to stream the local answer or redaction from the GPU.
+Every cloud payload is shown and marked **NOT SENT**: the studio never calls a cloud
+service. If the redaction check blocks a payload, show that too: the PC caught it before
+anything could leave. Try the *Field note while offline* preset to show the cloud step
+being queued rather than failing. The rules catch structured identifiers (emails,
+phone numbers, account numbers, credentials), not every name or context clue.
+
+**Speedometer and leaderboard:** run the speed test on each model you load to fill the
+session leaderboard. Numbers are this run on this laptop; never compare them with other
+devices or cloud services. **Export results (JSON)** saves timings, not text.
+
+**For developers**, open **Build on Surface**:
+- Start the **Local endpoint** (off by default, this PC only, no key). Copy a snippet
+  (Python, JavaScript, C#, PowerShell or curl) and run it in their own terminal.
+- **Create** a starter kit: streaming chat, ask private documents, redact-then-cloud,
+  a tool-using agent (Python) or a C# chat app. The studio writes the files and opens
+  the folder; it never runs them. The redact-then-cloud kit uses the router's own policy
+  and stops before any real cloud call.
+- Stop the endpoint when finished; closing the studio also stops it.
+
+**Companion tools** on the same page open Offline PPTX Forge, Local AI Tokenomics,
+Local AI Headroom, Local AI Bench and HydraFusion autorouting when they are installed
+beside the studio. Each tool's own claims and guardrails apply.
+
 ## Questions that qualify an opportunity
 
 1. Which repeated workflow consumes meaningful time today?
@@ -152,6 +193,17 @@ Hide the tab from the Seller playbook page if you do not need it.
 **"Why not cloud AI?"** Keep cloud AI for the workloads and managed services
 that suit it. This demonstrates an additional local route, not a replacement.
 No cloud price, performance comparison or subscription reduction is claimed.
+
+**"Does local AI replace the cloud?"** No. Hybrid Intelligence keeps private, fast
+and offline work on the PC and uses the cloud for current information,
+organisation-wide data and frontier scale. The Hybrid router shows the split and
+its reasons; the studio itself never calls a cloud service.
+
+**"Can our developers build on this?"** Yes. Build on Surface starts an
+OpenAI-compatible endpoint on loopback (off by default, this PC only) and creates
+small starter projects in Python and C#. Their code reviews and runs them; the
+studio never executes generated code. Production use still needs the customer's
+own model licensing, security review and deployment plan.
 
 **"How is AI accelerated?"** These models run on the NVIDIA RTX GPU through
 CUDA. Inspect each run's model identity and execution-provider evidence.

@@ -19,3 +19,4 @@ def load_edition(path=ROOT / "edition.json"):
 EDITION = load_edition()
 APP_ID = EDITION["serviceAppId"]
 DISPLAY_NAME = EDITION["displayName"]
+ENV_PREFIX = EDITION.get("envPrefix") or "HYBRID_STUDIO_"

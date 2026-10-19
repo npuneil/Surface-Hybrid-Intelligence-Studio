@@ -23,6 +23,7 @@ internal sealed partial class MainWindow
         var screenshots = new JsonArray();
         var liveRuns = new JsonArray();
         var liveDemos = new JsonArray();
+        var liveLab = new JsonObject();
         string screens = Path.Combine(_options.RuntimeDirectory, "screens");
         Directory.CreateDirectory(screens);
         void Check(string name, bool passed, string detail = "")
@@ -44,7 +45,7 @@ internal sealed partial class MainWindow
             Check("titlebar-logo", FindById(_root, "TitleBarLogo") is Image { Source: not null });
             Check("brand-mark", FindById(_root, "NavMark") is TextBlock { Text: Brand.Mark } && Title == Brand.WindowTitle, Title);
 
-            foreach (string tag in new[] { "overview", "live", "demos", "industries", "sizing", "platforms", "business", "playbook", "learn" })
+            foreach (string tag in new[] { "overview", "live", "demos", "hybrid", "industries", "showoff", "build", "sizing", "platforms", "business", "playbook", "learn" })
             {
                 Navigate(tag);
                 await Settle();
@@ -99,6 +100,139 @@ internal sealed partial class MainWindow
                     && brief["facts"]?.AsArray().Count > 0 && brief["guardrails"]?.AsArray().Count > 0 && !LeaksToken(briefPath), briefPath);
             }
             await Shot("industries");
+
+            // Hybrid router: every preset routes to its expected lane through the service; nothing is ever sent.
+            Navigate("hybrid");
+            await LoadHybridCatalogAsync();
+            await WaitFor(() => _hybridCatalog is not null && !_hybridLoading, 15);
+            await Settle();
+            var hybridPresets = _hybridCatalog is { } presetCatalog ? Items(presetCatalog, "presets").ToList() : [];
+            var hybridPatterns = _hybridCatalog is { } patternCatalog ? Items(patternCatalog, "patterns").ToList() : [];
+            Check("hybrid-catalog-loaded", hybridPresets.Count >= 6 && hybridPatterns.Count >= 7, $"{hybridPresets.Count} presets / {hybridPatterns.Count} patterns");
+            foreach (string id in new[] { "HybridInput", "HybridOffline", "HybridBeyond", "HybridRoute", "HybridRun", "HybridStop", "HybridLane", "HybridHeadline", "HybridSteps", "HybridPatterns" })
+                Check("automation-id-" + id, FindById(_root, id) is not null);
+            foreach (var preset in hybridPresets)
+            {
+                string id = Str(preset, "id"), expect = Str(preset, "expect");
+                bool hasButton = FindById(_root, "HybridPreset_" + id) is Button;
+                await ApplyHybridPresetAsync(preset);
+                await Settle();
+                bool payloadHonest = _hybridPayload.Visibility == Visibility.Collapsed || _hybridPayloadTitle.Text.Contains("NOT");
+                Check("hybrid-preset-" + id, hasButton && ReferenceEquals(_hybridLane.Background, LaneBrushes(expect).Background)
+                    && _hybridSteps.Children.Count > 0 && _hybridNote.Text.Contains("no model ran") && payloadHonest,
+                    $"expected {expect}: {_hybridLaneText.Text} / {_hybridPayloadTitle.Text}");
+                if (id == "rates")
+                {
+                    Check("hybrid-rates-preview-masked", _hybridPayload.Visibility == Visibility.Visible && _hybridPayloadTitle.Text.Contains("NOT SENT")
+                        && !_hybridPayloadText.Text.Contains("jonas.becker@example.com"), _hybridPayloadText.Text);
+                    await Shot("hybrid-route-rates");
+                }
+            }
+            if (hybridPresets.FirstOrDefault(p => Str(p, "id") == "complaint") is { ValueKind: JsonValueKind.Object } complaint
+                && FindById(_root, "HybridPreset_complaint") is Button complaintButton)
+            {
+                InvokeButton(complaintButton);
+                bool routed = await WaitFor(() => _hybridText.Text.ReplaceLineEndings("\n") == Str(complaint, "text") && ReferenceEquals(_hybridLane.Background, LaneBrushes("local").Background), 10);
+                Check("hybrid-preset-button-click", routed, _hybridLaneText.Text);
+            }
+            foreach (var pattern in hybridPatterns)
+            {
+                string id = Str(pattern, "id");
+                bool hasProof = pattern.TryGetProperty("proof", out var proof) && proof.ValueKind == JsonValueKind.Object;
+                Check("hybrid-pattern-" + id, FindById(_root, "Pattern_" + id) is not null && (!hasProof || FindById(_root, "PatternProof_" + id) is Button));
+            }
+            if (FindById(_root, "HybridPatterns") is FrameworkElement patternGallery)
+                patternGallery.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.2, AnimationDesired = false });
+            await Shot("hybrid-patterns");
+            if (hybridPatterns.FirstOrDefault(p => p.TryGetProperty("proof", out var pr) && Str(pr, "kind") == "demo") is { ValueKind: JsonValueKind.Object } demoPattern
+                && FindById(_root, "PatternProof_" + Str(demoPattern, "id")) is Button proofButton)
+            {
+                string target = Str(demoPattern.GetProperty("proof"), "target");
+                InvokeButton(proofButton);
+                await Settle();
+                Check("hybrid-pattern-proof-opens-demo", _currentSection == "demos" && DemoRunnerVisible && _openDemo?.Id == target, $"{_currentSection} {_openDemo?.Id} vs {target}");
+                CloseDemo();
+            }
+            else Check("hybrid-pattern-proof-opens-demo", false, "no pattern links to a live demo");
+
+            // Build on Surface: endpoint off by default, kits and snippets from the service, starter written under exports only.
+            Navigate("build");
+            await WaitFor(() => _builderState is not null && !_builderLoading, 15);
+            await Settle();
+            foreach (string id in new[] { "BuildEndpointState", "BuildBaseUrl", "BuildModel", "BuildStartEndpoint", "BuildStopEndpoint", "BuildTestCall", "BuildCopyUrl", "BuildSnippetPicker", "BuildSnippetCode", "BuildKits" })
+                Check("automation-id-" + id, FindById(_root, id) is not null);
+            var (endpointState, endpointActive) = BuilderEndpoint();
+            Check("build-endpoint-off-by-default", endpointActive == "large" || endpointState != "running", $"{endpointActive}:{endpointState}");
+            Check("build-loopback-base-url", _buildBaseUrl.Text.StartsWith("http://127.0.0.1:", StringComparison.Ordinal), _buildBaseUrl.Text);
+            foreach (string kit in new[] { "chat", "private-docs", "redact-then-cloud", "tool-agent", "csharp-chat" })
+                Check("build-kit-" + kit, FindById(_root, "Kit_" + kit) is not null && FindById(_root, "KitCreate_" + kit) is Button && FindText(_root, "KitRun_" + kit) is { Length: > 0 });
+            bool modelKnown = _buildModel.Text != "No model loaded yet";
+            Check("build-snippets", modelKnown ? _snippets.Count >= 7 && _buildSnippetCode.Text.Contains(_buildBaseUrl.Text.Replace("/v1", ""))
+                : _snippets.Count == 0 && _buildSnippetNote.Text.Length > 0, $"{_snippets.Count} snippets; {_buildSnippetNote.Text}");
+            _lastStarterPath = null;
+            await CreateStarterAsync("redact-then-cloud");
+            if (modelKnown)
+            {
+                string starter = _lastStarterPath ?? "";
+                Check("build-starter-written", starter.StartsWith(StarterDirectory, StringComparison.OrdinalIgnoreCase) && _buildInfo.Severity == InfoBarSeverity.Success
+                    && File.Exists(Path.Combine(starter, "redact_then_cloud.py")) && File.Exists(Path.Combine(starter, "hybrid.py"))
+                    && File.ReadAllText(Path.Combine(starter, "local_ai.py")).Contains(_buildBaseUrl.Text) && !LeaksToken(Path.Combine(starter, "local_ai.py")),
+                    starter + " " + _buildInfo.Message);
+            }
+            else Check("build-starter-needs-model", _lastStarterPath is null && _buildInfo.Severity == InfoBarSeverity.Error, _buildInfo.Message ?? "");
+            await Shot("build");
+            if (FindById(_root, "BuildKits") is FrameworkElement buildKits)
+            {
+                buildKits.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.4, AnimationDesired = false });
+                await Shot("build-kits");
+            }
+
+            // Show it off: tool gallery, run of show, speedometer gating.
+            Navigate("showoff");
+            await WaitFor(() => _toolStates.Count == Toolkit.Tools.Length && !_toolsLoading, 15);
+            await Settle();
+            foreach (var tool in Toolkit.Tools)
+                Check("tool-card-" + tool.Id, FindById(_root, "Tool_" + tool.Id) is not null && FindById(_root, "ToolStatus_" + tool.Id) is not null
+                    && _toolStates.FirstOrDefault(s => s.Tool.Id == tool.Id) is { Actions.Count: > 0 } state
+                    && state.Actions.All(a => FindById(_root, $"Tool_{tool.Id}_{a.Id}") is Button), _toolStates.FirstOrDefault(s => s.Tool.Id == tool.Id)?.Status ?? "missing");
+            for (int n = 1; n <= 5; n++) Check($"showoff-step-{n}", FindById(_root, $"ShowOffStep_{n}") is Button);
+            Check("speed-gated-on-model", _speedRun.IsEnabled == (LabBlocker() is null) && !_speedExport.IsEnabled && _speedRuns.Count == 0, LabBlocker() ?? "ready");
+            await Shot("showoff");
+            if (FindById(_root, "ToolGallery") is FrameworkElement toolGallery)
+            {
+                toolGallery.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0.3, AnimationDesired = false });
+                await Shot("showoff-tools");
+            }
+            if (FindById(_root, "ShowOffStep_1") is Button stepOne) InvokeButton(stepOne);
+            bool rates = await WaitFor(() => _currentSection == "hybrid" && _hybridText.Text.Contains("exchange rates") && ReferenceEquals(_hybridLane.Background, LaneBrushes("hybrid").Background), 10);
+            Check("showoff-step-1-routes-rates", rates, $"{_currentSection} {_hybridLaneText.Text}");
+
+            foreach (var way in new[] { "hybrid", "showoff", "build" })
+            {
+                Navigate("overview");
+                await Task.Delay(150);
+                var wayButton = FindById(_root, "OverviewWay_" + way) as Button;
+                if (wayButton is not null) InvokeButton(wayButton);
+                bool landed = wayButton is not null && await WaitFor(() => _currentSection == way, 5);
+                Check($"overview-way-{way}", landed, $"found={wayButton is not null} section={_currentSection}");
+            }
+
+            // One GPU job at a time: a lab job locks the other workspaces, and they lock the lab.
+            _labRunning = true;
+            _labActivity = SpeedActivity;
+            UpdateLiveButtons();
+            Check("lab-interlock-locks-others", !_runLive.IsEnabled && !_loadModel.IsEnabled && !_demoRunAll.IsEnabled && !_hybridRun.IsEnabled
+                && !_buildStart.IsEnabled && !_buildTest.IsEnabled && !_speedRun.IsEnabled && _speedStop.IsEnabled && _speedBlocker.Text.Length == 0, _hybridBlocker.Text);
+            OpenDemo("brief");
+            Check("lab-interlock-demo-blocker", !_demoRunLive.IsEnabled && _demoBlocker.Text.Contains(SpeedActivity), _demoBlocker.Text);
+            CloseDemo();
+            _labRunning = false;
+            _labActivity = "";
+            _demoRunning = true;
+            UpdateLiveButtons();
+            Check("lab-locked-by-demo", !_hybridRun.IsEnabled && !_speedRun.IsEnabled && !_buildStart.IsEnabled && _speedBlocker.Text.Contains("live demo"), _speedBlocker.Text);
+            _demoRunning = false;
+            UpdateLiveButtons();
 
             // Sales sizing view (default tab) through the real check boxes.
             Navigate("sizing");
@@ -512,6 +646,67 @@ internal sealed partial class MainWindow
                         && liveDemoJson["steps"]?.AsArray().Count > 0 && !LeaksToken(liveDemoExport!), liveDemoExport ?? "export failed");
                     CloseDemo();
                 }
+
+                // Show it off, Build on Surface and the Hybrid router on the GPU.
+                if (_status?.Engine.IsReady == true)
+                {
+                    Navigate("showoff");
+                    _speedInfo.IsOpen = false;
+                    await RunSpeedTestAsync();
+                    await Settle();
+                    Check("speed-test-live", _lastSpeed is { DecodeTps: > 0, TtftMs: > 0 } && _speedRuns.Count == 1 && FindById(_root, "SpeedBoardRow_1") is not null
+                        && !(_speedInfo.IsOpen && _speedInfo.Severity == InfoBarSeverity.Error) && _speedDecodeSource.Text.Length > 0 && _speedExport.IsEnabled,
+                        _speedInfo.Message ?? _speedPhase.Text);
+                    await Shot("showoff-speed-live");
+                    ExportSpeed();
+                    string speedPath = _speedInfo.Severity == InfoBarSeverity.Success ? _speedInfo.Message ?? "" : "";
+                    var speedJson = File.Exists(speedPath) ? JsonNode.Parse(File.ReadAllText(speedPath)) : null;
+                    Check("speed-export", speedJson?["schema"]?.GetValue<string>() == Brand.SchemaPrefix + ".speedtest/1"
+                        && speedJson["latest"]?["generation_tokens_per_second"] is not null && !File.ReadAllText(speedPath).Contains(_speedText.Text.Trim() is { Length: > 40 } t ? t[..40] : "\u0000")
+                        && !LeaksToken(speedPath), speedPath);
+                    liveLab["speed"] = new JsonObject
+                    {
+                        ["model"] = _lastSpeed?.Model, ["provider"] = _lastSpeed?.Provider, ["decode_tps"] = _lastSpeed?.DecodeTps, ["decode_source"] = _lastSpeed?.DecodeSource,
+                        ["ttft_ms"] = _lastSpeed?.TtftMs, ["prefill_tps"] = _lastSpeed?.PrefillTps, ["prefill_source"] = _lastSpeed?.PrefillSource,
+                    };
+
+                    Navigate("build");
+                    await WaitFor(() => _builderState is not null && !_builderLoading, 15);
+                    await RefreshBuilderAsync();
+                    if (BuilderEndpoint().Active == "foundry")
+                    {
+                        await ChangeEndpointAsync("start");
+                        Check("build-endpoint-start", BuilderEndpoint().State == "running" && _buildStateText.Text == "RUNNING ON LOOPBACK" && _buildTest.IsEnabled,
+                            $"{BuilderEndpoint()} {_buildInfo.Message}");
+                    }
+                    await TestEndpointAsync();
+                    Check("build-endpoint-test-call", _buildTestMeta.Text.StartsWith("HTTP 200") && _buildTestReply.Text.Length > 0 && !_buildTestReply.Text.StartsWith("(")
+                        && !_buildTestReply.Text.Contains("<|") && _buildTestRequest.Text.Contains("/chat/completions"), $"{_buildTestMeta.Text} {_buildInfo.Message}");
+                    liveLab["endpoint"] = new JsonObject { ["base_url"] = _buildBaseUrl.Text, ["model"] = _buildModel.Text, ["meta"] = _buildTestMeta.Text, ["reply"] = _buildTestReply.Text };
+                    await Shot("build-endpoint-live");
+                    if (BuilderEndpoint().Active == "foundry")
+                    {
+                        await ChangeEndpointAsync("stop");
+                        Check("build-endpoint-stop", BuilderEndpoint().State == "stopped" && _buildStateText.Text == "OFF" && !_buildTest.IsEnabled, $"{BuilderEndpoint()} {_buildInfo.Message}");
+                    }
+
+                    Navigate("hybrid");
+                    if (_hybridCatalog is { } liveCatalog && Items(liveCatalog, "presets").FirstOrDefault(p => Str(p, "id") == "rates") is { ValueKind: JsonValueKind.Object } ratesPreset)
+                    {
+                        await ApplyHybridPresetAsync(ratesPreset);
+                        await RunHybridAsync();
+                        await Settle();
+                        bool clean = _hybridCheckText.Text.StartsWith("\u2713");
+                        Check("hybrid-live-rates", _hybridNote.Text.StartsWith("Completed on this PC") && _hybridOutput.Text.Length > 20
+                            && _hybridCheck.Visibility == Visibility.Visible && _hybridPayload.Visibility == Visibility.Visible
+                            && (clean ? _hybridPayloadTitle.Text.Contains("NOT SENT") && !_hybridPayloadText.Text.Contains("jonas.becker@example.com")
+                                      : _hybridPayloadTitle.Text.StartsWith("WITHHELD")),
+                            $"{_hybridInfo.Message} | {_hybridCheckText.Text} | {_hybridPayloadTitle.Text}");
+                        liveLab["hybrid_rates"] = new JsonObject { ["check"] = _hybridCheckText.Text, ["payload_title"] = _hybridPayloadTitle.Text, ["metrics"] = _hybridMetrics.Text };
+                        await Shot("hybrid-live-rates");
+                    }
+                    else Check("hybrid-live-rates", false, "rates preset missing");
+                }
             }
 
             Navigate("overview");
@@ -533,6 +728,7 @@ internal sealed partial class MainWindow
             ["failures"] = new JsonArray(failures.Select(f => (JsonNode?)f).ToArray()),
             ["live_runs"] = liveRuns,
             ["live_demos"] = liveDemos,
+            ["live_lab"] = liveLab,
             ["screenshots"] = screenshots,
         };
         Directory.CreateDirectory(_options.RuntimeDirectory);
