@@ -24,6 +24,9 @@ Never present rehearsal as an inference or timing measurement.
 DIMM capacity. Approximately **64 GB is visible to Windows**; NVIDIA separately
 reports a **64,000 MiB GPU budget**. These are distinct memory views, not separate
 additive pools or a dedicated-VRAM claim. No memory partition settings are changed.
+The Executive overview shows the hero specs (128 GB unified memory, 6,144-core
+Blackwell RTX GPU, 20-core CPU, 15-inch PixelSense Ultra display); open
+**Device evidence** for the three memory views.
 
 **Larger-model walkthrough:** Start with **Qwen2.5-Coder 14B**, then use the
 on-device model selector to load **GPT-OSS 20B**. Wait for ready status before

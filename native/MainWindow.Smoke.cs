@@ -55,10 +55,11 @@ internal sealed partial class MainWindow
 
             Navigate("overview");
             await Settle();
-            Check("overview-memory-views-distinct",
-                FindText(_root, "OverviewInstalledMemory") == "128 GB" && FindText(_root, "OverviewVisibleMemory") == "64 GB"
-                && FindText(_root, "OverviewGpuBudget") == "62.5 GiB",
-                $"{FindText(_root, "OverviewInstalledMemory")} / {FindText(_root, "OverviewVisibleMemory")} / {FindText(_root, "OverviewGpuBudget")}");
+            Check("overview-hero-stats",
+                FindText(_root, "OverviewInstalledMemory") == "128 GB" && FindText(_root, "OverviewGpuCores") == "6,144-core"
+                && FindText(_root, "OverviewCpuCores") == "20-core" && FindText(_root, "OverviewDisplay") == "15-inch"
+                && FindById(_root, "OverviewVisibleMemory") is null && FindById(_root, "OverviewGpuBudget") is null && FindById(_root, "OverviewLiveModel") is null,
+                $"{FindText(_root, "OverviewInstalledMemory")} / {FindText(_root, "OverviewGpuCores")} / {FindText(_root, "OverviewCpuCores")} / {FindText(_root, "OverviewDisplay")}");
 
             Navigate("live");
             await Settle();

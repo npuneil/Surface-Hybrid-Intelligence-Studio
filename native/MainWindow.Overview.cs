@@ -7,7 +7,7 @@ namespace HybridIntelligenceStudio;
 
 internal sealed partial class MainWindow
 {
-    private TextBlock _ovInstalled = null!, _ovVisible = null!, _ovGpu = null!, _ovModel = null!, _ovModelDetail = null!, _ovDevice = null!;
+    private TextBlock _ovInstalled = null!, _ovGpuCores = null!, _ovCpuCores = null!, _ovDevice = null!;
 
     private static Border StatCard(out TextBlock value, string initial, string label, string detail, string id, out TextBlock detailText)
     {
@@ -35,11 +35,11 @@ internal sealed partial class MainWindow
             Set(Row(10, startLive, size, evidence), r => r.Margin = new Thickness(0, 6, 0, 0)));
 
         var stats = new AdaptiveGrid(230, 4).With(
-            StatCard(out _ovInstalled, "...", "Installed memory", "Physical, firmware-reported", "OverviewInstalledMemory", out _),
-            StatCard(out _ovVisible, "...", "Windows-visible memory", "Reported by Windows", "OverviewVisibleMemory", out _),
-            StatCard(out _ovGpu, "...", "GPU memory budget", "Driver-reported budget, not dedicated VRAM", "OverviewGpuBudget", out _),
-            StatCard(out _ovModel, "...", "Live model on GPU", "Checking local service", "OverviewLiveModel", out _ovModelDetail));
-        var memoryNote = CardBorder(Lead(12, Glyph("\uE946", 18), Body("These are three different reported views of one machine. They overlap and are never added together; the planner uses one view at a time.")), 14, Sand);
+            StatCard(out _ovInstalled, "...", "LPDDR5x unified memory", "Installed in this laptop, shared by the CPU and RTX GPU", "OverviewInstalledMemory", out _),
+            StatCard(out _ovGpuCores, "...", "NVIDIA Blackwell RTX GPU", "NVIDIA RTX Spark N1X", "OverviewGpuCores", out _),
+            StatCard(out _ovCpuCores, "...", "CPU", "NVIDIA RTX Spark N1X", "OverviewCpuCores", out _),
+            StatCard(out _, "15-inch", "PixelSense Ultra display", "3270 × 2180, up to 120Hz, 2,000-nit HDR peak", "OverviewDisplay", out _));
+        var specNote = Id(Small("Memory and core counts as reported by this laptop. Display and processor family from Microsoft's Surface Laptop Ultra tech specs."), "OverviewSpecSource");
 
         var story = new AdaptiveGrid(260, 3).With(
             StoryCard("1", "Prove it live", "Run the executive briefing or code draft on the RTX GPU. Real timing, real model, private reasoning withheld.", "live"),
@@ -58,7 +58,7 @@ internal sealed partial class MainWindow
             Body("- No claim that Snapdragon or Intel workflows ran on this laptop; they are recommended pilots verified per SKU."),
             Body("- Generated code is shown as text and never executed. Sources are synthetic.")), 22);
 
-        return Page(Stack(26, hero, stats, memoryNote, Stack(14, H2("The five-minute executive story"), story),
+        return Page(Stack(26, hero, Stack(10, stats, specNote), Stack(14, H2("The five-minute executive story"), story),
             Stack(14, H2("Hybrid Intelligence: see it, show it, build on it"),
                 Body("The PC does what it does best - private, fast, always available - and the cloud does what only it can. These pages make that split visible, measurable and buildable."),
                 hybridWays),
@@ -93,12 +93,16 @@ internal sealed partial class MainWindow
             ? $"{d.DisplayName}  |  {d.Cpu}"
             : "Device inventory unavailable: " + d.Error;
         _ovInstalled.Text = Gb(d.InstalledGiB);
-        _ovVisible.Text = Gb(d.OsVisibleGiB);
-        _ovGpu.Text = d.PrimaryGpuBudgetMiB is long mib ? $"{mib / 1024d:F1} GiB" : "Unavailable";
-        var engine = status.Engine;
-        _ovModel.Text = engine.Model?.Name ?? (engine.State == "error" ? "Unavailable" : "Loading");
-        _ovModel.FontSize = 24;
-        _ovModelDetail.Text = engine.IsReady ? $"{engine.Model!.Provider} | ready" : engine.Detail;
+        _ovGpuCores.Text = CoreCount(d.Cpu, "GPU") ?? d.Accelerators.Select(a => CoreCount(a, "")).FirstOrDefault(c => c is not null) ?? "Unavailable";
+        _ovCpuCores.Text = CoreCount(d.Cpu, "CPU") ?? (d.Cores is int cores ? $"{cores}-core" : "Unavailable");
+    }
+
+    private static string? CoreCount(string? text, string unit)
+    {
+        var match = text is null ? null : System.Text.RegularExpressions.Regex.Match(text, $@"(\d+)-core\s*(?:\w+\s+)*?{unit}");
+        return match is { Success: true } && int.TryParse(match.Groups[1].Value, out int n)
+            ? n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) + "-core"
+            : null;
     }
 
     private FrameworkElement BuildPlaybook()
