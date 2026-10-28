@@ -1,4 +1,4 @@
-"""Loopback-only seller showcase; standard library HTTP, Foundry Local SDK inference."""
+"""Loopback-only banking showcase; standard library HTTP, Foundry Local SDK inference."""
 import argparse
 import json
 import logging

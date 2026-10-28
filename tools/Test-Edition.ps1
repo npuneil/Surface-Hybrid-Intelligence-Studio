@@ -17,7 +17,7 @@ param(
     [switch]$Live,
     [switch]$Browser,
     [switch]$SkipNative,
-    [ValidateRange(1, 65535)][int]$NativePort = 8796,
+    [ValidateRange(1, 65535)][int]$NativePort = 8790,
     [ValidateRange(1, 65535)][int]$BrowserPort = 8797
 )
 $ErrorActionPreference = 'Stop'

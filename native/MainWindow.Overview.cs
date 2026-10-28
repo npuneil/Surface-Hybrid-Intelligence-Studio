@@ -27,9 +27,9 @@ internal sealed partial class MainWindow
         evidence.Click += async (_, _) => await ShowDeviceEvidenceAsync();
 
         var hero = Stack(14,
-            Eyebrow("Executive overview"),
-            H1("Serious local AI, running on the RTX GPU of a Surface Laptop Ultra."),
-            Set(Body("Show a 14B coding model and a 20B reasoning model working on this laptop, size what a customer's workload needs, then frame a measured pilot. Evidence first, no hype."),
+            Eyebrow("Firm overview  |  " + Event.Session),
+            H1("Hybrid AI for global banking, with client data kept inside the firm."),
+            Set(Body("For line-of-business leaders, CIOs, CDAOs, CISOs and model risk teams: capture a client meeting, transcribe it and draft call notes and checklists on this laptop's RTX GPU, escalate only de-identified complex questions to the cloud, and keep every customer decision with bankers. Synthetic clients, evidence first, no hype."),
                 t => { t.FontSize = 16; t.LineHeight = 24; t.MaxWidth = 820; t.HorizontalAlignment = HorizontalAlignment.Left; }),
             _ovDevice,
             Set(Row(10, startLive, size, evidence), r => r.Margin = new Thickness(0, 6, 0, 0)));
@@ -42,23 +42,27 @@ internal sealed partial class MainWindow
         var specNote = Id(Small("Memory and core counts as reported by this laptop. Display and processor family from Microsoft's Surface Laptop Ultra tech specs."), "OverviewSpecSource");
 
         var story = new AdaptiveGrid(260, 3).With(
-            StoryCard("1", "Prove it live", "Run the executive briefing or code draft on the RTX GPU. Real timing, real model, private reasoning withheld.", "live"),
-            StoryCard("2", "Size it honestly", "Use T-shirt sizes to show what S to XL models need, against one memory budget at a time.", "sizing"),
-            StoryCard("3", "Fit the fleet, frame the pilot", "Match Snapdragon, Intel and RTX devices to workflows, then model capacity with the customer's numbers.", "platforms"));
+            StoryCard("1", "Prove it live", "Run the line-of-business and CIO briefing or a technology team code draft on the RTX GPU. Real timing, real model, private reasoning withheld.", "live"),
+            StoryCard("2", "Keep customer data local", "Route customer emails and complex questions: what stays in the firm, what is de-identified first and what would go to Azure OpenAI, with every reason shown.", "hybrid"),
+            StoryCard("3", "Make it real for each business", "Run six workflows across consumer, commercial, markets, wealth and model risk teams, then size the device and frame a pilot with your own numbers.", "industries"));
 
         var hybridWays = new AdaptiveGrid(260, 3).With(
-            WayCard("\uE8AB", "See the split", "Route a request and watch what stays on this PC, what is redacted here first and what would go to the cloud, with every reason shown.", "Open the Hybrid router", "hybrid"),
+            WayCard("\uE8AB", "See the split", "Route a customer email or complex question and watch what stays on this PC, what is de-identified here first and what would go to the cloud, with every reason shown.", "Open the Hybrid router", "hybrid"),
             WayCard("\uEC4A", "Show it off", "Measure the loaded model live, rank models over the session and follow a five-minute run of show that ends with a deck.", "Open Show it off", "showoff"),
-            WayCard("\uE943", "Build on it", "Start a loopback, OpenAI-compatible endpoint, copy working code and create starter projects that run against this GPU.", "Open Build on Surface", "build"));
+            WayCard("\uE943", "Build on it", "Give technology, data science and architecture teams a loopback, OpenAI-compatible endpoint, working code and starter projects that run against this GPU.", "Open Build on Surface", "build"));
 
         var guardrails = CardBorder(Stack(8,
             H3("What this showcase will not claim"),
             Body("- No cash savings, ROI forecast or subscription replacement; capacity value is illustrative."),
             Body("- No battery or speed comparisons with other devices; metrics describe one local run."),
             Body("- No claim that Snapdragon or Intel workflows ran on this laptop; they are recommended pilots verified per SKU."),
+            Body("- Drafts only: no credit, lending, account-opening, dispute, fraud, AML, trade-booking, model-approval or investment decisions without approval by authorized people."),
+            Body("- Not financial, legal or investment advice, and no suitability, risk-rating or suspicious-activity determination."),
+            Body("- Synthetic clients only: no real customers, account data or NPI, and no regulatory or compliance determinations."),
+            Body("- De-identification removes structured identifiers only; it is not certified. No core banking, CRM or payments connection is made."),
             Body("- Generated code is shown as text and never executed. Sources are synthetic.")), 22);
 
-        return Page(Stack(26, hero, Stack(10, stats, specNote), Stack(14, H2("The five-minute executive story"), story),
+        return Page(Stack(26, hero, Stack(10, stats, specNote), BuildArchitecture(), Stack(14, H2("The five-minute executive story"), story),
             Stack(14, H2("Hybrid Intelligence: see it, show it, build on it"),
                 Body("The PC does what it does best - private, fast, always available - and the cloud does what only it can. These pages make that split visible, measurable and buildable."),
                 hybridWays),
@@ -108,21 +112,24 @@ internal sealed partial class MainWindow
     private FrameworkElement BuildPlaybook()
     {
         var beats = new AdaptiveGrid(280, 3).With(
-            Beat("Open (30 s)", "\"This laptop runs a 14B coding model and a 20B reasoning model locally on its RTX GPU. Let me show you, then we'll size what your teams need.\""),
-            Beat("Prove (2 min)", "Run the executive briefing live. Point to the model, CUDA provider and timing. Switch to code drafting. Note: rehearsal is labelled and has no metrics."),
-            Beat("Land (2 min)", "Size the workload with T-shirt sizes, map the fleet with Platform fit, then agree a 10-user, two-week pilot with measured baselines."));
+            Beat("Open (30 s)", "\"Client conversations, account data and NPI never need to leave the firm. This laptop transcribes and drafts on its RTX GPU; only de-identified complex questions would go to the cloud, and bankers approve every decision.\""),
+            Beat("Prove (2 min)", "Walk the architecture: run client meeting capture (Tier 1), draft a KYC refresh checklist (Tier 2), then route the complex question and show the NOT SENT de-identified payload (Tier 3). Rehearsal is labelled and has no metrics."),
+            Beat("Land (2 min)", "Size the workload with T-shirt sizes, map banker, operations and branch devices with Platform fit, then agree a four-week pilot on synthetic client records with measured baselines."));
 
         var questions = CardBorder(Stack(8,
             H3("Discovery questions"),
-            Body("1. Which teams work with sensitive or connectivity-constrained content today?"),
-            Body("2. Which repeatable drafting, summarising or coding tasks would you measure first?"),
-            Body("3. Which approvals (security, licensing, app compatibility) must come before a pilot?"),
-            Body("4. What result would justify scaling beyond a pilot, and who decides?")), 22);
+            Body("1. Where are client conversations captured today, and which recordings, notes and identifiers must stay inside the firm?"),
+            Body("2. Which banker workflows (meeting prep, call notes, KYC refresh, settlement breaks, model documentation reviews) would you measure first?"),
+            Body("3. Which approvals (model risk management, privacy, information security, third-party risk, licensing) must come before a pilot? These are questions for the firm's risk and legal teams; this app makes no determination."),
+            Body("4. What result would justify scaling beyond a pilot, and who decides: the line of business, the CIO, the CDAO or a model risk committee?")), 22);
 
         var objections = Stack(8, H3("Objection handling"),
             Objection("How is AI accelerated on this device?", "On the RTX GPU through the CUDA execution provider in Foundry Local. The run evidence names the model variant and provider; there is no silent CPU fallback."),
             Objection("Is it really 128 GB?", "128 GB is installed physical memory. Windows reports about 64 GB visible, and the GPU driver reports a 64,000 MiB budget. These are separate views and are never added."),
             Objection("Will it save us money?", "This app shows illustrative capacity value only, not cash savings or ROI. Time savings and adoption must be measured in a pilot; cloud subscriptions are unchanged."),
+            Objection("Can we use real customer data?", "Not in this showcase. Every client here is synthetic. A pilot with real customer data needs the firm's privacy, information security and model risk reviews first; this app makes no regulatory or compliance determination."),
+            Objection("Will it make credit or account decisions?", "No. It drafts notes and checklists for bankers to review and approve. Credit, account, dispute, fraud and investment decisions stay with authorized people; nothing here is financial advice."),
+            Objection("What goes to Azure OpenAI?", "In the architecture, only de-identified, minimized queries for complex questions. In this showcase nothing is sent: the Hybrid router shows the payload marked NOT SENT. Structured identifiers are removed; free-text customer detail still needs human review."),
             Objection("Does this run on our Snapdragon or Intel fleet?", "Those are recommended pilots. Verify the exact model, runtime and accelerator support per SKU; nothing here ran on those devices."),
             Objection("What about model reasoning text?", "Private reasoning is counted but never displayed, exported or saved. Only the final answer is shown."),
             Objection("Does local AI replace the cloud?", "No. Hybrid Intelligence keeps private, fast and offline work on the PC and uses the cloud for current information, organisation-wide data and frontier scale. The Hybrid router shows the split and its reasons; the studio itself never calls a cloud service."),
@@ -133,21 +140,21 @@ internal sealed partial class MainWindow
                 Body("Use live runs whenever the model is ready."),
                 Body("Name the exact model and provider shown."),
                 Body("Position every estimate as illustrative."),
-                Body("Export evidence only when the customer asks.")), 22),
+                Body("Keep every example synthetic and every decision human.")), 22),
             CardBorder(Stack(6, Set(H3("Don't"), t => t.Foreground = AccentDeep),
                 Body("Present rehearsal as live output."),
                 Body("Compare speed or battery with other devices."),
                 Body("Add memory views together or call the GPU budget VRAM."),
-                Body("Promise savings, procurement fit or provider support.")), 22));
+                Body("Promise savings, customer outcomes, compliance or decision accuracy.")), 22));
 
         var rampUp = Id(CardBorder(Lead(14, Glyph("\uE7BE", 22, Accent), Stack(8,
             H3("Optional: ramp up technically"),
-            Body("'Coding as a second language' is eight short lessons that teach you to read code like a new language, with a quick check per lesson and a local coding tutor on the RTX GPU. Progress is saved on this laptop only."),
+            Body("'Coding as a second language' is eight short AI-literacy lessons for bankers, operations and technology teams that teach you to read code like a new language, with a quick check per lesson and a local coding tutor on the RTX GPU. Progress is saved on this laptop only."),
             _learnToggle)), 22), "PlaybookLearnCard");
 
         return Page(Stack(24,
-            Stack(10, Eyebrow("Seller playbook"), H1("Five minutes. Three beats. One pilot."),
-                Body("A concise talk track for an executive conversation, with the guardrails that keep it credible.")),
+            Stack(10, Eyebrow("Banking playbook  |  " + Event.Name), H1("Five minutes. Three beats. One pilot."),
+                Body("A concise talk track for line-of-business leaders, technology and risk teams, with the guardrails that keep it credible.")),
             beats, questions, objections, doDont, rampUp));
     }
 

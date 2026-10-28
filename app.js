@@ -249,7 +249,7 @@ Select Developer acceleration. Run the small Python request. Explain that the co
 "A developer can explore a bounded first draft on the device. Their review and testing still matter."
 
 03:15 — MAKE THE CASE
-Select Customer-specific economics. Replace illustrative assumptions with the customer's numbers. Show how adoption changes capacity; set minutes gained to zero to show the result disappears.
+Select Firm-specific economics. Replace illustrative assumptions with the firm's numbers. Show how adoption changes capacity; set minutes gained to zero to show the result disappears.
 "This is capacity value, not a reduction in payroll, and not a reason to subtract existing cloud subscriptions."
 
 04:15 — CLOSE ON A PILOT
@@ -260,11 +260,11 @@ OBJECTION HANDLING
 "Why not just use cloud AI?" — Keep cloud for the workloads and services that belong there. This demonstrates an additional local option, not a cloud replacement.
 "How is AI accelerated?" — These models execute on the NVIDIA RTX GPU through CUDA. Inspect each run's model and execution-provider evidence.
 "Is it faster or longer-lasting than another laptop?" — No comparison or battery test is included. Scope a controlled benchmark.
-"Are these Copilot+ or Microsoft 365 Copilot features?" — No. This is an independent custom Foundry Local application. No certification, bundled license or Microsoft 365 integration is implied.
+"Are these Microsoft 365 Copilot features?" — No. This is an independent custom Foundry Local application. No certification, bundled license or Microsoft 365 integration is implied.
 "What if live inference fails?" — The error stays visible. Explicitly select Authored rehearsal; never describe it as measured or live.
 
 HANDOFF
-Export evidence after a real run. Export the business case with its assumptions. Print the executive handout. All scenarios are fictional; never paste customer-confidential data into an unapproved prototype.`;
+Export evidence after a real run. Export the business case with its assumptions. Print the executive handout. All scenarios are fictional; never paste real customer records, nonpublic personal information or confidential firm data into an unapproved prototype.`;
 
 async function initialize() {
   try {
@@ -280,7 +280,7 @@ async function initialize() {
     $("run-button").addEventListener("click", run);
     $("model").addEventListener("change", switchModel);
     $("source-button").addEventListener("click", () => dialog("Inspect the source.", scenarios[story].source));
-    $("device-button").addEventListener("click", () => dialog("Observed. Not assumed.", JSON.stringify(status.device, null, 2) + "\n\nInstalled memory is the sum of firmware DIMM capacities, not Windows-visible memory. GPU memory is the budget reported by nvidia-smi; these views must not be added or treated as separate dedicated memory pools. No memory partition settings were changed.\n\nGPU-focused inventory, not a published shipping specification.\n\nRuntime:\n" + JSON.stringify(status.engine, null, 2) + "\n\nInference runs on the RTX GPU through CUDA. No battery, TOPS, dedicated-VRAM, all-network-isolation, competitive advantage or production-accuracy result is established."));
+    $("device-button").addEventListener("click", () => dialog("Observed. Not assumed.", JSON.stringify(status.device, null, 2) + "\n\nInstalled memory is the sum of firmware DIMM capacities, not Windows-visible memory. GPU memory is the budget reported by nvidia-smi; these views must not be added or treated as separate dedicated memory pools. No memory partition settings were changed.\n\nGPU-focused inventory, not a published shipping specification.\n\nRuntime:\n" + JSON.stringify(status.engine, null, 2) + "\n\nInference runs on the RTX GPU through CUDA. No battery, accelerator-rating, dedicated-VRAM, all-network-isolation, competitive advantage or production-accuracy result is established."));
     $("guide-button").addEventListener("click", () => dialog("Land the story. Then scope the pilot.", playbook));
     $("close-dialog").addEventListener("click", () => $("info-dialog").close());
     $("info-dialog").addEventListener("click", event => { if (event.target === $("info-dialog")) { const bounds = event.target.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close(); } });

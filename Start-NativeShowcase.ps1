@@ -7,7 +7,7 @@ param(
     [ValidateSet('overview', 'live', 'demos', 'hybrid', 'industries', 'showoff', 'build', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
     [switch]$Wait
 )
-# Launches the native WinUI 3 Surface Hybrid Intelligence Studio (never a browser).
+# Launches the native WinUI 3 Surface Hybrid Intelligence x Zava Financial (never a browser).
 # Backend lifecycle is owned by the app: it reuses a showcase service already on
 # 127.0.0.1:$Port (left running on exit), otherwise it starts server.py with
 # HYBRID_STUDIO_PYTHON, the project .venv or the sibling Foundry SDK venv, logs to
@@ -42,7 +42,7 @@ function Find-Dotnet {
 $exe = Find-Exe
 if ($Rebuild -or -not $exe) {
     $dotnet = Find-Dotnet
-    Write-Host "Building Surface Hybrid Intelligence Studio with $dotnet ..."
+    Write-Host "Building Surface Hybrid Intelligence x Zava Financial with $dotnet ..."
     & $dotnet build $project -c Release -nologo -v minimal
     if ($LASTEXITCODE -ne 0) { throw "Native build failed (exit $LASTEXITCODE)." }
     $exe = Find-Exe

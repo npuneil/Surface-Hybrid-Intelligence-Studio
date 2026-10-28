@@ -53,15 +53,15 @@ internal static class PptxForge
     {
         if (string.IsNullOrWhiteSpace(scenario.Industry) || string.IsNullOrWhiteSpace(scenario.Client)
             || string.IsNullOrWhiteSpace(scenario.DeckObjective) || string.IsNullOrWhiteSpace(scenario.Source))
-            throw new ArgumentException("An industry scenario needs its industry, fictional client, objective and source notes.");
+            throw new ArgumentException("A banking scenario needs its area, fictional bank, objective and source notes.");
         return new Dictionary<string, object>
         {
             ["id"] = "studio_" + scenario.Key.Replace('-', '_'),
             ["client"] = scenario.Client,
             ["pitch_type"] = "sales",
-            ["audience"] = scenario.Industry + " operations and IT leaders; fictional demonstration only.",
+            ["audience"] = scenario.Industry + " leaders, bank technology and risk teams; fictional demonstration only.",
             ["objective"] = scenario.DeckObjective,
-            ["context"] = "Synthetic industry workflow from " + Brand.DisplayName + ". " + scenario.Prompt
+            ["context"] = "Synthetic banking workflow from " + Brand.DisplayName + ". " + scenario.Prompt
                 + " This brief is source material, not a completed deck or evidence that a pilot ran.",
             ["facts"] = scenario.Source.ReplaceLineEndings("\n").Split("\n\n", StringSplitOptions.RemoveEmptyEntries),
             ["required_topics"] = new Dictionary<string, string[]>

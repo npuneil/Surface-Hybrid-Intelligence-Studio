@@ -105,10 +105,10 @@ internal sealed partial class MainWindow
 
         RecomputeSales();
         return Stack(22,
-            Stack(10, Eyebrow("T-shirt sizing - sales view"), H1("What does the customer want AI to do?"),
-                Body("Pick the everyday workloads the customer cares about. The studio picks the model size they need and shows where it fits, with no technical inputs.")),
+            Stack(10, Eyebrow("T-shirt sizing - leader view"), H1("What does the firm want AI to do?"),
+                Body("Pick the everyday workloads your bankers, operations and technology teams care about. The studio picks the model size they need and shows where it fits, with no technical inputs.")),
             CardBorder(Stack(12,
-                Lead(12, H3("Pick the customer's workloads"), Set(Row(12, _salesSelectionCount, clear), r => r.HorizontalAlignment = HorizontalAlignment.Right)),
+                Lead(12, H3("Pick the firm's workloads"), Set(Row(12, _salesSelectionCount, clear), r => r.HorizontalAlignment = HorizontalAlignment.Right)),
                 Small("Check workloads to size them. Use Run live demo to see one working on this laptop."),
                 tiles), 22),
             results,

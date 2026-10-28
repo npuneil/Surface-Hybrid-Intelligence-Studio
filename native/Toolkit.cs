@@ -26,7 +26,7 @@ internal static class Toolkit
             "FORGE_ROOT", "Offline-PPTX-Forge", "forge_cli.py", "\uE8A5"),
         new("tokenomics", "Local AI Tokenomics", "github.com/npuneil/Local-AI-Tokenomics",
             "A WinUI dashboard that models where a fleet's AI work could run (cloud, subscription or on-device) under editable assumptions.",
-            "Turns the hybrid conversation into a planning model a customer can change.",
+            "Turns the hybrid conversation into a planning model the firm can change.",
             "Its figures are illustrative assumptions you enter, not measurements from this studio or promised savings.",
             "TOKENOMICS_ROOT", "Local-AI-Tokenomics", Path.Combine("src", "SurfaceTokenomics.App", "SurfaceTokenomics.App.csproj"), "\uE9D2"),
         new("headroom", "Local AI Headroom", "github.com/npuneil/Local-AI-Headroom",

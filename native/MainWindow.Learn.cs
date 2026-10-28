@@ -98,7 +98,7 @@ internal sealed partial class MainWindow
             CardBorder(Lead(12, Glyph("\uE82F", 18), Stack(2, Text("IN PLAIN ENGLISH", 11, Slate, FontWeights.SemiBold), _lessonAnalogy)), 14, SlateTint),
             Stack(8, Text("READ THE CODE", 11, Muted, FontWeights.SemiBold), code, Small("Displayed for learning only. This app never runs it.")),
             Stack(10, H3("Line by line"), _lessonNotes),
-            CardBorder(Stack(6, Text("SAY IT TO A CUSTOMER", 11, AccentDeep, FontWeights.SemiBold), _lessonSayIt), 16, Sand),
+            CardBorder(Stack(6, Text("SAY IT TO A COLLEAGUE", 11, AccentDeep, FontWeights.SemiBold), _lessonSayIt), 16, Sand),
             new Border { Height = 1, Background = Line },
             Stack(10, Text("QUICK CHECK", 11, Muted, FontWeights.SemiBold), _quizQuestion, _quizOptions, _quizCheck, _quizFeedback),
             new Border { Height = 1, Background = Line },

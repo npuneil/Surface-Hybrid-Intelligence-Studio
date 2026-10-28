@@ -167,7 +167,7 @@ class RegistryTests(unittest.TestCase):
         self.assertFalse(demos.schedule_check("I could not decide.")["pass"])
         self.assertFalse(demos.receipt_sum_check('{"line_items": [{"amount": "1.00"}], "subtotal": "2.00"}')["pass"])
         self.assertFalse(demos.receipt_sum_check('{"subtotal": "2.00"}')["pass"])
-        self.assertFalse(demos.protected_terms_check("Northstar, HD 204, 2 pm")["pass"])
+        self.assertFalse(demos.protected_terms_check("Woodgrove, HD 204, 2 pm")["pass"])
         self.assertFalse(demos.code_checks("def other(): pass")[0]["pass"])
 
     def test_native_app_demo_links_match_the_registry(self):

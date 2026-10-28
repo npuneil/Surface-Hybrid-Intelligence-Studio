@@ -17,7 +17,7 @@ internal sealed partial class MainWindow
     private readonly InfoBar _businessInfo = Id(new InfoBar { Severity = InfoBarSeverity.Success, IsClosable = true }, "BusinessExportInfo");
     private TextBlock _bHours = null!, _bCapacity = null!, _bInvestment = null!;
     private readonly TextBlock _bDisclaimer = Id(Small(""), "BusinessDisclaimer");
-    private readonly TextBlock _bState = Id(Small("Enter the customer's assumptions, then calculate."), "BusinessState");
+    private readonly TextBlock _bState = Id(Small("Enter the firm's assumptions, then calculate."), "BusinessState");
     private JsonDocument? _lastBusiness;
     private bool _businessDefaultsApplied;
     private static readonly CultureInfo Usd = CultureInfo.GetCultureInfo("en-US");
@@ -30,7 +30,7 @@ internal sealed partial class MainWindow
         foreach (var p in PlatformGuide.Platforms) cards.With(PlatformCard(p));
 
         var distinctions = CardBorder(Stack(10,
-            H3("Runtime distinctions sellers should keep straight"),
+            H3("Runtime distinctions to keep straight"),
             Body(PlatformGuide.FoundryDistinction, Ink),
             Body(PlatformGuide.GenieDistinction, Ink),
             Body(PlatformGuide.RuntimeNotInferred, Ink),
@@ -147,8 +147,8 @@ internal sealed partial class MainWindow
         _bCapacity.Foreground = Accent;
 
         return Page(Stack(22,
-            Stack(10, Eyebrow("Business case"), H1("Frame the pilot with the customer's own numbers."),
-                Body("Deterministic arithmetic from the local service. Every input is the customer's hypothesis to validate in a pilot; nothing here is a forecast.")),
+            Stack(10, Eyebrow("Business case"), H1("Frame the pilot with the firm's own numbers."),
+                Body("Deterministic arithmetic from the local service. Every input is the firm's hypothesis to validate in a pilot; nothing here is a forecast.")),
             CardBorder(Stack(16, grid, Row(10, _calculate, reset), _bState, _businessError), 22),
             results,
             CardBorder(Stack(8, H3("How to read this"), _bDisclaimer,

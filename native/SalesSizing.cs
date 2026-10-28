@@ -1,6 +1,6 @@
 namespace HybridIntelligenceStudio;
 
-/// <summary>A broad, 100-level workload a seller can pick without knowing model or memory details.</summary>
+/// <summary>A broad, 100-level workload a presenter can pick without knowing model or memory details.</summary>
 internal sealed record SalesWorkload(
     string Id,
     string Name,
@@ -27,7 +27,7 @@ internal sealed record SalesRecommendation(
     string TalkTrack);
 
 /// <summary>
-/// Seller-facing sizing. Maps everyday workloads to a T-shirt size, then runs the exact same
+/// Presenter-facing sizing. Maps everyday workloads to a T-shirt size, then runs the exact same
 /// <see cref="Sizing.Estimate"/> arithmetic as the technical view with its default settings.
 /// </summary>
 internal static class SalesSizing
@@ -45,7 +45,7 @@ internal static class SalesSizing
         new("translation", "Translation", "\uF2B7",
             "Translate emails, documents and chat between languages.", TShirtSize.M,
             "7-8B multilingual model class", "translate", true,
-            "Live demo here: a customer notice is translated into your choice of language on the RTX GPU. A fluent reviewer still checks the meaning."),
+            "Live demo here: an online-banking maintenance notice is translated into your choice of language on the RTX GPU. A fluent reviewer still checks the meaning."),
         new("writing", "Writing & summaries", "\uE70F",
             "Draft emails, briefs and summaries from notes.", TShirtSize.M,
             "7-8B general model class", "brief", true,
@@ -174,7 +174,7 @@ internal static class SalesSizing
         else if (!fits16 && hereFits)
             third = "A 16 GB laptop would not have room for it (estimate). That is where the Surface Laptop Ultra stands out.";
         else if (fits16 && pilot)
-            third = "It also fits a 16 GB laptop (estimate), so a Snapdragon or Intel AI PC pilot is worth exploring; verify the model on that device first. Position the Surface Laptop Ultra when the customer also wants bigger models.";
+            third = "It also fits a 16 GB laptop (estimate), so a Snapdragon or Intel AI PC pilot is worth exploring; verify the model on that device first. Position the Surface Laptop Ultra when the firm also wants bigger models.";
         else
             third = "Check the technical view before committing to a device.";
         return $"{first} {second} {third}";

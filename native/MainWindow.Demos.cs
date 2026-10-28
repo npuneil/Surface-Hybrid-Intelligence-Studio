@@ -105,7 +105,7 @@ internal sealed partial class MainWindow
             new AdaptiveGrid(230, 4, 8).With(_demoPillChat.Root, _demoPillModels.Root, _demoPillRuntime.Root, _demoPillMedia.Root),
             _demoReadinessDetail,
             Set(Row(10, _demoRunAll, _demoRunAllStop), r => r.Margin = new Thickness(0, 4, 0, 0)),
-            Small("Pre-flight runs every demo live once with its default input, so you know what works before the customer arrives. " +
+            Small("Pre-flight runs every demo live once with its default input, so you know what works before the audience arrives. " +
                   "The first pre-flight loads every model and takes a few minutes. The face-off grades each model on its own, so one wrong answer there is a real result."),
             _demoPreflightSummary,
             _demoPreflightList), 20), "DemoReadinessCard");

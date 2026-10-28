@@ -11,22 +11,21 @@ from content import SCENARIOS
 
 # ---------------------------------------------------------------- speech fixtures (rendered by Windows TTS)
 MEETING_SEGMENTS = (
-    ("female", "Thanks for joining the Cedar Services pilot check in. We need owners for the next steps before we close."),
-    ("male", "I will document the current ticket workflow by Friday. We have not measured drafting time or answer quality yet."),
-    ("female", "Maria from the service desk will choose ten sample tickets for the review. We did not agree a due date for that."),
-    ("male", "We also agreed to request a security review, but nobody owns that request yet."),
-    ("female", "The two week local AI pilot is still only a suggestion. Funding is not approved, so that decision stays open."),
-    ("male", "One more item. The warehouse team asked whether transcripts could stay on the laptop. "
-             "I will confirm the data retention policy by Wednesday."),
-    ("female", "Good. I will send these minutes to everyone this afternoon. Thanks, everyone."),
+    ("female", "Thanks for meeting with me today, Jordan. With your consent, I am recording this conversation for my call notes."),
+    ("male", "That is fine. We want to start paying our suppliers in Europe directly from our operating account."),
+    ("female", "I will send you the international wire setup forms by Friday. We have not discussed any fees yet."),
+    ("male", "Our controller, Maria, will gather the last two years of financial statements. We did not agree a date for that."),
+    ("female", "We also agreed that someone should review the daily wire limit, but nobody owns that yet."),
+    ("male", "One more thing. We might want to increase our line of credit next year, but that is only an idea for now."),
+    ("female", "Understood. That decision stays open. I will send these notes to you this afternoon. Thank you."),
 )
 MEMO_SEGMENTS = (
-    ("male", "Field note for Harbor Distribution, dock three. Handheld scanner H seventeen will not sync since "
-             "the network dropped this morning. Battery is at forty percent and I restarted it twice. "
+    ("male", "Field note for the Contoso Bank operations team. Location is teller desk three at the Riverside "
+             "branch. Teller tablet H seventeen will "
+             "not sync since the network dropped this morning. Battery is at forty percent and I restarted it twice. "
              "Please open a priority two ticket and send a replacement charging cradle. "
              "I am on site until three this afternoon."),
 )
-
 
 def script_text(segments):
     return " ".join(text for _, text in segments)
@@ -34,16 +33,16 @@ def script_text(segments):
 
 # ---------------------------------------------------------------- document images (rendered by System.Drawing)
 WORK_ORDER = {
-    "work_order": "WO-48217", "date_reported": "16 Oct 2026", "customer": "Harbor Distribution",
-    "site": "Dock 3, Building B", "asset": "Handheld scanner H-17", "priority": "P2 - High",
+    "work_order": "WO-48217", "date_reported": "16 Oct 2026", "department": "Retail Banking Operations",
+    "site": "Operations Center, Room 114", "asset": "Conference projector P-17", "priority": "P2 - High",
     "reported_by": "Sam Okafor", "technician": "J. Alvarez",
-    "description": "Scanner will not sync after the network outage. Restarted twice. Battery 40%.",
+    "description": "Projector will not connect after the network outage. Restarted twice. Meeting moved to Room 116.",
     "status": "Open",
 }
-WORK_ORDER_CHECK = {"work_order": "WO-48217", "date_reported": "16 Oct 2026", "customer": "Harbor Distribution",
-                    "site": "Dock 3", "asset": "H-17", "priority": "P2", "reported_by": "Okafor",
+WORK_ORDER_CHECK = {"work_order": "WO-48217", "date_reported": "16 Oct 2026", "department": "Retail Banking",
+                    "site": "Room 114", "asset": "P-17", "priority": "P2", "reported_by": "Okafor",
                     "technician": "Alvarez", "description": "network outage", "status": "Open"}
-RECEIPT_ITEMS = (("Working lunch (6)", "72.00"), ("Coffee service", "9.00"), ("Fruit platter", "5.40"))
+RECEIPT_ITEMS = (("Client lunch (6)", "72.00"), ("Coffee service", "9.00"), ("Fruit platter", "5.40"))
 RECEIPT = {"merchant": "Bluebird Cafe & Catering", "date": "14 Oct 2026", "order_number": "2291",
            "subtotal": "86.40", "tax": "7.13", "total": "93.53", "card_last4": "4417"}
 RECEIPT_CHECK = {"merchant": "Bluebird", "date": "14 Oct 2026", "order_number": "2291", "subtotal": "86.40",
@@ -56,12 +55,12 @@ MEDIA_SPEC = {
         {"name": "voice-memo.wav", "kind": "speech", "rate": 16000,
          "segments": [{"voice": v, "text": t, "pause_ms": 300} for v, t in MEMO_SEGMENTS]},
         {"name": "work-order.png", "kind": "form", "width": 1100, "height": 900, "rotate": -1.2,
-         "title": "FIELD SERVICE WORK ORDER",
-         "subtitle": "Harbor Distribution  |  Facilities and devices  |  Fictional form for demonstration",
+         "title": "BANK FACILITIES WORK ORDER",
+         "subtitle": "Woodgrove Bank  |  Corporate facilities  |  Fictional form",
          "rows": [
              {"label": "Work order no.", "value": WORK_ORDER["work_order"]},
              {"label": "Date reported", "value": WORK_ORDER["date_reported"]},
-             {"label": "Customer", "value": WORK_ORDER["customer"]},
+             {"label": "Department", "value": WORK_ORDER["department"]},
              {"label": "Site", "value": WORK_ORDER["site"], "hand": True},
              {"label": "Asset", "value": WORK_ORDER["asset"], "hand": True},
              {"label": "Priority", "value": WORK_ORDER["priority"], "hand": True},
@@ -70,7 +69,7 @@ MEDIA_SPEC = {
              {"label": "Fault description", "value": WORK_ORDER["description"], "hand": True, "wide": True},
              {"label": "Status", "value": WORK_ORDER["status"]},
          ],
-         "footer": "FICTIONAL WORK ORDER  |  Synthetic data for a local AI demonstration  |  No real customer"},
+         "footer": "FICTIONAL WORK ORDER  |  Synthetic data for a local AI demonstration  |  No real institution"},
         {"name": "receipt.png", "kind": "receipt", "width": 620, "height": 640, "rotate": 1.5,
          "merchant": "BLUEBIRD CAFE & CATERING",
          "header": ["418 Harbor Row, Port Ellis", "Tel 555-0142", "14 Oct 2026   12:47", "Order #2291"],
@@ -85,57 +84,61 @@ MEDIA_NAMES = tuple(item["name"] for item in MEDIA_SPEC["files"])
 
 # ---------------------------------------------------------------- text fixtures
 NOTICE = (
-    "FICTIONAL CUSTOMER NOTICE | Northstar Field Services\n"
-    "Planned maintenance on the scheduling portal will take place on Saturday 24 October 2026, "
-    "from 14:00 to 16:00. During this window, new bookings will be paused, but existing appointments "
-    "are not affected. If you have an urgent request, call the service desk and quote reference HD-204. "
-    "We apologise for the inconvenience and thank you for your patience."
+    "FICTIONAL NOTICE | Woodgrove Bank\n"
+    "Planned maintenance on online banking will take place on Saturday 24 October 2026, "
+    "from 14:00 to 16:00. During this window, new branch appointments cannot be booked online, but existing "
+    "appointments are not affected. If you have an urgent request, call customer service and quote reference "
+    "HD-204. We apologise for the inconvenience and thank you for your patience."
 )
-PROTECTED_TERMS = ("Northstar Field Services", "HD-204", "14:00", "16:00")
+PROTECTED_TERMS = ("Woodgrove Bank", "HD-204", "14:00", "16:00")
 LANGUAGES = (("es", "Spanish"), ("fr", "French"), ("de", "German"), ("pt-BR", "Brazilian Portuguese"),
              ("ja", "Japanese"))
 
 POLICIES = (
-    ("POL-01", "Travel booking", "Book travel through the approved portal at least 14 days ahead. Economy class is "
-     "standard for flights under six hours. The hotel limit is 180 dollars per night unless a manager approves an "
-     "exception in writing."),
+    ("POL-01", "Travel booking", "Book business travel through the approved portal at least 14 days ahead. "
+     "Economy class is standard for flights under six hours. The hotel limit is 180 dollars per night unless a "
+     "department head approves an exception in writing."),
     ("POL-02", "Expense claims", "Submit expense claims within 30 days with itemised receipts. Meals are reimbursed "
      "up to 60 dollars per day while travelling. Alcohol is not reimbursable."),
-    ("POL-03", "Lost or stolen devices", "Report a lost or stolen laptop, phone or handheld to the Security "
-     "Operations desk within one hour of noticing, on extension 4400 or security@northstar.example. Do not delay "
-     "the report to keep searching. IT will remotely lock and wipe the device."),
-    ("POL-04", "Data retention", "Customer job records are kept for seven years. Meeting recordings and transcripts "
-     "are deleted after 90 days unless the Legal team places them on legal hold."),
-    ("POL-05", "Overtime", "Overtime must be approved by a shift lead before it is worked. Field technicians are paid "
-     "1.5 times the base rate after 40 hours in a week."),
-    ("POL-06", "Site safety", "Hard hats and high-visibility vests are mandatory at all loading docks. Report any "
-     "injury, however minor, to the site supervisor before the end of the shift."),
-    ("POL-07", "Remote work", "Office staff may work remotely up to three days per week with manager agreement. "
-     "Field roles are site-based. Use the VPN for all internal systems."),
-    ("POL-08", "Software requests", "Request new software through the IT service portal. Security review takes up "
-     "to ten business days. AI tools must be approved by the AI governance group before use with customer data."),
-    ("POL-09", "Training", "Each employee has 24 hours of paid training per year. Safety refresher training is "
-     "mandatory every 12 months for field roles."),
-    ("POL-10", "Purchasing", "Purchases up to 2,500 dollars need one manager approval. Larger purchases need quotes "
-     "from two suppliers and finance approval."),
-    ("POL-11", "Visitors", "Visitors must sign in at reception, wear a visitor badge and be escorted in all "
-     "operational areas."),
+    ("POL-03", "Lost or stolen devices", "Report a lost or stolen laptop, tablet or phone used for bank work "
+     "to the IT Security Operations desk within one hour of noticing, on extension 4400 or "
+     "security@woodgrove.example. Do not delay the report to keep searching. IT will remotely lock and wipe the "
+     "device."),
+    ("POL-04", "Data retention", "Customer account records are kept for seven years after an account closes. "
+     "Meeting recordings and transcripts are deleted after 90 days unless the Legal department places them "
+     "on legal hold."),
+    ("POL-05", "Branch staffing", "Branch staff may work up to 40 scheduled hours per week. "
+     "Overtime needs approval from the branch manager."),
+    ("POL-06", "Cash handling", "Two employees must be present whenever the vault is opened. Report any cash "
+     "difference, however small, to the branch manager before the end of the day."),
+    ("POL-07", "Remote work", "Staff may work remotely up to three days per week with manager agreement. "
+     "Customer-facing branch roles are on site during branch hours. Use the VPN for all internal systems."),
+    ("POL-08", "Software requests", "Request new software through the IT service portal. Security and model risk "
+     "review takes up to ten business days. AI tools must be approved by the AI governance committee before use "
+     "with customer data."),
+    ("POL-09", "Training", "Each employee has 24 hours of paid professional development per year. "
+     "Privacy and information security training is mandatory every 12 months for anyone with access to customer records."),
+    ("POL-10", "Purchasing", "Purchases up to 2,500 dollars need one budget manager approval. Larger purchases need "
+     "quotes from two suppliers and procurement approval."),
+    ("POL-11", "Visitors", "Visitors to operations centers must sign in at the front desk, wear a visitor badge and be "
+     "escorted at all times."),
     ("POL-12", "Customer complaints", "Acknowledge customer complaints within one business day and log them in the "
-     "service desk with a reference number. Escalate unresolved complaints to the regional manager after five "
-     "business days."),
+     "case system with a reference number. Escalate unresolved complaints to the customer advocacy office after "
+     "five business days."),
 )
-DOCS_QUESTION = "I think I left my work laptop on the train. What should I do, and how fast?"
+DOCS_QUESTION = "I think I left my work laptop on the commuter train. What should I do, and how fast?"
 DOCS_EXPECTED = "POL-03"
-QUERY_INSTRUCTION = "Instruct: Given an employee question, retrieve the company policy that answers it\nQuery: "
+QUERY_INSTRUCTION = "Instruct: Given a staff question, retrieve the bank policy that answers it\nQuery: "
 
+EMAIL_OFFICE = "Woodgrove Bank customer care team"
 EMAIL = (
     "FICTIONAL EMAIL\n"
     "From: Dana Whitfield <dana.whitfield@example.com>\n"
-    "To: Northstar service desk\n"
-    "Subject: Billing address change\n\n"
-    "Hello, please update my billing address to 1847 Lakeview Terrace, Port Ellis, PE4 7QT. My account number is "
+    f"To: {EMAIL_OFFICE}\n"
+    "Subject: Mailing address change\n\n"
+    "Hello, please update my mailing address to 1847 Lakeview Terrace, Port Ellis, PE4 7QT. My account number is "
     "ACCT-7781-2209 and my date of birth is 3 March 1984 if you need to verify me. You can reach me on 555-0187 "
-    "after six. My colleague Marcus Lee (marcus.lee@example.com) approved the change.\n"
+    "after six. My relationship manager Marcus Lee (marcus.lee@example.com) is copied on this request.\n"
     "Thanks, Dana"
 )
 IDENTIFIERS = (
@@ -151,27 +154,29 @@ IDENTIFIERS = (
 )
 
 INBOX = (
-    ("E1", "Scanner offline at Dock 3", "Handheld H-17 has not synced since 07:10 and drivers are waiting to load. "
-     "Please help urgently.", "incident"),
-    ("E2", "New starter laptop", "Can we order a laptop and headset for a new planner starting on 2 November?",
+    ("E1", "Branch Wi-Fi down", "Tellers at the Riverside branch have had no Wi-Fi since 07:10 and the branch opens "
+     "at 09:00. Please help urgently.", "incident"),
+    ("E2", "New banker laptop", "Can we order a laptop and headset for a new relationship manager starting on 2 November?",
      "request"),
-    ("E3", "Invoice INV-5521 query", "Our October invoice shows 14 devices but we only have 12. Please check.",
-     "billing"),
-    ("E4", "Thank you", "The technician at Port Ellis was excellent yesterday. Just wanted to say thanks.", "feedback"),
+    ("E3", "Invoice INV-5521 query", "Our October invoice shows 14 software licences but we only have 12. "
+     "Please check.", "billing"),
+    ("E4", "Thank you", "The technician who fixed the branch lobby display yesterday was excellent. Just wanted "
+     "to say thanks.", "feedback"),
     ("E5", "You have won a gift card", "Click this link within 24 hours to claim your prize.", "spam"),
-    ("E6", "VPN keeps dropping", "Three office staff cannot stay connected to the VPN today; they can work offline "
+    ("E6", "VPN keeps dropping", "Three loan officers cannot stay connected to the VPN today; they can work offline "
      "for now.", "incident"),
 )
 CATEGORIES = ("incident", "request", "billing", "feedback", "spam")
 
 SITES = ("Atlas", "Birch", "Cedar", "Delta", "Harbor")
 PUZZLE = (
-    "Plan a five-week pilot rollout, one site per week, for the sites Atlas, Birch, Cedar, Delta and Harbor. "
-    "Constraints: (1) Delta needs a network upgrade that finishes at the end of week 2, so Delta cannot be before "
-    "week 3. (2) Harbor must be in the week immediately after Cedar. (3) Atlas cannot be in week 1 or week 5. "
-    "(4) Birch must come before Atlas. (5) Delta cannot be in week 5 because of a stock audit. (6) Cedar cannot be "
+    "Plan a five-week pilot rollout, one branch per week, for the branches Atlas, Birch, Cedar, Delta and "
+    "Harbor. Constraints: (1) Delta needs a network upgrade that finishes at the end of week 2, so Delta cannot be "
+    "before week 3. (2) Harbor must be in the week immediately after Cedar. (3) Atlas cannot be in week 1 or week 5. "
+    "(4) Birch must come before Atlas. (5) Delta cannot be in week 5 because of quarter-end close. (6) Cedar cannot be "
     "in week 1. Find the only schedule that satisfies every constraint. Explain the key deductions in at most five "
-    "short bullets, then finish with one line exactly in this format: ORDER: site, site, site, site, site"
+    "short bullets, then finish with one line exactly in this format: ORDER: branch, branch, branch, "
+    "branch, branch"
 )
 PUZZLE_SYSTEM = ("You solve scheduling puzzles carefully and concisely. Use only the stated constraints. "
                  "Keep the explanation under 120 words and always end with the ORDER line.")
@@ -216,89 +221,91 @@ def _step(title, role):
 
 DEMOS = {
     "meeting": {
-        "title": "Meeting to minutes and actions", "category": "Listen", "glyph": "\uE720", "workload": "transcription",
-        "pitch": "A recorded meeting becomes minutes and an action register without leaving the laptop.",
-        "proof": "Speech recognition and summarising both run on the RTX GPU; word accuracy is measured against the script.",
+        "title": "Client meeting to call notes and actions", "category": "Listen", "glyph": "\uE720", "workload": "transcription",
+        "pitch": "Tier 1 and Tier 2 on one PC: a recorded client meeting becomes call notes and an action list without leaving the laptop.",
+        "proof": "Speech recognition and drafting both run on the RTX GPU; word accuracy is measured against the script.",
         "input": {"kind": "audio", "media": "meeting.wav",
-                  "label": "Synthetic two-voice meeting recorded with Windows text-to-speech"},
+                  "label": "Synthetic two-voice client meeting recorded with Windows text-to-speech"},
         "source": script_text(MEETING_SEGMENTS),
-        "prompt": ("Turn this meeting transcript into minutes with three sections: Summary (two sentences), "
+        "prompt": ("Turn this client meeting transcript into call notes with three sections: Summary (two sentences), "
                    "Actions (a table with columns Action, Owner, Due), and Open decisions. Use only what was said. "
                    "Write 'Not assigned' or 'Not agreed' when an owner or date is missing."),
-        "system": ("You write concise, factual meeting minutes from a machine transcript. Do not invent owners, "
-                   "dates, approvals or benefits. A suggestion is not an approved action. Keep it under 170 words. "
-                   "Human review is required before the minutes are sent."),
+        "system": ("You write concise, factual client call notes from a machine transcript. Do not invent owners, "
+                   "dates, approvals, fees, rates or credit decisions. An idea is not an approved action. Keep it under "
+                   "170 words. The banker must review the notes before they are sent or filed."),
         "max_tokens": 700,
-        "steps": [_step("Transcribe the recording", "asr"), _step("Write minutes and actions", "chat")],
+        "steps": [_step("Transcribe the meeting (Tier 1)", "asr"), _step("Draft call notes and actions (Tier 2)", "chat")],
         "rehearsal": [script_text(MEETING_SEGMENTS), (
-            "Summary\nThe Cedar Services pilot check-in assigned owners for documenting the workflow and choosing "
-            "sample tickets. Funding for the two-week pilot is not approved.\n\n"
+            "Summary\nJordan's business wants to pay European suppliers directly from its operating account. A larger "
+            "line of credit was mentioned as an idea only; nothing was approved.\n\n"
             "Actions\nAction | Owner | Due\n"
-            "Document the current ticket workflow | IT lead | Friday\n"
-            "Choose ten sample tickets for the review | Maria (service desk) | Not agreed\n"
-            "Request a security review | Not assigned | Not agreed\n"
-            "Confirm the data retention policy | IT lead | Wednesday\n"
-            "Send the minutes | Program lead | This afternoon\n\n"
-            "Open decisions\nWhether to fund the two-week local AI pilot.")],
+            "Send the international wire setup forms | Relationship manager | Friday\n"
+            "Gather the last two years of financial statements | Maria (controller) | Not agreed\n"
+            "Review the daily wire limit | Not assigned | Not agreed\n"
+            "Send the call notes | Relationship manager | This afternoon\n\n"
+            "Open decisions\nWhether to increase the line of credit next year.\n\n"
+            "Banker review required before the notes are sent.")],
     },
     "voice-memo": {
         "title": "Voice memo to work order", "category": "Listen", "glyph": "\uE707", "workload": "field",
         "pitch": "A technician talks; a structured work order comes back, ready for a person to check.",
         "proof": "Speech to text, then text to structured fields, on the GPU; fields are checked against the memo.",
         "input": {"kind": "audio", "media": "voice-memo.wav",
-                  "label": "Synthetic field voice memo recorded with Windows text-to-speech"},
+                  "label": "Synthetic branch voice memo recorded with Windows text-to-speech"},
         "source": script_text(MEMO_SEGMENTS),
         "prompt": ("Convert this voice memo transcript into a work order. Return only one JSON object with the keys "
-                   "customer, location, asset, issue, actions_taken, battery_percent, priority, parts_requested and "
+                   "department, location, asset, issue, actions_taken, battery_percent, priority, parts_requested and "
                    "technician_available_until. Use null when the memo does not say."),
-        "system": ("You turn field voice memos into structured work orders. Use only what the transcript says. "
+        "system": ("You turn branch voice memos into structured work orders. Use only what the transcript says. "
                    "Do not invent ticket numbers, causes or fixes. Return JSON only."),
         "max_tokens": 400,
         "steps": [_step("Transcribe the voice memo", "asr"), _step("Structure the work order", "chat")],
         "rehearsal": [script_text(MEMO_SEGMENTS), (
-            '{\n  "customer": "Harbor Distribution",\n  "location": "Dock 3",\n  "asset": "Handheld scanner H-17",\n'
+            '{\n  "department": "Contoso Bank operations team",\n  "location": "Teller desk 3, Riverside branch",\n  "asset": "Teller tablet H-17",\n'
             '  "issue": "Will not sync since the network dropped this morning",\n'
             '  "actions_taken": "Restarted twice",\n  "battery_percent": 40,\n  "priority": "P2",\n'
             '  "parts_requested": "Replacement charging cradle",\n'
             '  "technician_available_until": "Three this afternoon"\n}')],
-        "check_fields": {"customer": "Harbor Distribution", "location": "dock 3", "asset": "H17",
+        "check_fields": {"department": "operations", "location": "desk 3", "asset": "H17",
                          "actions_taken": "restarted", "battery_percent": "40", "priority": "2",
                          "parts_requested": "charging cradle"},
     },
     "translate": {
         "title": "Translate on the device", "category": "Write", "glyph": "\uF2B7", "workload": "translation",
-        "pitch": "Customer notices and emails translated locally, keeping names, references and times intact.",
+        "pitch": "Customer notices translated locally, keeping names, references and times intact.",
         "proof": "Runs on the selected local model; protected terms are checked automatically, meaning needs a fluent reviewer.",
         "input": {"kind": "text", "label": "Synthetic customer notice"},
         "source": NOTICE,
-        "prompt": ("Translate the notice into {language}. Keep the company name, the reference HD-204 and the times "
-                   "14:00 and 16:00 exactly as written. Return only the translation."),
+        "prompt": ("Translate the notice into {language}. Keep the brand name Woodgrove Bank in English, the "
+                   "reference HD-204 and the times 14:00 and 16:00 exactly as written. Return only the translation."),
         "system": ("You are a professional translator running locally. Translate faithfully and naturally. "
-                   "Do not add or remove information. Keep names, references, numbers and 24-hour times unchanged."),
+                   "Do not add or remove information. Never translate brand names. Keep names, references, numbers "
+                   "and 24-hour times unchanged."),
         "max_tokens": 600,
         "options": [{"id": code, "label": name} for code, name in LANGUAGES],
         "option_label": "Target language",
         "steps": [_step("Translate", "chat")],
         "rehearsal": [(
-            "AVISO A CLIENTES | Northstar Field Services\n"
-            "El mantenimiento programado del portal de citas se realizará el sábado 24 de octubre de 2026, de "
-            "14:00 a 16:00. Durante este periodo se pausarán las nuevas reservas, pero las citas existentes no se "
-            "verán afectadas. Si tiene una solicitud urgente, llame al servicio de asistencia e indique la "
+            "AVISO | Woodgrove Bank\n"
+            "El mantenimiento programado de la banca en línea se realizará el sábado 24 de octubre de 2026, de "
+            "14:00 a 16:00. Durante este periodo no se podrán reservar en línea nuevas citas en sucursal, pero las "
+            "citas existentes no se verán afectadas. Si tiene una solicitud urgente, llame al servicio de atención "
+            "al cliente e indique la "
             "referencia HD-204. Disculpe las molestias y gracias por su paciencia.")],
     },
     "brief": {
         "title": "Executive brief from notes", "category": "Write", "glyph": "\uE70F", "workload": "writing",
-        "pitch": "Discovery notes become a cited executive agenda in seconds, on the laptop.",
+        "pitch": "Discovery notes become a cited line-of-business and CIO agenda, on the laptop.",
         "proof": "Every point must cite its source note; the required no-benefit-claimed sentence is checked.",
-        "input": {"kind": "text", "label": "Synthetic account notes (three sources)"},
+        "input": {"kind": "text", "label": "Synthetic bank notes (three sources)"},
         "source": SCENARIOS["brief"]["source"], "prompt": SCENARIOS["brief"]["prompt"],
         "system": SCENARIOS["brief"]["system"], "max_tokens": 650,
         "steps": [_step("Draft the brief", "chat")],
         "rehearsal": [SCENARIOS["brief"]["rehearsal"]],
     },
     "redact": {
-        "title": "Redact before it leaves the device", "category": "Protect", "glyph": "\uE72E", "workload": "writing",
-        "pitch": "Personal data is stripped locally, so only a clean version is ever shared with a cloud service.",
+        "title": "De-identify before escalating (Tier 3)", "category": "Protect", "glyph": "\uE72E", "workload": "writing",
+        "pitch": "Before a complex question escalates to the cloud, customer identifiers are stripped inside the firm; only the de-identified text would leave.",
         "proof": "Counts how many of the nine known synthetic identifiers survive. This demo sends nothing anywhere.",
         "input": {"kind": "text", "label": "Synthetic customer email with personal data"},
         "source": EMAIL,
@@ -307,53 +314,54 @@ DEMOS = {
                    "[DATE_OF_BIRTH]. Keep all other wording unchanged. Return only the redacted email."),
         "system": ("You are a privacy filter running locally. Replace personal identifiers (people's names, email "
                    "addresses, phone numbers, street addresses, postcodes, account numbers, dates of birth) with "
-                   "placeholders. Company names and business wording stay. Never echo an identifier."),
+                   "placeholders. Institution names and office wording stay. Never echo an identifier."),
         "max_tokens": 450,
         "steps": [_step("Redact personal data", "chat")],
         "rehearsal": [(
-            "FICTIONAL EMAIL\nFrom: [NAME] <[EMAIL]>\nTo: Northstar service desk\nSubject: Billing address change\n\n"
-            "Hello, please update my billing address to [ADDRESS], Port Ellis, [POSTCODE]. My account number is "
+            "FICTIONAL EMAIL\nFrom: [NAME] <[EMAIL]>\nTo: Woodgrove Bank customer care team\n"
+            "Subject: Mailing address change\n\n"
+            "Hello, please update my mailing address to [ADDRESS], Port Ellis, [POSTCODE]. My account number is "
             "[ACCOUNT] and my date of birth is [DATE_OF_BIRTH] if you need to verify me. You can reach me on [PHONE] "
-            "after six. My colleague [NAME] ([EMAIL]) approved the change.\nThanks, [NAME]")],
+            "after six. My relationship manager [NAME] ([EMAIL]) is copied on this request.\nThanks, [NAME]")],
     },
     "triage": {
         "title": "Inbox triage to structured data", "category": "Write", "glyph": "\uE715", "workload": "writing",
-        "pitch": "A morning's inbox sorted into incidents, requests and noise, as data a workflow can use.",
+        "pitch": "A morning's bank IT inbox sorted into incidents, requests and noise, as data a workflow can use.",
         "proof": "Output must be valid JSON; categories are compared with the fixture's labels.",
         "input": {"kind": "text", "label": "Six synthetic emails"},
         "source": "FICTIONAL INBOX\n" + "\n".join(f"[{i}] Subject: {s}. {b}" for i, s, b, _ in INBOX),
         "prompt": ("Triage these six emails. Return only a JSON array with one object per email, using the keys id, "
                    "category, urgency and next_step. category must be one of incident, request, billing, feedback or "
                    "spam. urgency must be high, medium or low. next_step is one short sentence."),
-        "system": ("You triage a service desk inbox. Classify each email from its text only. Do not reply to anyone, "
+        "system": ("You triage an IT service desk inbox. Classify each email from its text only. Do not reply to anyone, "
                    "click links or invent details. Return JSON only."),
         "max_tokens": 600,
         "steps": [_step("Triage the inbox", "chat")],
         "rehearsal": ['[\n' + ",\n".join(
             f'  {{"id": "{i}", "category": "{c}", "urgency": "{u}", "next_step": "{n}"}}' for i, c, u, n in (
-                ("E1", "incident", "high", "Dispatch support to check H-17 sync at Dock 3."),
-                ("E2", "request", "medium", "Raise a hardware order for the new planner."),
-                ("E3", "billing", "medium", "Ask billing to reconcile the device count on INV-5521."),
+                ("E1", "incident", "high", "Dispatch network support to the Riverside branch before 09:00."),
+                ("E2", "request", "medium", "Raise a hardware order for the new relationship manager."),
+                ("E3", "billing", "medium", "Ask billing to reconcile the licence count on INV-5521."),
                 ("E4", "feedback", "low", "Share the thanks with the technician's manager."),
                 ("E5", "spam", "low", "Report as phishing and delete; do not click the link."),
                 ("E6", "incident", "medium", "Open a network ticket for the VPN drops."))) + "\n]"],
     },
     "ask-docs": {
         "title": "Ask your documents", "category": "Know", "glyph": "\uE8A5", "workload": "documents",
-        "pitch": "Questions answered from approved company documents, with citations, on the laptop.",
+        "pitch": "Questions answered from approved bank policies, with citations, on the laptop.",
         "proof": "GPU embeddings find the right policy (checked), then the local model answers only from it.",
-        "input": {"kind": "text", "label": "Twelve synthetic company policies"},
+        "input": {"kind": "text", "label": "Twelve synthetic bank policies"},
         "source": "\n".join(f"[{pid}] {title}: {text}" for pid, title, text in POLICIES),
         "prompt": DOCS_QUESTION, "prompt_label": "Question",
-        "system": ("Answer the employee's question only from the supplied policy excerpts. Cite the policy ID in "
+        "system": ("Answer the staff member's question only from the supplied policy excerpts. Cite the policy ID in "
                    "square brackets after each fact, for example [POL-03]. If the excerpts do not answer the "
                    "question, say so. Keep it under 90 words."),
         "max_tokens": 300,
         "steps": [_step("Search the documents", "embed"), _step("Answer with citations", "chat")],
         "rehearsal": [
             "1. POL-03 Lost or stolen devices\n2. POL-08 Software requests\n3. POL-07 Remote work",
-            ("Report the lost laptop to the Security Operations desk within one hour of noticing, on extension "
-             "4400 or security@northstar.example [POL-03]. Do not delay the report to keep searching; IT will "
+            ("Report the lost laptop to the IT Security Operations desk within one hour of noticing, on extension "
+             "4400 or security@woodgrove.example [POL-03]. Do not delay the report to keep searching; IT will "
              "remotely lock and wipe the device [POL-03].")],
     },
     "vision": {
@@ -368,7 +376,7 @@ DEMOS = {
         "documents": {
             "work-order": {"media": "work-order.png", "check": WORK_ORDER_CHECK, "prompt": (
                 "Extract the fields from this scanned work order as one JSON object with exactly these keys: "
-                "work_order, date_reported, customer, site, asset, priority, reported_by, technician, description, "
+                "work_order, date_reported, department, site, asset, priority, reported_by, technician, description, "
                 "status. Copy each value exactly as printed or handwritten. Use null for a missing value. "
                 "Return only JSON.")},
             "receipt": {"media": "receipt.png", "check": RECEIPT_CHECK, "prompt": (
@@ -391,7 +399,7 @@ DEMOS = {
         "title": "Local coding assistant", "category": "Build", "glyph": "\uE943", "workload": "coding",
         "pitch": "A 14-billion-parameter coding model drafts and explains code with no source leaving the laptop.",
         "proof": "Runs on the RTX GPU. The code is displayed for review and is never executed by this app.",
-        "input": {"kind": "text", "label": "Synthetic service-desk requirement"},
+        "input": {"kind": "text", "label": "Synthetic bank IT requirement"},
         "source": SCENARIOS["code"]["source"], "prompt": SCENARIOS["code"]["prompt"],
         "system": SCENARIOS["code"]["system"], "max_tokens": 1600,
         "steps": [_step("Draft the code", "chat")],

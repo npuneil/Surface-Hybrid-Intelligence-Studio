@@ -354,7 +354,7 @@ class DemoRunner:
         if minutes is not FAILED and not edited:
             flagged = "not assigned" in minutes.lower()
             yield demos.check("Unowned action marked 'Not assigned'", "Yes" if flagged else "No", flagged,
-                              "Nobody took the security review; the minutes must not invent an owner.")
+                              "Nobody owns the wire-limit review; the notes must not invent an owner.")
 
     def _live_voice_memo(self, prompt, option, edited):
         demo = demos.DEMOS["voice-memo"]
@@ -423,9 +423,9 @@ class DemoRunner:
         if output is FAILED:
             return
         yield demos.leak_check(output)
-        kept = "Northstar service desk" in output
-        yield demos.check("Business wording kept", "Yes" if kept else "No", kept,
-                          "The company name and request must survive; only personal data is replaced.")
+        kept = demos.EMAIL_OFFICE in output
+        yield demos.check("Office wording kept", "Yes" if kept else "No", kept,
+                          "The office name and request must survive; only personal data is replaced.")
 
     def _live_triage(self, prompt, option, edited):
         output = yield from self._text_demo("triage", prompt)

@@ -20,7 +20,7 @@ internal sealed record Lesson(
     string? SizingLink = null);
 
 /// <summary>
-/// "Coding as a second language": an optional onboarding track that teaches sellers to read code like a new language
+/// "Coding as a second language": an optional onboarding track that teaches bankers, operations and technology staff to read code like a new language
 /// (vocabulary, grammar, sentences, conversation). Code is displayed for learning and never executed by this app.
 /// </summary>
 internal static class CodingTrack
@@ -28,8 +28,8 @@ internal static class CodingTrack
     internal const string TutorScenario = "tutor";
 
     internal const string TutorIntro =
-        "Explain this Python code in plain English for a seller who is new to code. Give a one-sentence summary, " +
-        "then a short note for each line, then one everyday analogy, then one sentence the seller could say to a customer. " +
+        "Explain this Python code in plain English for a learner who is new to code. Give a one-sentence summary, " +
+        "then a short note for each line, then one everyday analogy, then one sentence the learner could say to a colleague. " +
         "Do not run the code or claim it was run.";
 
     internal const string Promise =
@@ -41,33 +41,33 @@ internal static class CodingTrack
         new("variables", "Vocabulary", "Variables: naming things",
             "Every script starts by naming the facts it works with. Spot the names and you know what a program cares about.",
             "A variable is a labelled box: the label is the name, and what is inside is the value.",
-            "account = \"Northstar Field Services\"\nmanagers = 240\nsummaries_per_day = 5",
+            "bank = \"Woodgrove Bank\"\nadvisors = 240\nsummaries_per_day = 5",
             [
-                new("account = \"Northstar Field Services\"", "Stores some text under the name account. Quotes mark text, which programmers call a string."),
-                new("managers = 240", "Stores the number 240 under the name managers. A single = means 'store this', not 'is equal to'."),
+                new("bank = \"Woodgrove Bank\"", "Stores some text under the name bank. Quotes mark text, which programmers call a string."),
+                new("advisors = 240", "Stores the number 240 under the name advisors. A single = means 'store this', not 'is equal to'."),
                 new("summaries_per_day = 5", "Names use underscores instead of spaces so the computer reads them as one word."),
             ],
             "The script starts by naming the facts it works with, so anyone can check its assumptions.",
-            new("What does managers = 240 do?",
-                ["Stores 240 under the name managers", "Checks whether managers is equal to 240", "Adds 240 new managers"], 0,
+            new("What does advisors = 240 do?",
+                ["Stores 240 under the name advisors", "Checks whether advisors is equal to 240", "Hires 240 new advisors"], 0,
                 "A single = stores a value. Checking whether two things are equal uses ==, which is the next lesson.")),
 
         new("decisions", "Grammar", "Decisions: if and else",
-            "Business rules such as approval thresholds and escalation paths become if/else decisions in code.",
-            "Like a decision tree in a support script: if this is true, do that; otherwise, do something else.",
-            "severity = \"critical\"\nif severity == \"critical\":\n    print(\"Page the on-call engineer\")\nelse:\n    print(\"Add to the normal queue\")",
+            "Bank procedures such as escalation paths and service levels become if/else decisions in code.",
+            "Like a decision tree in a help desk script: if this is true, do that; otherwise, do something else.",
+            "severity = \"critical\"\nif severity == \"critical\":\n    print(\"Page the on-call technician\")\nelse:\n    print(\"Add to the normal queue\")",
             [
                 new("if severity == \"critical\":", "Asks a yes/no question. == compares two values; the colon starts the 'then' part."),
-                new("    print(\"Page the on-call engineer\")", "Indented lines belong to the if. Python uses indentation the way writing uses paragraphs."),
+                new("    print(\"Page the on-call technician\")", "Indented lines belong to the if. Python uses indentation the way writing uses paragraphs."),
                 new("else:", "What happens when the answer is no."),
             ],
-            "Business rules become if/else decisions in code, so they can be read and reviewed line by line.",
+            "Bank procedures become if/else decisions in code, so they can be read and reviewed line by line.",
             new("In Python, what does == do?",
                 ["Compares two values", "Stores a value", "Adds two numbers"], 0,
                 "== asks 'are these equal?'. A single = stores a value.")),
 
         new("loops", "Grammar", "Loops: do it for each one",
-            "Most automation starts with a loop: the same steps applied to every ticket, invoice or record.",
+            "Most automation starts with a loop: the same steps applied to every ticket, form or record.",
             "Like working through an inbox: open each message in turn and apply the same steps.",
             "tickets = [\"T-101\", \"T-102\", \"T-103\"]\nfor ticket in tickets:\n    print(\"Reviewing\", ticket)",
             [
@@ -83,10 +83,10 @@ internal static class CodingTrack
         new("functions", "Sentences", "Functions: reusable recipes",
             "Software is built from small named functions. When a developer says 'we'll add a function', this is what they mean.",
             "A function is a recipe card: give it ingredients (inputs) and it returns the dish (output) the same way every time.",
-            "def daily_summaries(managers, per_manager):\n    return managers * per_manager\n\ntotal = daily_summaries(240, 5)\nprint(total)",
+            "def daily_summaries(advisors, per_advisor):\n    return advisors * per_advisor\n\ntotal = daily_summaries(240, 5)\nprint(total)",
             [
-                new("def daily_summaries(managers, per_manager):", "def defines a recipe named daily_summaries with two inputs."),
-                new("    return managers * per_manager", "Multiplies the two inputs (* means multiply) and hands back the answer."),
+                new("def daily_summaries(advisors, per_advisor):", "def defines a recipe named daily_summaries with two inputs."),
+                new("    return advisors * per_advisor", "Multiplies the two inputs (* means multiply) and hands back the answer."),
                 new("total = daily_summaries(240, 5)", "Uses the recipe with 240 and 5, and stores the answer under the name total."),
                 new("print(total)", "Would show 1200 on screen."),
             ],
@@ -110,7 +110,7 @@ internal static class CodingTrack
                 "Square brackets with a key look up that one field's value.")),
 
         new("apis", "Conversation", "APIs: how programs talk",
-            "Customers ask about integrations. An API is the agreed way two programs talk, and the first thing an architect will ask about.",
+            "Bank IT teams ask about integrations with core banking and CRM systems. An API is the agreed way two programs talk, and the first thing an architect will ask about.",
             "An API is like a restaurant menu and waiter: you order from a fixed list, and the kitchen sends back a standard plate.",
             "status = get(\"http://127.0.0.1:8790/api/status\")\nprint(status[\"engine\"][\"state\"])",
             [
@@ -121,11 +121,11 @@ internal static class CodingTrack
             ],
             "This studio's screen talks to a local AI service through an API on the laptop itself, at 127.0.0.1.",
             new("What does the address 127.0.0.1 mean?",
-                ["This computer", "A cloud data centre", "The customer's website"], 0,
+                ["This computer", "A cloud data centre", "The bank's website"], 0,
                 "127.0.0.1 is the loopback address: the request goes to a program on the same machine.")),
 
         new("ai-words", "Conversation", "AI words: parameters, bits and memory",
-            "Customers will ask 'how big a model can it run?'. Three words, parameters, bits and memory, answer most of it.",
+            "Business and IT leaders will ask 'how big a model can it run?'. Three words, parameters, bits and memory, answer most of it.",
             "Bits are like photo compression: fewer bits per number makes the model smaller, with some loss of detail.",
             "parameters_billions = 14\nbits = 4\nweight_gib = parameters_billions * 1e9 * bits / 8 / 2**30\nprint(round(weight_gib, 2))",
             [

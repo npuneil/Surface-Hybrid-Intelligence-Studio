@@ -12,12 +12,12 @@ internal sealed partial class MainWindow
 
     private FrameworkElement BuildIndustries()
     {
-        _industryGallery.Children.Add(Body("Connect to the local service to load the industry scenarios."));
+        _industryGallery.Children.Add(Body("Connect to the local service to load the banking scenarios."));
         var forge = Id(Primary("Open PPTX Offline Generator"), "IndustryOpenForge");
         forge.Click += (_, _) => OpenPptxForge();
         return Page(Stack(22,
-            Stack(10, Eyebrow("Industry scenarios"), H1("Make local AI relevant to their work."),
-                Body("Four fictional industry workflows turn supplied notes into reviewable drafts on this laptop's RTX GPU. "
+            Stack(10, Eyebrow("Banking scenarios"), H1("Make local AI relevant across the firm."),
+                Body("Six fictional banking workflows across consumer, commercial, markets, wealth and model risk teams, from card disputes to settlement breaks, turn supplied notes into reviewable drafts on this laptop's RTX GPU. "
                     + "Run a workflow, then prepare a source-grounded presentation brief for your offline PowerPoint generator.")),
             CardBorder(Stack(12,
                 Row(10, Glyph("\uE8A5", 22, Accent), H2("PPTX Offline Generator - Offline PPTX Forge")),
@@ -55,11 +55,11 @@ internal sealed partial class MainWindow
                 Eyebrow(scenario.Industry!), H2(scenario.Title),
                 Text(scenario.Client + " - fictional organization", 13, Muted, FontWeights.SemiBold),
                 Body(scenario.DeckObjective ?? ""),
-                Small("Text-only drafting from supplied synthetic notes. No business-system connection, real records or automated decisions."),
+                Small("Text-only drafting from supplied synthetic notes. No core banking or CRM connection, no real customers or account data, and no automated decisions."),
                 notes, run, prepare, export), 22), "IndustryCard_" + scenario.Key));
         }
         if (cards.Children.Count == 0)
-            _industryGallery.Children.Add(Body("No industry scenarios were provided by the local service. Restart it with the updated studio files."));
+            _industryGallery.Children.Add(Body("No banking scenarios were provided by the local service. Restart it with the updated studio files."));
         else _industryGallery.Children.Add(cards);
     }
 

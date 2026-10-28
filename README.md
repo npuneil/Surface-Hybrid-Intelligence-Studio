@@ -1,15 +1,77 @@
-# Surface Hybrid Intelligence Studio | Surface Laptop Ultra
+# Surface Hybrid Intelligence x Zava Financial | Surface Laptop Ultra
 
-A native **WinUI 3** executive showcase: live local GPU inference, twelve
-one-click **live demos** (speech, vision, document search, translation, coding
-and reasoning on the RTX GPU), a **Hybrid router** that shows what stays on the
-PC and what would go to the cloud, a **GPU speedometer** and run of show, a
-**Build on Surface** hub with a loopback OpenAI-compatible endpoint and starter
-kits, interactive T-shirt model sizing, platform-fit use cases, and an
-assumption-driven capacity calculator. The original web presentation remains
-available as a companion.
-Independent seller-enablement prototype, not a product announcement or endorsement.
-The conceptual device illustration is original, not a product photograph.
+A native **WinUI 3** local AI showcase, tailored for **Zava Financial**, a fictional
+global financial services firm. Built for line-of-business leaders, CIOs, CDAOs,
+CISOs, model risk and technology teams, it adds
+a three-tier **illustrative banking reference architecture** (smart capture at the
+client meeting, in-firm drafting, cloud support only for de-identified complex
+questions), six fictional **banking scenarios** (card dispute intake, KYC refresh, treasury onboarding,
+markets settlement breaks, wealth review preparation and model risk documentation
+readiness), twelve one-click **live demos** (including a synthetic
+client meeting transcribed and drafted into call notes and actions on the RTX GPU),
+a **Hybrid router** that shows what stays in the firm and what de-identified query
+would go to the cloud, a **GPU speedometer** and run of show, a **Build on Surface**
+hub, T-shirt model sizing, platform-fit use cases and an assumption-driven capacity
+calculator. Independent demonstration prototype, not a product announcement or
+endorsement. The conceptual device illustration is original, not a product photograph.
+
+## The Zava Financial executive briefing
+
+Prepared as a **Zava Financial** executive briefing, theme *Hybrid AI for global banking*.
+Zava Financial is a fictional global financial services firm, not a real company, and
+the architecture is illustrative rather than a description of any bank's systems.
+Every firm, client, account and record in the app is fictional (Zava Financial,
+Woodgrove Bank, Contoso Bank and similar). To brief a real customer, generate a
+separate edition with its own manifest (see *Editions and scale-out harness*) and use
+the customer's name as text only: no logos, marks or affiliation claims.
+
+The earlier cross-industry studio (manufacturing, insurance, retail and public sector
+scenarios) remains available as release
+[v1.0.0](https://github.com/npuneil/Surface-Hybrid-Intelligence-Studio/releases/tag/v1.0.0).
+
+Guardrails:
+
+- Synthetic clients only: no real customers, account data or NPI.
+- Drafts only: credit, lending, account-opening, dispute, fraud, AML, trade-booking,
+  model-approval and investment decisions stay with authorized people.
+- Not financial, legal or investment advice, and no suitability, risk-rating or
+  suspicious-activity determination.
+- No regulatory or compliance determination. De-identification removes structured
+  identifiers only and is not certified. No core banking, CRM or payments
+  connection is made.
+
+Suggested five-minute flow: **Firm overview** reference architecture ->
+**Run client meeting capture** (Tier 1) -> **Draft a KYC refresh checklist** (Tier 2) ->
+**Route a complex question** in the Hybrid router (escalate, NOT SENT) ->
+**Banking playbook** to agree a four-week pilot on synthetic client records. See
+[SELLER-GUIDE.md](SELLER-GUIDE.md) (the banking playbook; the file name is kept for
+the `/seller-guide` route).
+
+The service listens on `127.0.0.1:8790` by default so it can run beside other
+demos.
+
+## Illustrative reference architecture: hybrid AI for global banking
+
+The **Firm overview** opens with a three-tier reference architecture. It is an
+illustrative pattern, not any bank's actual design. Each tier has a button that
+proves it with a live, local demo:
+
+| Tier | Where it runs | What it does | Proved in the app by |
+|---|---|---|---|
+| **Tier 1: Smart capture** | The banker's Surface at the client meeting | Capture the conversation with consent, transcribe locally, draft call notes, sync securely inside the firm | **Run client meeting capture**: the *Client meeting to call notes and actions* demo transcribes a synthetic client meeting on the RTX GPU |
+| **Tier 2: In-firm drafting** | Local AI beside the firm's systems of record | Apply policies and procedures, draft checklists and next steps, keep client records inside the firm | **Draft a KYC refresh checklist**: the *KYC refresh notes to a review checklist* scenario, live |
+| **Escalate only when needed** | Inside the firm | Remove NPI and account numbers, minimize context, algorithmic delegation | **Route a complex question**: the Hybrid router's *Complex question* preset masks the client's name, account number and email |
+| **Tier 3: Cloud support** | External cloud (Azure OpenAI) | Frontier reasoning for complex questions; de-identified queries in, model support out | **Preview the cloud payload**: the de-identification demo shows what would leave, marked NOT SENT |
+
+Output: **draft notes + checklists**, then **banker review and approval**. Client
+data stay in the firm: recordings, account data and nonpublic personal information
+(NPI) remain inside the firm.
+
+In this showcase the Surface Laptop Ultra stands in for Tier 1 and Tier 2, using
+synthetic clients only. The studio never calls a cloud service and does not connect
+to core banking, CRM, payments or any system of record. De-identification removes
+structured identifiers only; it is not certified and makes no regulatory or
+compliance determination.
 
 ## Download
 
@@ -67,7 +129,7 @@ accent colours come from `edition.json` (see *Editions and scale-out harness*);
 `.\tools\Sync-Edition.ps1` regenerates `native\Brand.cs` and the PNG/ICO/SVG
 assets in `native\Assets`.
 `.\tools\Install-NativeShortcut.ps1` installs or updates the
-**Surface Hybrid Intelligence Studio** desktop shortcut with the native target,
+**Surface Hybrid Intelligence x Zava Financial** desktop shortcut with the native target,
 app icon and matching Windows taskbar identity.
 
 The live workspace offers five synthetic text workflows: executive briefing,
@@ -91,7 +153,7 @@ the engine can grade live output against it.
 
 | Demo | Runs on the GPU | Graded by the engine |
 |---|---|---|
-| Meeting to minutes and actions | Whisper medium, then Qwen2.5-Coder 14B | Word accuracy against the spoken script; unowned action marked |
+| Client meeting to call notes and actions | Whisper medium, then Qwen2.5-Coder 14B | Word accuracy against the spoken script; unowned action marked |
 | Voice memo to work order | Whisper medium, then Qwen2.5-Coder 14B | Valid JSON; fields match the memo |
 | Scanned form to structured data | Qwen3-VL 4B (work order or receipt) | Valid JSON; fields or line-item arithmetic |
 | Ask your documents | Qwen3-Embedding 0.6B, then Qwen2.5-Coder 14B | Right policy retrieved; answer cites only retrieved policies |
@@ -218,18 +280,18 @@ Official references:
 
 ### Optional: Coding as a second language
 
-An optional onboarding tab for sellers who want to ramp up technically. Eight
+An optional AI-literacy tab for bankers, operations and technology staff who want to ramp up technically. Eight
 short lessons teach reading code the way you learn a language: vocabulary
 (variables), grammar (decisions, loops), sentences (functions, data/JSON),
 conversation (APIs, AI sizing words) and fluency (reading AI-written code).
-Each lesson has a plain-English analogy, line-by-line notes, a customer-ready
+Each lesson has a plain-English analogy, line-by-line notes, a colleague-ready
 sentence and a quick check; a correct answer completes the lesson. Numbers in
 lessons are computed by the same engine as the sizing page (for example 14B at
 4-bit = 6.52 GiB of weights). **Ask the local coding tutor** opens the Live GPU
 workspace with the lesson's code in the prompt so the local coding model explains it
 on the RTX GPU. Code is displayed, never executed. Progress is stored only in
 `%LOCALAPPDATA%\HybridIntelligenceStudio\learning.json`. Hide or restore the tab from
-the lesson page or the **Seller playbook** page.
+the lesson page or the **Banking playbook** page.
 
 ### Companion web presentation
 
@@ -239,21 +301,32 @@ the lesson page or the **Seller playbook** page.
 
 Open **http://127.0.0.1:8790**. Keep the launch terminal open. Ctrl+C stops only
 the process started by the launcher. Ctrl+Enter runs the selected AI story.
-The full-screen button expands the presentation. The seller playbook contains
+The full-screen button expands the presentation. The Banking playbook contains
 the talk track and objection handling; **Print executive handout** prints a
-clean, customer-facing summary with the calculator's current assumptions.
-`.\tools\Install-NativeShortcut.ps1` adds a **Surface Hybrid Intelligence Studio** desktop shortcut.
+clean, audience-facing summary with the calculator's current assumptions.
+`.\tools\Install-NativeShortcut.ps1` adds a **Surface Hybrid Intelligence x Zava Financial** desktop shortcut.
 `Executive-Handout.pdf` is the prepared single-page handout using illustrative
 default assumptions; print again from the app after changing those inputs.
 Launching again opens the existing showcase rather than starting a second
 model process. Stop the original launch terminal before changing startup mode.
 
-### Industry scenarios and Offline PPTX Forge
+### Banking scenarios and Offline PPTX Forge
 
-The **Industries** page adds four fictional customer stories, each a live workflow on
-the local GPU model: Fabrikam Components (manufacturing), Beacon Mutual (insurance
-operations), Northwind Retail (retail) and Cedar Borough (public sector). Names and
-data are invented for demonstration; no real customer appears.
+The **Banking scenarios** page (section `industries`) adds six fictional Zava Financial
+workflows across lines of business, each a live drafting workflow on the local GPU model:
+
+| Line of business | Workflow |
+|---|---|
+| Know your customer | KYC refresh notes to a review checklist |
+| Model risk management | Model documentation notes to a validation-readiness checklist |
+| Card disputes | Dispute intake notes to a case checklist |
+| Markets operations | Settlement break notes to an exception checklist |
+| Treasury management | Treasury onboarding notes to an implementation checklist |
+| Wealth management | Client review notes to an advisor agenda |
+
+Names and data are invented for demonstration; no real bank, customer, account or
+record appears. Drafts support bankers and never make credit, account, dispute,
+fraud, risk-rating, trade-booking, model-approval or investment decisions.
 
 Each card offers:
 
@@ -273,7 +346,7 @@ not close Forge. `.\Start-NativeShowcase.ps1 -Section industries` opens the page
 ### Hybrid Intelligence: router, show-off tools and builder hub
 
 Three pages turn "Hybrid Intelligence on Surface" from a slide into something people can
-see, measure and build on. The Executive overview links to all three.
+see, measure and build on. The Firm overview links to all three.
 
 **Hybrid router** (`-Section hybrid`) shows where a request should run and why. A published,
 deterministic policy (`hybrid.py`, standard library only) scans the text for identifiers and
@@ -319,7 +392,7 @@ structured identifiers, not every name or context clue; they are not a data-loss
 - **Code snippets**: copy-ready calls for the current endpoint and model (PowerShell, curl,
   Python, the OpenAI Python SDK, JavaScript, C# and the models list).
 - **Starter kits**: five small projects written to
-  `Documents\Surface Hybrid Intelligence Studio\Exports\Starters\<kit>-<time>`:
+  `Documents\Surface Hybrid Intelligence x Zava Financial\Exports\Starters\<kit>-<time>`:
 
   | Kit | Run | Shows |
   |---|---|---|
@@ -487,8 +560,9 @@ App SDK.
 
 ## Boundaries
 
-All scenarios and account data are synthetic. Do not enter customer-confidential
-data into an unapproved prototype. The generated code is displayed, never
+All scenarios, customer and account data are synthetic. Do not enter real customer
+records, NPI or confidential bank data into an unapproved prototype. No
+credit, lending, account, dispute, fraud, AML or investment decisions are made. The generated code is displayed, never
 executed. Generated asserts are examples, not verified passing tests.
 Drafts require human review. Token-limit completions are labeled incomplete.
 No email, file-system automation, service-desk or Microsoft 365 integration exists.
@@ -497,7 +571,7 @@ Rehearsal is explicitly selected, labeled **authored / no inference**, and tied
 to the fixed sample prompt. Failures never substitute rehearsed text.
 The presentation and device inventory focus on the RTX GPU and CUDA.
 There is no fabricated cloud baseline, savings counter, battery test,
-TOPS claim, Copilot+ certification or subscription replacement claim.
+accelerator-rating claim, PC certification claim or subscription replacement claim.
 RAM is not described as dedicated GPU memory.
 
 Local inference means the model executes on this PC; it does **not** mean the
@@ -521,6 +595,10 @@ are unchanged. Confirm availability, approved positioning, model licensing,
 exact shipping SKU and pricing with the appropriate channels before selling.
 
 ## Editions and scale-out harness
+
+The Zava Financial update was produced with this harness: `tools\New-Edition.ps1`
+re-badged a banking edition of the studio with a `zava-financial` manifest, then its
+content was retargeted to global banking workflows across lines of business.
 
 The studio is built to be re-badged for another partner, device or audience
 without hand-editing a fork. `edition.json` is this tree's brand manifest:
@@ -605,4 +683,4 @@ The live option exercises both AI stories on both featured larger CUDA models,
 exports measured evidence, and restores the default 14B model. It requires a
 running showcase with both models cached and checks this device's 128 GB / 64 GB
 memory views. Both browser modes validate the single-page PDF layout.
-See `SELLER-GUIDE.md` for the presentation.
+See `SELLER-GUIDE.md` (the Banking playbook) for the presentation.

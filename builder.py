@@ -127,7 +127,7 @@ def retrieve(question, docs, k=3):
 
 
 def main():
-    question = " ".join(sys.argv[1:]).strip() or "I think I left my work laptop on the train. What should I do?"
+    question = " ".join(sys.argv[1:]).strip() or "I think I left my work laptop on the commuter train. What should I do?"
     hits = retrieve(question, load())
     if not hits:
         print("No document matched. Try different words.")
@@ -370,9 +370,9 @@ while (true)
 '''
 
 SAMPLE_TXT = (
-    "FICTIONAL. Draft a reply to this customer that quotes today's exchange rates for euros to US dollars.\n\n"
+    "FICTIONAL. Draft a reply to this business client that quotes today's exchange rates for euros to US dollars.\n\n"
     "From: Jonas Becker <jonas.becker@example.com>\n"
-    "Account number ACCT-5521-0093. I am paying a 12,400 EUR invoice next week. Roughly what will that be in dollars?\n"
+    "Account number ACCT-5521-0093. I am sending a 12,400 EUR supplier payment next week. Roughly what will that be in dollars?\n"
 )
 
 COMMON_README = """

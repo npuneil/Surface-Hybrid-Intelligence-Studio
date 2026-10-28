@@ -1,38 +1,38 @@
 {
   "schema": "studio-edition/1",
-  "id": "surface",
-  "displayName": "Surface Hybrid Intelligence Studio",
+  "id": "zava-financial",
+  "displayName": "Surface Hybrid Intelligence x Zava Financial",
   "device": "Surface Laptop Ultra",
   "mark": "Surface",
-  "markSubtitle": "Hybrid Intelligence Studio",
+  "markSubtitle": "Hybrid Intelligence x Financial Services",
   "codeName": "HybridIntelligenceStudio",
   "appUserModelId": "SurfaceHybridIntelligence.Studio",
   "serviceAppId": "surface-hybrid-intelligence-studio",
   "schemaPrefix": "hybrid-intelligence-studio",
   "envPrefix": "HYBRID_STUDIO_",
-  "shortcutName": "Surface Hybrid Intelligence Studio",
+  "shortcutName": "Surface Hybrid Intelligence x Zava Financial",
   "repository": "npuneil/Surface-Hybrid-Intelligence-Studio",
   "visibility": "public",
   "logo": {
     "style": "device",
-    "text": "HI",
-    "background": "#2B8BE0",
-    "backgroundEnd": "#0B4A8C",
+    "text": "ZAVA",
+    "background": "#2B6CA3",
+    "backgroundEnd": "#0F2740",
     "foreground": "#FFFFFF"
   },
   "accent": {
-    "base": "#0F6CBD",
-    "light1": "#2B7FC9",
-    "light2": "#4A94D3",
-    "light3": "#8CBCE6",
-    "dark1": "#0E5FA8",
-    "dark2": "#0C4E8A",
-    "dark3": "#093A66",
-    "tint": "#EAF2FB"
+    "base": "#1F4E79",
+    "light1": "#2B6CA3",
+    "light2": "#5A8FC2",
+    "light3": "#A9C6E3",
+    "dark1": "#1A4268",
+    "dark2": "#153655",
+    "dark3": "#0F2740",
+    "tint": "#EAF1F8"
   },
   "webAccent": {
-    "base": "#0f6cbd",
-    "deep": "#0c4e8a",
-    "focus": "#4a7fb5"
+    "base": "#1f4e79",
+    "deep": "#0f2740",
+    "focus": "#5a8fc2"
   }
 }

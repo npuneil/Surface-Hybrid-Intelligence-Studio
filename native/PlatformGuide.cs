@@ -111,7 +111,7 @@ internal static class PlatformGuide
                     "Exported model, operator and device support must be verified.", "meeting"),
                 new("Service desk and knowledge drafts", TShirtSize.M,
                     "A 7-8B model drafts replies and knowledge articles from approved internal content.",
-                    "Content governance and accuracy review stay with the customer.", null),
+                    "Content governance and accuracy review stay with the firm.", null),
                 new("Visual document triage", TShirtSize.S,
                     "A small vision-language pipeline proposes a category for scanned forms before human routing.",
                     "Requires a supported exported vision model on the installed CPU/GPU runtime.", null),

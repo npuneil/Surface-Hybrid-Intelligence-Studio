@@ -100,7 +100,7 @@ try {
   $("close-dialog").click();
   $("device-button").click(); check($("dialog-content").textContent.includes("RTX GPU through CUDA") && !/\bNPU\b/i.test($("dialog-content").textContent),"Device evidence is GPU-focused");
   $("close-dialog").click();
-  $("source-button").click(); check($("dialog-content").textContent.includes("FICTIONAL ACCOUNT"),"Original synthetic source is inspectable");
+  $("source-button").click(); check($("dialog-content").textContent.includes("FICTIONAL INSTITUTION: Zava Financial"),"Original synthetic source is inspectable");
   $("close-dialog").click();
   $("mode").value="rehearsal"; $("mode").dispatchEvent(new Event("change"));
   check($("prompt").readOnly,"Authored rehearsal locks its prompt");

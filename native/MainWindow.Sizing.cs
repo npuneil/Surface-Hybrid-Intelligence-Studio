@@ -145,7 +145,7 @@ internal sealed partial class MainWindow
             observedCard), "SizingTechnicalView");
         _salesView = Id(BuildSalesSizing(), "SizingSalesView");
 
-        var salesTab = Id(new SelectorBarItem { Text = "Sales view", Icon = Glyph("\uE716", 16, Accent), Tag = "sales" }, "SizingTab_Sales");
+        var salesTab = Id(new SelectorBarItem { Text = "Leader view", Icon = Glyph("\uE716", 16, Accent), Tag = "sales" }, "SizingTab_Sales");
         var technicalTab = Id(new SelectorBarItem { Text = "Technical view", Icon = Glyph("\uE9D9", 16, Accent), Tag = "technical" }, "SizingTab_Technical");
         _sizingTabs.Items.Add(salesTab);
         _sizingTabs.Items.Add(technicalTab);
@@ -154,7 +154,7 @@ internal sealed partial class MainWindow
         ApplySizingTab();
 
         _sizingScroller = Page(Stack(18,
-            Lead(16, _sizingTabs, Set(Small("Sales view for customer conversations. Technical view shows and edits every number."), t => { t.VerticalAlignment = VerticalAlignment.Center; t.TextWrapping = TextWrapping.Wrap; })),
+            Lead(16, _sizingTabs, Set(Small("Leader view for executive conversations. Technical view shows and edits every number."), t => { t.VerticalAlignment = VerticalAlignment.Center; t.TextWrapping = TextWrapping.Wrap; })),
             _salesView, _technicalView));
         return _sizingScroller;
     }
@@ -244,7 +244,7 @@ internal sealed partial class MainWindow
             BudgetSource.WindowsVisibleMemory => device?.OsVisibleGiB is double w
                 ? $"Windows-visible memory: {w:F2} GiB. A different view of the same machine; never added to the GPU budget."
                 : "Windows-visible memory not reported yet.",
-            _ => "Enter any budget, for example a customer device's memory. Useful for Snapdragon and Intel sizing conversations."
+            _ => "Enter any budget, for example a banker, branch or operations device's memory. Useful for Snapdragon and Intel sizing conversations."
         } + $" {installed} is shown for context and is not used as a budget.";
     }
 

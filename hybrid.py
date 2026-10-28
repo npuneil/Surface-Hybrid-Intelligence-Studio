@@ -52,10 +52,10 @@ DETECTORS = (
      re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b"), None),
     ("identifier", "card", "Payment card number", "[CARD]", re.compile(r"(?<![\w-])(?:\d[ -]?){12,18}\d(?![\w-])"), _luhn),
     ("identifier", "ssn", "National ID / SSN", "[ID]", re.compile(r"(?<![\w-])\d{3}-\d{2}-\d{4}(?![\w-])"), None),
-    ("identifier", "account", "Account, policy or member number", "[ACCOUNT]",
-     re.compile(r"\b(?:ACCT|ACC|MRN|CUST|MBR|POL|CLM|INV)-?\d[\d-]{3,}\d\b"), None),
-    ("identifier", "account", "Account, policy or member number", "[ACCOUNT]",
-     re.compile(r"(?i:\b(?:account|policy|member|customer|patient|claim)\s+(?:number|no\.?|id|#)\s*(?:is\s+|:\s*)?)"
+    ("identifier", "account", "Account, student, policy or member number", "[ACCOUNT]",
+     re.compile(r"\b(?:ACCT|ACC|MRN|CUST|MBR|POL|CLM|INV|STU|SID)-?\d[\d-]{3,}\d\b"), None),
+    ("identifier", "account", "Account, student, policy or member number", "[ACCOUNT]",
+     re.compile(r"(?i:\b(?:account|student|policy|member|customer|patient|claim)\s+(?:number|no\.?|id|#)\s*(?:is\s+|:\s*)?)"
                 r"(?P<v>[A-Z0-9][A-Z0-9-]{3,}\d)\b"), None),
     ("identifier", "dob", "Date of birth", "[DATE_OF_BIRTH]",
      re.compile(r"(?i:\b(?:DOB|D\.O\.B\.|date of birth|born(?: on)?)\s*(?:is\s+|:\s*)?)"
@@ -87,9 +87,10 @@ FLAGS = (
                 r"weather|forecast|exchange rates?|live scores?|trending|search the web|look (?:it )?up online|"
                 r"browse the web|on the internet|current (?:prices?|rates?|events|news))\b")),
     ("org", "org", "Needs organisation-wide data",
-     re.compile(r"(?i)\b(?:across (?:the|our) (?:company|organi[sz]ation|tenant)|company-wide|org-wide|sharepoint|"
+     re.compile(r"(?i)\b(?:across (?:the|our) (?:company|organi[sz]ation|tenant|bank|firm|enterprise|institution)|"
+                r"company-wide|org-wide|bank-wide|firm-wide|enterprise-wide|system-wide|sharepoint|"
                 r"onedrive|teams (?:chats?|channels?|meetings?)|outlook (?:mail|inbox)|microsoft graph|"
-                r"all (?:employees|staff)|our crm|dynamics 365)\b")),
+                r"all (?:employees|staff|bankers|branches)|our crm|dynamics 365)\b")),
     ("scale", "scale", "Larger than one PC should take on",
      re.compile(r"(?i)\b(?:thousands of (?:documents|files|pages|contracts|records)|entire (?:archive|data ?lake|corpus)"
                 r"|terabytes?|frontier model|deep research)\b")),
@@ -277,80 +278,87 @@ def drift(original, redacted):
 
 
 PRESETS = (
-    {"id": "complaint", "title": "Customer complaint", "expect": "local", "network": "online", "scale": "fits",
-     "text": "FICTIONAL. Summarise this complaint for the service desk and draft a short, polite reply.\n\n"
-             "From: Priya Natarajan <priya.natarajan@example.com>\nOrder 4471 arrived with a cracked screen. "
-             "Call me on 555-0142 after five. Please refund the card I paid with."},
-    {"id": "rates", "title": "Reply with today's rates", "expect": "hybrid", "network": "online", "scale": "fits",
-     "text": "FICTIONAL. Draft a reply to this customer that quotes today's exchange rates for euros to US dollars.\n\n"
-             "From: Jonas Becker <jonas.becker@example.com>\nAccount number ACCT-5521-0093. I am paying a 12,400 EUR "
-             "invoice next week. Roughly what will that be in dollars?"},
-    {"id": "news", "title": "Public market news", "expect": "cloud", "network": "online", "scale": "fits",
-     "text": "What are the latest news headlines about laptop GPU shipments this week? Summarise them in three bullets."},
-    {"id": "secret", "title": "Config with a credential", "expect": "local", "network": "online", "scale": "fits",
-     "text": "Why does this connection fail? Explain and suggest a fix, and search the web for the latest SDK version.\n\n"
-             "endpoint = https://api.contoso.example/v1\napi_key = \"sk-FAKE-EXAMPLE-0000000000000000\"\ntimeout = 5"},
-    {"id": "field", "title": "Field note while offline", "expect": "local", "network": "offline", "scale": "fits",
-     "text": "FICTIONAL. Turn this site note into a work order, and check the latest manufacturer guidance for the pump.\n\n"
-             "Site: Cedar pumping station. Pump P-7 vibrating above normal since 14:00. Seal replaced in June.\n"
-             "Technician: Sam Ortega"},
-    {"id": "org", "title": "Company-wide question", "expect": "cloud", "network": "online", "scale": "fits",
-     "text": "Across the company, which Teams channels discussed the travel policy change last quarter? "
+    {"id": "complaint", "title": "Customer email to the branch", "expect": "local", "network": "online", "scale": "fits",
+     "text": "FICTIONAL. Summarise this customer's email for the branch team and draft a short, empathetic reply.\n\n"
+             "From: Priya Natarajan <priya.natarajan@example.com>\nI was charged an overdraft fee after my paycheck "
+             "posted a day late. Call me on 555-0142 after five. Can someone walk me through my options?"},
+    {"id": "rates", "title": "Supplier payment with today's rates", "expect": "hybrid", "network": "online", "scale": "fits",
+     "text": "FICTIONAL. Draft a reply to this business client that quotes today's exchange rates for euros to "
+             "US dollars.\n\nFrom: Jonas Becker <jonas.becker@example.com>\nAccount number ACCT-5521-0093. I am sending "
+             "a 12,400 EUR supplier payment next week. Roughly what will that be in dollars?"},
+    {"id": "news", "title": "Public banking news", "expect": "cloud", "network": "online", "scale": "fits",
+     "text": "What are the latest news headlines about AI in banking this week? "
+             "Summarise them in three bullets."},
+    {"id": "secret", "title": "Payments sandbox config with a credential", "expect": "local", "network": "online", "scale": "fits",
+     "text": "Why does this payments sandbox connection fail? Explain and suggest a fix, and search the web for the latest SDK version.\n\n"
+             "endpoint = https://payments-sandbox.contoso.example/api/v1\napi_key = \"sk-FAKE-EXAMPLE-0000000000000000\"\ntimeout = 5"},
+    {"id": "field", "title": "Branch ATM note while offline", "expect": "local", "network": "offline", "scale": "fits",
+     "text": "FICTIONAL. Turn this branch note into a service request, and check the latest manufacturer "
+             "guidance for the ATM.\n\nSite: Cedar Creek branch. ATM A-7 reporting a cash-dispenser fault "
+             "since 14:00. Receipt printer replaced in June.\nTechnician: Sam Ortega"},
+    {"id": "org", "title": "Firm-wide question", "expect": "cloud", "network": "online", "scale": "fits",
+     "text": "Across the organization, which Teams channels discussed the overdraft-fee policy change last quarter? "
              "Summarise the main concerns."},
+    {"id": "complex-case", "title": "Complex question: escalate to Tier 3", "expect": "hybrid", "network": "online",
+     "scale": "beyond_device",
+     "text": "FICTIONAL. Two reviewers read this commercial client's covenant reporting differently. Weigh the terms "
+             "and suggest points for the credit committee to discuss; the committee decides.\n\nClient name: Alex Rivera\n"
+             "Account number ACCT-48213-0071, alex.rivera@example.com\nThe loan agreement requires a debt service "
+             "coverage ratio of at least 1.25, tested quarterly. The third-quarter package reports 1.22 on one "
+             "calculation and 1.31 on another, depending on whether a one-time equipment sale is included."},
 )
 
 PATTERNS = (
     {"id": "local-first", "title": "Local first, escalate on purpose",
      "summary": "Draft on the PC. A transparent policy decides what, if anything, needs the cloud.",
-     "flow": [("device", "Draft on the RTX GPU"), ("device", "Check: private? current? too big?"),
+     "flow": [("device", "Draft on the RTX GPU"), ("device", "Check: customer data? current? too big?"),
               ("cloud", "Escalate only what needs it")],
      "when": "Everyday drafting, summarising and coding help where most requests never need to leave the PC.",
      "proof": {"kind": "page", "target": "hybrid", "label": "Try the router"},
-     "caveat": "The router's rules are deterministic patterns, not a DLP product."},
-    {"id": "redact-cloud", "title": "Redact here, then cloud",
-     "summary": "Personal data is replaced on the device, so only a clean version is ever shared.",
+     "caveat": "The router's rules are deterministic patterns, not a DLP product or a compliance determination."},
+    {"id": "redact-cloud", "title": "De-identify here, then cloud",
+     "summary": "Customer identifiers are replaced on the device, so only a de-identified version is ever shared.",
      "flow": [("device", "On-device model redacts"), ("device", "Re-scan blocks any leak"),
-              ("cloud", "Send the clean text")],
-     "when": "Customer emails, case notes or tickets that need a cloud service's reach.",
+              ("cloud", "Send the de-identified text")],
+     "when": "Customer emails, call notes or tickets that need a cloud service's reach.",
      "proof": {"kind": "demo", "target": "redact", "label": "Run the redaction demo"},
      "caveat": "Review redactions before sharing; models and patterns can miss context."},
-    {"id": "private-knowledge", "title": "Private knowledge stays put",
+    {"id": "private-knowledge", "title": "Firm knowledge stays put",
      "summary": "Documents are embedded and searched on the GPU, and answers cite the source.",
      "flow": [("device", "Embed documents on the GPU"), ("device", "Retrieve and answer with citations"),
               ("person", "Reviewer checks the cited source")],
-     "when": "Policies, manuals and playbooks you can't or don't want to upload.",
+     "when": "Policies, procedures, product guides and internal research you can't or don't want to upload.",
      "proof": {"kind": "demo", "target": "ask-docs", "label": "Run Ask your documents"},
      "caveat": "Demo documents are synthetic; retrieval quality depends on your content."},
-    {"id": "field", "title": "Keep working in the field",
+    {"id": "field", "title": "Keep working off the network",
      "summary": "Speech and drafting run on the PC, and results sync when a connection returns.",
-     "flow": [("device", "Transcribe a voice memo"), ("device", "Structure it as a work order"),
+     "flow": [("device", "Transcribe a voice memo"), ("device", "Structure it as a request"),
               ("cloud", "Sync when connected")],
-     "when": "Inspections, site visits and travel where connectivity is patchy.",
+     "when": "Field research, outreach events, study abroad and travel where connectivity is patchy.",
      "proof": {"kind": "demo", "target": "voice-memo", "label": "Run the voice memo demo"},
      "caveat": "This studio does not certify offline operation. Test in airplane mode on your own setup."},
     {"id": "volume", "title": "High volume on device, people on exceptions",
-     "summary": "Classify every item locally and send people only the cases that need judgement.",
-     "flow": [("device", "Classify every item locally"), ("person", "People review the exceptions"),
+     "summary": "Classify every item locally and send staff only the cases that need judgement.",
+     "flow": [("device", "Classify every item locally"), ("person", "Staff review the exceptions"),
               ("cloud", "Optionally escalate the hard few")],
-     "when": "Inbox triage, ticket routing and form intake.",
+     "when": "Customer-service inbox triage, IT ticket routing and form intake at month-end peaks.",
      "proof": {"kind": "demo", "target": "triage", "label": "Run inbox triage"},
      "caveat": "Throughput shown is one run on this PC, not a capacity guarantee."},
     {"id": "right-size", "title": "Right-size the model",
      "summary": "Small and fast for routine work, a larger local model for depth, the cloud for the rest.",
      "flow": [("device", "14B-20B for routine work"), ("device", "30B-120B on the GPU for depth"),
               ("cloud", "Frontier models for the rest")],
-     "when": "Mixed workloads where speed and depth trade off.",
+     "when": "Mixed branch, operations and analyst workloads where speed and depth trade off.",
      "proof": {"kind": "page", "target": "showoff", "label": "Measure tokens per second"},
      "caveat": "Speeds vary by model, prompt and what else the GPU is doing."},
     {"id": "same-api", "title": "Same code, local or cloud",
      "summary": "An OpenAI-compatible endpoint on loopback, so apps switch between local and cloud by changing a URL.",
      "flow": [("device", "Call the local endpoint"), ("device", "Same request and response shape"),
               ("cloud", "Point the base URL at your cloud")],
-     "when": "Builders prototyping on the PC before choosing where each feature runs.",
+     "when": "Bank developers and data scientists prototyping on the PC before choosing where each feature runs.",
      "proof": {"kind": "page", "target": "build", "label": "Open Build on Surface"},
      "caveat": "The local endpoint is loopback-only and unauthenticated; it stays off until you start it."},
 )
-
 
 def public():
     return {"policy": POLICY_VERSION, "networks": list(NETWORKS), "scales": list(SCALES), "max_text": MAX_TEXT,

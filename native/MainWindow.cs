@@ -92,6 +92,14 @@ internal sealed partial class MainWindow : Window
             Text(Brand.Device, 13, Muted));
         brand.VerticalAlignment = VerticalAlignment.Center;
         titleBar.Children.Add(brand);
+        var eventPill = Pill(Event.Name + "  |  " + Event.DateShort, Hex(Event.GoldTint), AccentDeep);
+        eventPill.BorderBrush = Hex(Event.Gold);
+        eventPill.BorderThickness = new Thickness(1);
+        eventPill.HorizontalAlignment = HorizontalAlignment.Right;
+        eventPill.Margin = new Thickness(0, 0, 12, 0);
+        Id(eventPill, "TitleBarEventPill");
+        Grid.SetColumn(eventPill, 1);
+        titleBar.Children.Add(eventPill);
         _enginePill.Child = _enginePillText;
         Grid.SetColumn(_enginePill, 2);
         titleBar.Children.Add(_enginePill);
@@ -104,7 +112,7 @@ internal sealed partial class MainWindow : Window
         _nav.PaneDisplayMode = NavigationViewPaneDisplayMode.Auto;
         _nav.IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed;
         _nav.IsSettingsVisible = false;
-        _nav.OpenPaneLength = 256;
+        _nav.OpenPaneLength = 340;
         _nav.ExpandedModeThresholdWidth = 1100;
         _nav.CompactModeThresholdWidth = 640;
         _nav.Background = Paper;
@@ -114,17 +122,17 @@ internal sealed partial class MainWindow : Window
             Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(12, 8, 0, 8),
             Children = { Logo(32, "NavLogo"), Stack(0, Id(Text(Brand.Mark, 15, Accent, FontWeights.Bold), "NavMark"), Small(Brand.MarkSubtitle)) }
         };
-        AddNav("overview", "Executive overview", "\uE80F", "NavOverview");
+        AddNav("overview", "Firm overview", "\uE80F", "NavOverview");
         AddNav("live", "Live GPU workspace", "\uE945", "NavLive");
         AddNav("demos", "Live demos", "\uE768", "NavDemos");
         AddNav("hybrid", "Hybrid router", "\uE8AB", "NavHybrid");
-        AddNav("industries", "Industry scenarios", "\uE821", "NavIndustries");
+        AddNav("industries", "Banking scenarios", "\uE7BE", "NavIndustries");
         AddNav("showoff", "Show it off", "\uEC4A", "NavShowOff");
         AddNav("build", "Build on Surface", "\uE943", "NavBuild");
         AddNav("sizing", "T-shirt sizing", "\uE9D9", "NavSizing");
         AddNav("platforms", "Platform fit", "\uE7F8", "NavPlatforms");
         AddNav("business", "Business case", "\uE8EF", "NavBusiness");
-        AddNav("playbook", "Seller playbook", "\uE82D", "NavPlaybook");
+        AddNav("playbook", "Banking playbook", "\uE82D", "NavPlaybook");
         AddLearnNav();
         var evidence = new NavigationViewItem { Content = "Device evidence", Icon = Glyph("\uE9D2", 16, Muted), SelectsOnInvoked = false, Tag = "evidence" };
         Id(evidence, "NavDeviceEvidence");
