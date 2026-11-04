@@ -103,7 +103,7 @@ internal sealed partial class MainWindow
             Stack(10, Text("QUICK CHECK", 11, Muted, FontWeights.SemiBold), _quizQuestion, _quizOptions, _quizCheck, _quizFeedback),
             new Border { Height = 1, Background = Line },
             Row(10, _lessonPrev, _lessonNext, _lessonTutor),
-            Small("The tutor opens the Live GPU workspace with this code in the prompt; the local coding model explains it on the RTX GPU. Nothing is executed, and the explanation is a draft to check."),
+            Worded(Small(""), w => $"The tutor opens the Live workspace with this code in the prompt; the local coding model explains it on {w.Where}. Nothing is executed, and the explanation is a draft to check."),
             _lessonSizing), 26);
         Id(lessonCard, "LessonCard");
 
@@ -224,7 +224,7 @@ internal sealed partial class MainWindow
         bool available = _scenarios.ContainsKey(CodingTrack.TutorScenario);
         _lessonTutor.IsEnabled = available;
         ToolTipService.SetToolTip(_lessonTutor, available
-            ? "Opens the Live GPU workspace with this lesson's code in the prompt."
+            ? "Opens the Live workspace with this lesson's code in the prompt."
             : "The running local service does not offer the coding tutor.");
     }
 

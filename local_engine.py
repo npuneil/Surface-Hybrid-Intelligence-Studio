@@ -759,7 +759,7 @@ class LocalEngine:
         if self.large.loaded() and LARGE_MODELS[self.large.alias]["exclusive"]:
             return (f"{self.large.info['name']} is using most of the GPU memory, so this demo's Foundry Local models "
                     "cannot load beside it. Select Qwen2.5-Coder 14B, GPT-OSS 20B or Qwen3-Coder 30B in the "
-                    "Live GPU workspace, then run the demo again.")
+                    "Live workspace, then run the demo again.")
         return None
 
     def ensure_chat(self, ref):

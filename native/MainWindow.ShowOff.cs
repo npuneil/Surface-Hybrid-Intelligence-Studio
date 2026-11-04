@@ -51,7 +51,7 @@ internal sealed partial class MainWindow
         _speedExport.Click += (_, _) => ExportSpeed();
         _speedExport.IsEnabled = false;
         Show(_speedText, false);
-        var switchModel = Id(new HyperlinkButton { Content = "Load a different model in the Live GPU workspace", Padding = new Thickness(0), Foreground = Accent }, "SpeedSwitchModel");
+        var switchModel = Id(new HyperlinkButton { Content = "Load a different model in the Live workspace", Padding = new Thickness(0), Foreground = Accent }, "SpeedSwitchModel");
         switchModel.Click += (_, _) => Navigate("live");
         var refreshTools = Id(Secondary("Refresh"), "ToolRefresh");
         refreshTools.Click += async (_, _) => await RefreshToolsAsync();

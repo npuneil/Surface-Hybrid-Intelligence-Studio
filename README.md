@@ -198,13 +198,13 @@ prompt. **Pre-flight: run every demo live** runs all twelve with their default
 inputs and reports how many ran end to end and how many passed every check. On
 this unit a warm pre-flight takes about three minutes. Export saves the
 selected run's evidence as JSON. On the Sales sizing tab, each blue **Run live
-demo** button with a play icon opens the matching demo and starts a live GPU
-run. The separate checkboxes select workloads for sizing; the buttons do not
-change that selection. If the GPU is busy or
+demo** button with a play icon opens the matching demo and starts a live
+run on this PC. The separate checkboxes select workloads for sizing; the buttons do not
+change that selection. If the local model is busy or
 not ready, the demo opens with the reason it cannot start; no rehearsal is substituted.
 
 Demos load extra models beside the selected chat model and keep them resident,
-so later runs skip loading. Selecting a model in the Live GPU workspace still
+so later runs skip loading. Selecting a model in the Live workspace still
 unloads the other chat models. Speech, vision and embedding models need two
 items that `Start-Showcase.ps1 -Prepare` downloads once:
 - the model weights;
@@ -308,9 +308,9 @@ conversation (APIs, AI sizing words) and fluency (reading AI-written code).
 Each lesson has a plain-English analogy, line-by-line notes, a colleague-ready
 sentence and a quick check; a correct answer completes the lesson. Numbers in
 lessons are computed by the same engine as the sizing page (for example 14B at
-4-bit = 6.52 GiB of weights). **Ask the local coding tutor** opens the Live GPU
+4-bit = 6.52 GiB of weights). **Ask the local coding tutor** opens the Live
 workspace with the lesson's code in the prompt so the local coding model explains it
-on the RTX GPU. Code is displayed, never executed. Progress is stored only in
+on this PC. Code is displayed, never executed. Progress is stored only in
 `%LOCALAPPDATA%\HybridIntelligenceStudio\learning.json`. Hide or restore the tab from
 the lesson page or the **Banking playbook** page.
 
@@ -351,7 +351,7 @@ fraud, risk-rating, trade-booking, model-approval or investment decisions.
 
 Each card offers:
 
-- **Run live workflow**: opens the Live GPU workspace with the scenario's prompt.
+- **Run live workflow**: opens the Live workspace with the scenario's prompt.
 - **Prepare deck in Forge**: writes a deck brief to Offline PPTX Forge's
   `briefs\custom\studio_<key>.json` and opens Forge. In Forge's Pre-staged mode select
   *<Client> - sales (custom)*, review the facts and template, then choose **Build deck**.

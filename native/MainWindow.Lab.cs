@@ -24,7 +24,7 @@ internal sealed partial class MainWindow
     {
         if (!ServiceOnline) return "The local service is not connected.";
         if (_labRunning) return _labActivity + " is running. Wait for it to finish.";
-        if (_running) return "The Live GPU workspace is running. Wait for it to finish.";
+        if (_running) return "The Live workspace is running. Wait for it to finish.";
         if (_demoRunning) return "A live demo is running. Wait for it to finish.";
         if (_switching) return "A model switch is in progress.";
         if (needsModel && _status?.Engine.IsReady != true) return _status?.Engine.Detail is { Length: > 0 } d ? d : "The model is not ready yet.";
