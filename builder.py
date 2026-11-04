@@ -409,7 +409,7 @@ KITS = {
     "chat": {
         "title": "Streaming chat (Python)", "language": "Python 3.10+, standard library only",
         "summary": "A chat loop that streams tokens from the local model. The smallest possible starting point.",
-        "shows": "OpenAI-compatible streaming from a model on this PC's GPU.",
+        "shows": "OpenAI-compatible streaming from a model running on this PC.",
         "run": 'python chat.py "Give me three ideas for a team offsite"',
     },
     "private-docs": {

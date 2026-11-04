@@ -223,7 +223,7 @@ DEMOS = {
     "meeting": {
         "title": "Client meeting to call notes and actions", "category": "Listen", "glyph": "\uE720", "workload": "transcription",
         "pitch": "Tier 1 and Tier 2 on one PC: a recorded client meeting becomes call notes and an action list without leaving the laptop.",
-        "proof": "Speech recognition and drafting both run on the RTX GPU; word accuracy is measured against the script.",
+        "proof": "Speech recognition and drafting run on {where}; word accuracy is measured against the script.",
         "input": {"kind": "audio", "media": "meeting.wav",
                   "label": "Synthetic two-voice client meeting recorded with Windows text-to-speech"},
         "source": script_text(MEETING_SEGMENTS),
@@ -249,13 +249,14 @@ DEMOS = {
     "voice-memo": {
         "title": "Voice memo to work order", "category": "Listen", "glyph": "\uE707", "workload": "field",
         "pitch": "A technician talks; a structured work order comes back, ready for a person to check.",
-        "proof": "Speech to text, then text to structured fields, on the GPU; fields are checked against the memo.",
+        "proof": "Speech to text, then text to structured fields, on {where}; fields are checked against the memo.",
         "input": {"kind": "audio", "media": "voice-memo.wav",
                   "label": "Synthetic branch voice memo recorded with Windows text-to-speech"},
         "source": script_text(MEMO_SEGMENTS),
         "prompt": ("Convert this voice memo transcript into a work order. Return only one JSON object with the keys "
                    "department, location, asset, issue, actions_taken, battery_percent, priority, parts_requested and "
-                   "technician_available_until. Use null when the memo does not say."),
+                   "technician_available_until. Give location in full as the memo states it, including any desk, room "
+                   "or floor. Use null when the memo does not say."),
         "system": ("You turn branch voice memos into structured work orders. Use only what the transcript says. "
                    "Do not invent ticket numbers, causes or fixes. Return JSON only."),
         "max_tokens": 400,
@@ -349,7 +350,7 @@ DEMOS = {
     "ask-docs": {
         "title": "Ask your documents", "category": "Know", "glyph": "\uE8A5", "workload": "documents",
         "pitch": "Questions answered from approved bank policies, with citations, on the laptop.",
-        "proof": "GPU embeddings find the right policy (checked), then the local model answers only from it.",
+        "proof": "Embeddings find the right policy (checked), then the local model answers only from it; both run on {where}.",
         "input": {"kind": "text", "label": "Twelve synthetic bank policies"},
         "source": "\n".join(f"[{pid}] {title}: {text}" for pid, title, text in POLICIES),
         "prompt": DOCS_QUESTION, "prompt_label": "Question",
@@ -367,7 +368,7 @@ DEMOS = {
     "vision": {
         "title": "Scanned form to structured data", "category": "See", "glyph": "\uE722", "workload": "vision",
         "pitch": "Photos of forms and receipts read on the laptop, including handwriting, into data a system can use.",
-        "proof": "A vision-language model runs on the RTX GPU; every field is compared with the synthetic document.",
+        "proof": "A vision-language model runs on {where}; every field is compared with the synthetic document.",
         "input": {"kind": "image", "label": "Synthetic scanned document rendered on this laptop"},
         "source": "", "prompt": "", "max_tokens": 450,
         "options": [{"id": "work-order", "label": "Work order form (handwritten fields)"},
@@ -397,8 +398,8 @@ DEMOS = {
     },
     "code": {
         "title": "Local coding assistant", "category": "Build", "glyph": "\uE943", "workload": "coding",
-        "pitch": "A 14-billion-parameter coding model drafts and explains code with no source leaving the laptop.",
-        "proof": "Runs on the RTX GPU. The code is displayed for review and is never executed by this app.",
+        "pitch": "{chat} drafts and explains code with no source leaving the laptop.",
+        "proof": "Runs on {where}. The code is displayed for review and is never executed by this app.",
         "input": {"kind": "text", "label": "Synthetic bank IT requirement"},
         "source": SCENARIOS["code"]["source"], "prompt": SCENARIOS["code"]["prompt"],
         "system": SCENARIOS["code"]["system"], "max_tokens": 1600,
@@ -407,7 +408,7 @@ DEMOS = {
     },
     "reasoning": {
         "title": "Plan it out with a reasoning model", "category": "Think", "glyph": "\uE82F", "workload": "reasoning",
-        "pitch": "A 20-billion-parameter reasoning model works through a multi-constraint plan, locally.",
+        "pitch": "{reasoner} works through a multi-constraint plan, locally.",
         "proof": "The engine checks the proposed schedule against all six constraints; exactly one schedule is valid.",
         "input": {"kind": "text", "label": "Synthetic rollout constraints"},
         "source": "", "prompt": PUZZLE, "system": PUZZLE_SYSTEM, "max_tokens": REASONING_BUDGET, "model": "gpt-oss-20b",
@@ -420,25 +421,25 @@ DEMOS = {
             "ORDER: Birch, Atlas, Delta, Cedar, Harbor")],
     },
     "faceoff": {
-        "title": "Model face-off: 14B versus 20B", "category": "Scale", "glyph": "\uE9D5", "workload": "prototyping",
+        "title": "Model face-off: {faceoff}", "category": "Scale", "glyph": "\uE9D5", "workload": "prototyping",
         "pitch": "Two large models, both resident on one laptop, answer the same question side by side.",
-        "proof": "Both run on the RTX GPU with measured speed. The engine grades each answer against the puzzle's "
+        "proof": "Both run on {where} with measured speed. The engine grades each answer against the puzzle's "
                  "single valid schedule, so you see which model got it right.",
         "input": {"kind": "text", "label": "Same prompt for both models"},
         "source": "", "prompt": PUZZLE, "system": PUZZLE_SYSTEM, "max_tokens": REASONING_BUDGET,
-        "steps": [_step("Qwen2.5-Coder 14B answers", "qwen2.5-coder-14b"), _step("GPT-OSS 20B answers", "gpt-oss-20b")],
-        "rehearsal": None,
+        "steps": [_step("{model} answers", "qwen2.5-coder-14b"), _step("{model} answers", "gpt-oss-20b")],
+        "rehearsal": None, "independent": True,
     },
     "team": {
         "title": "Five models, one laptop", "category": "Scale", "glyph": "\uE950", "workload": "prototyping",
         "pitch": "Chat, reasoning, speech, vision and search models all resident at once, each doing real work.",
-        "proof": "Each model runs a task; residency and GPU memory are read from Foundry Local and Windows counters.",
+        "proof": "Each model runs a task; residency is read from Foundry Local and memory from Windows counters.",
         "input": {"kind": "text", "label": "Measurement: no customer data"},
         "source": "", "prompt": "",
         "steps": [_step("Chat model", "qwen2.5-coder-14b"), _step("Reasoning model", "gpt-oss-20b"),
                   _step("Speech model", "asr"), _step("Vision model", "vision"), _step("Embedding model", "embed"),
                   _step("Measure residency and memory", "measure")],
-        "rehearsal": None,
+        "rehearsal": None, "independent": True,
     },
 }
 ORDER = ("meeting", "voice-memo", "vision", "ask-docs", "translate", "brief", "redact", "triage", "code",
@@ -489,21 +490,93 @@ def media_for(demo_id, option=None):
     return demo["input"].get("media")
 
 
-def public():
+# ---------------------------------------------------------------- wording for the PC the demos run on
+# The registry text above names no model and no hardware. {where}, {chat}, {reasoner}, {faceoff} (and {model} in a step title) are filled
+# from what this PC actually runs, so the same registry reads correctly on an RTX GPU, an NPU or a CPU. REFERENCE is the PC the demos
+# were authored on; it is what public() and render() use until they are given the engine's own wording().
+_RTX = "the RTX GPU"
+REFERENCE = {"roles": {
+    "chat": {"label": "Qwen2.5-Coder 14B", "where": _RTX, "lane": "gpu", "available": True},
+    "qwen2.5-coder-14b": {"label": "Qwen2.5-Coder 14B", "where": _RTX, "lane": "gpu", "available": True},
+    "gpt-oss-20b": {"label": "GPT-OSS 20B", "where": _RTX, "lane": "gpu", "available": True},
+    "asr": {"label": "Whisper medium", "where": _RTX, "lane": "gpu", "available": True},
+    "vision": {"label": "Qwen3-VL 4B", "where": _RTX, "lane": "gpu", "available": True},
+    "embed": {"label": "Qwen3-Embedding 0.6B", "where": _RTX, "lane": "gpu", "available": True},
+}}
+ROLES = tuple(REFERENCE["roles"])
+# What a role is called when this PC has no model for it.
+GENERIC = {"chat": "The chat model", "qwen2.5-coder-14b": "The chat model", "gpt-oss-20b": "The reasoning model",
+           "asr": "The speech model", "vision": "The vision model", "embed": "The embedding model"}
+PLACEHOLDER = re.compile(r"\{(where|chat|reasoner|faceoff|model)\}")
+SIZE = re.compile(r"\b\d+(?:\.\d+)?B\b")
+
+
+def wording(engine):
+    """The context render() and public() fill the registry's placeholders from, read off the engine: for every role, which model this PC
+    runs, where it runs, and whether it can run at all."""
+    roles = {}
+    for role in ROLES:
+        info = engine.describe(None if role == "chat" else role)
+        roles[role] = {key: info[key] for key in ("label", "where", "lane", "available")}
+    return {"roles": roles}
+
+
+def _join(items):
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _label(context, role):
+    info = context["roles"].get(role) or {}
+    return info["label"] if info.get("available") else GENERIC.get(role, "The model")
+
+
+def _faceoff(context):
+    chat, reasoner = (context["roles"].get(role) or {} for role in ("qwen2.5-coder-14b", "gpt-oss-20b"))
+    if not (chat.get("available") and reasoner.get("available")):
+        return "chat model versus reasoning model"
+    sizes = SIZE.findall(chat["label"]), SIZE.findall(reasoner["label"])
+    # Sizes alone ("14B versus 20B") make the shorter title; names are used when a label has no size or both sizes match.
+    if sizes[0] and sizes[1] and sizes[0][-1] != sizes[1][-1]:
+        return f"{sizes[0][-1]} versus {sizes[1][-1]}"
+    return f"{chat['label']} versus {reasoner['label']}"
+
+
+def render(demo_id, context=None):
+    """The demo's title, pitch, proof and step titles with this PC's model names and lanes filled in."""
+    context = context or REFERENCE
+    demo = DEMOS[demo_id]
+    places = []
+    for step in demo["steps"]:
+        info = context["roles"].get(step["role"]) or {}
+        if info.get("available") and info["where"] not in places:
+            places.append(info["where"])
+    values = {"where": _join(places) if places else "this PC", "chat": _label(context, "chat"),
+              "reasoner": _label(context, "gpt-oss-20b"), "faceoff": _faceoff(context)}
+
+    def fill(text, extra=None):
+        merged = {**values, **(extra or {})}
+        return PLACEHOLDER.sub(lambda found: merged.get(found.group(1), found.group(0)), text)
+
+    steps = [fill(step["title"], {"model": _label(context, step["role"])}) for step in demo["steps"]]
+    return {"title": fill(demo["title"]), "pitch": fill(demo["pitch"]), "proof": fill(demo["proof"]), "steps": steps}
+
+
+def public(context=None):
     """Registry as served to the apps; every option carries its own default prompt, media and rehearsal flag."""
     rows = []
     for demo_id in ORDER:
         demo = DEMOS[demo_id]
-        row = {key: demo.get(key) for key in ("title", "category", "glyph", "workload", "pitch", "proof",
-                                              "source", "option_label")}
+        text = render(demo_id, context)
+        row = {key: demo.get(key) for key in ("category", "glyph", "workload", "source", "option_label")}
         options = [{**option, "prompt": prompt_for(demo_id, option["id"]),
                     "media": media_for(demo_id, option["id"]), "rehearsal": has_rehearsal(demo_id, option["id"])}
                    for option in demo.get("options", [])]
-        row.update(id=demo_id, input=dict(demo["input"], media=media_for(demo_id)), options=options,
+        row.update(id=demo_id, title=text["title"], pitch=text["pitch"], proof=text["proof"],
+                   input=dict(demo["input"], media=media_for(demo_id)), options=options,
                    prompt=prompt_for(demo_id), prompt_label=demo.get("prompt_label", "Instruction"),
                    editable=is_editable(demo_id), rehearsal=has_rehearsal(demo_id),
-                   steps=[{"title": step["title"], "role": step["role"]} for step in demo["steps"]],
-                   default_option=default_option(demo))
+                   steps=[{"title": title, "role": step["role"]} for title, step in zip(text["steps"], demo["steps"])],
+                   independent=bool(demo.get("independent")), default_option=default_option(demo))
         rows.append(row)
     return rows
 

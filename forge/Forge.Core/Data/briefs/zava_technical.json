@@ -1,0 +1,36 @@
+{
+  "id": "zava_technical",
+  "client": "Zava",
+  "pitch_type": "technical",
+  "audience": "Zava engineering leadership, platform architects and senior developers (about 150 developers and architects). Technical, skeptical, want architecture and measured numbers.",
+  "objective": "Show how {device} runs a local AI developer stack (code generation, RAG over internal docs, hybrid routing) and win a 10-developer, 2-week technical pilot.",
+  "template_hint": "surface_ultra",
+  "slide_range": [8, 12],
+  "context": "Zava is a fictional design and manufacturing company with about 150 developers and architects. Its CAD/PLM data and source code are sensitive IP. Teams want code assistants and retrieval over internal engineering docs without sending IP to shared services, while keeping cloud models for the heaviest tasks. This deck itself is drafted on {device} by a local model, so the device is teaching others about itself.",
+  "facts": [
+    "Model sizing bands: S 1-4B, M 7-8B, L 14-20B, XL 24-32B parameters. Bands are planning estimates, not accuracy tiers.",
+    "A PC has three engines for AI work: the NPU for efficient always-on work, the GPU for the largest models and the CPU as the universal fallback; the planner picks the lane for each workload.",
+    "Hybrid routing: sensitive, frequent tasks (code, internal docs) go to the local lane; heaviest reasoning can route to cloud models.",
+    "Pilot: 10 developers for 2 weeks (14 days), measuring acceptance rate, latency and developer experience.",
+    "The device facts and the speed in this deck come from this PC: what it detected, the model that wrote the deck and what it measured."
+  ],
+  "required_topics": {
+    "hardware": ["silicon", "npu", "gpu", "cpu"],
+    "memory_views": ["memory", "ram", "gb", "budget"],
+    "runtimes": ["runtime", "foundry", "execution provider", "onnx"],
+    "throughput": ["tokens/s", "tokens per second", "decode", "speed"],
+    "three_engines": ["npu", "gpu", "cpu", "engine", "lane"],
+    "sizing_bands": ["sizing", "band", "1-4b", "7-8b", "14-20b", "24-32b"],
+    "codegen_rag": ["code", "rag", "retrieval", "internal docs", "docs"],
+    "hybrid_routing": ["hybrid", "router", "routing", "cloud lane", "local lane"],
+    "made_on_device": ["this deck", "drafted on", "built this", "this device"],
+    "pilot_ask": ["pilot", "10 developers", "2 weeks", "two weeks"]
+  },
+  "guardrails": [
+    "Never add the memory views together and never call system RAM dedicated VRAM.",
+    "Speeds are measured on this PC for the model named; do not present them as a guaranteed spec or a comparison against other devices.",
+    "Do not claim air-gapped or certified offline operation.",
+    "Do not cite TOPS, Copilot+ certification, dollar savings or subscription replacement.",
+    "A larger parameter count is not an accuracy claim."
+  ]
+}

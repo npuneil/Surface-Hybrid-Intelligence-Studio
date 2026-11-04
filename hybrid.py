@@ -152,12 +152,16 @@ def _signals(text, found):
     return list(rows.values())
 
 
-def route(text, network="online", scale="fits"):
-    """Decide a lane and explain it. Pure and deterministic: the same input always routes the same way."""
+def route(text, network="online", scale="fits", where=None):
+    """Decide a lane and explain it. Pure and deterministic: the same input always routes the same way.
+
+    `where` names what runs the on-device model in the step text ('the NPU', 'the RTX GPU'); it never changes the decision.
+    """
     if not isinstance(text, str) or not 1 <= len(text.strip()) <= MAX_TEXT:
         raise ValueError(f"Text must contain 1 to {MAX_TEXT:,} characters.")
     if network not in NETWORKS or scale not in SCALES:
         raise ValueError("Network must be online or offline; scale must be fits or beyond_device.")
+    where = where or "this PC"
     found = scan(text)
     signals = _signals(text, found)
     groups = {s["group"] for s in signals}
@@ -188,7 +192,7 @@ def route(text, network="online", scale="fits"):
         blocked = bool(needs)
         headline = ("Keep it on this PC: credentials found. The cloud step is blocked until they are removed."
                     if blocked else "Keep it on this PC: credentials found.")
-        steps = [("device", "Answer on this PC's GPU; nothing leaves the device."),
+        steps = [("device", f"Answer on {where}; nothing leaves the device."),
                  ("person", "Remove the credentials and rotate them if they were shared anywhere.")]
         if blocked:
             steps.append(("cloud", "Blocked: route again once the text holds no credentials."))
@@ -216,7 +220,7 @@ def route(text, network="online", scale="fits"):
         lane = "local"
         headline = ("Local: private data stays on this PC, and nothing here needs the cloud." if sensitive
                     else "Local: everything this needs is already on this PC.")
-        steps = [("device", "Answer on this PC's GPU; nothing leaves the device.")]
+        steps = [("device", f"Answer on {where}; nothing leaves the device.")]
     if not reasons:
         reasons.append("No identifiers, credentials, confidentiality markers or cloud-only needs were found.")
     return {
@@ -311,7 +315,7 @@ PRESETS = (
 PATTERNS = (
     {"id": "local-first", "title": "Local first, escalate on purpose",
      "summary": "Draft on the PC. A transparent policy decides what, if anything, needs the cloud.",
-     "flow": [("device", "Draft on the RTX GPU"), ("device", "Check: customer data? current? too big?"),
+     "flow": [("device", "Draft on {where}"), ("device", "Check: customer data? current? too big?"),
               ("cloud", "Escalate only what needs it")],
      "when": "Everyday drafting, summarising and coding help where most requests never need to leave the PC.",
      "proof": {"kind": "page", "target": "hybrid", "label": "Try the router"},
@@ -324,8 +328,8 @@ PATTERNS = (
      "proof": {"kind": "demo", "target": "redact", "label": "Run the redaction demo"},
      "caveat": "Review redactions before sharing; models and patterns can miss context."},
     {"id": "private-knowledge", "title": "Firm knowledge stays put",
-     "summary": "Documents are embedded and searched on the GPU, and answers cite the source.",
-     "flow": [("device", "Embed documents on the GPU"), ("device", "Retrieve and answer with citations"),
+     "summary": "Documents are embedded and searched on {where}, and answers cite the source.",
+     "flow": [("device", "Embed documents on {where}"), ("device", "Retrieve and answer with citations"),
               ("person", "Reviewer checks the cited source")],
      "when": "Policies, procedures, product guides and internal research you can't or don't want to upload.",
      "proof": {"kind": "demo", "target": "ask-docs", "label": "Run Ask your documents"},
@@ -346,11 +350,11 @@ PATTERNS = (
      "caveat": "Throughput shown is one run on this PC, not a capacity guarantee."},
     {"id": "right-size", "title": "Right-size the model",
      "summary": "Small and fast for routine work, a larger local model for depth, the cloud for the rest.",
-     "flow": [("device", "14B-20B for routine work"), ("device", "30B-120B on the GPU for depth"),
+     "flow": [("device", "{routine}"), ("device", "{depth}"),
               ("cloud", "Frontier models for the rest")],
      "when": "Mixed branch, operations and analyst workloads where speed and depth trade off.",
      "proof": {"kind": "page", "target": "showoff", "label": "Measure tokens per second"},
-     "caveat": "Speeds vary by model, prompt and what else the GPU is doing."},
+     "caveat": "Speeds vary by model, prompt and what else this PC is doing."},
     {"id": "same-api", "title": "Same code, local or cloud",
      "summary": "An OpenAI-compatible endpoint on loopback, so apps switch between local and cloud by changing a URL.",
      "flow": [("device", "Call the local endpoint"), ("device", "Same request and response shape"),
@@ -360,8 +364,21 @@ PATTERNS = (
      "caveat": "The local endpoint is loopback-only and unauthenticated; it stays off until you start it."},
 )
 
-def public():
+# {where}, {routine} and {depth} in PATTERNS name this PC's lane and models. REFERENCE_WORDING is the RTX GPU the studio was authored on;
+# the studio passes its own for the PC it runs on.
+REFERENCE_WORDING = {"where": "the RTX GPU", "routine": "14B-20B for routine work",
+                     "depth": "30B-120B on the GPU for depth"}
+_WORDING = re.compile(r"\{(where|routine|depth)\}")
+
+
+def public(wording=None):
+    wording = {**REFERENCE_WORDING, **(wording or {})}
+
+    def fill(text):
+        return _WORDING.sub(lambda found: wording[found.group(1)], text)
+
     return {"policy": POLICY_VERSION, "networks": list(NETWORKS), "scales": list(SCALES), "max_text": MAX_TEXT,
             "presets": [dict(p) for p in PRESETS],
-            "patterns": [{**p, "flow": [{"where": w, "text": t} for w, t in p["flow"]]} for p in PATTERNS],
+            "patterns": [{**p, "summary": fill(p["summary"]), "flow": [{"where": w, "text": fill(t)} for w, t in p["flow"]]}
+                         for p in PATTERNS],
             "not_sent": NOT_SENT}

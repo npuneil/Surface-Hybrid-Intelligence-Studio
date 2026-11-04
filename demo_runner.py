@@ -18,7 +18,7 @@ from pathlib import Path
 import demos
 import gpu_runtime
 import media
-from local_engine import LARGE_MODELS, MEDIA_MODELS, MODELS
+from local_engine import LARGE_MODELS
 
 ROOT = Path(__file__).resolve().parent
 MEDIA_DIR = ROOT / ".runtime" / "demo-media"
@@ -151,10 +151,12 @@ def load_metric(timing):
 
 
 class DemoRunner:
-    def __init__(self, engine, media_store, device=None):
+    def __init__(self, engine, media_store, device=None, view=None):
         self.engine = engine
         self.media = media_store
         self.device = device or {}
+        # The engine whose models the demos' text describes. It is the real engine unless the studio is previewing another device.
+        self.view = view or (lambda: engine)
 
     # ------------------------------------------------------------ request validation
     def validate(self, body):
@@ -192,20 +194,26 @@ class DemoRunner:
         return demo_id, mode, prompt.strip(), option, prompt.strip() != default.strip()
 
     # ------------------------------------------------------------ orchestration
+    def wording(self):
+        """The model names and lanes the demos' text is filled in with on this PC."""
+        return demos.wording(self.view())
+
     def role_label(self, role):
-        if role in MEDIA_MODELS:
-            return MEDIA_MODELS[role]["label"]
-        if role in MODELS:
-            return MODELS[role]["label"]
+        if role == "measure":
+            return "Foundry Local and Windows counters"
+        view = self.view()
         if role == "chat":
-            return (self.engine.state.get("model") or {}).get("name") or "Selected chat model"
-        return "Foundry Local and Windows counters"
+            loaded = (self.engine.state.get("model") or {}).get("name") if view is self.engine else None
+            return loaded or ("Selected chat model" if view is self.engine else view.describe(None)["label"])
+        return view.label(role)
 
     def run(self, demo_id, mode, prompt, option=None, edited=False):
         started = time.perf_counter()
         demo = demos.DEMOS[demo_id]
+        titles = demos.render(demo_id, self.wording())["steps"]
         yield {"type": "plan", "demo": demo_id, "mode": mode, "option": option, "edited": edited,
-               "steps": [{"title": step["title"], "model": self.role_label(step["role"])} for step in demo["steps"]]}
+               "steps": [{"title": title, "model": self.role_label(step["role"])}
+                         for title, step in zip(titles, demo["steps"])]}
         passed = total = failed = 0
         source = (self._rehearse(demo_id, option) if mode == "rehearsal"
                   else getattr(self, "_live_" + demo_id.replace("-", "_"))(prompt, option, edited))
@@ -250,17 +258,26 @@ class DemoRunner:
                    "detail": "Skipped because an earlier step failed."}
 
     # ------------------------------------------------------------ step primitives
+    def _loading(self, ref, text):
+        """The 'Loading …' sentence for a first use, with the note that a first NPU load can take a while."""
+        label, where = self.engine.label(ref), self.engine.where(ref)
+        sentence = f"Loading {label} on {where}{text} (first use only)"
+        return sentence + ". The first load on the NPU can take a while" if self.engine.lane(ref) == "npu" else sentence
+
     def _chat(self, index, alias, prompt, system, max_tokens):
         metrics = []
+        if alias is not None:
+            # A model this PC cannot run stops here with the reason, before anything is loaded.
+            self.engine.require_alias(alias)
         if alias is not None and not self.engine.is_resident(alias):
-            yield {"type": "step", "index": index, "state": "running", "model": MODELS[alias]["label"],
-                   "detail": f"Loading {MODELS[alias]['label']} on the RTX GPU (first use only)"}
+            yield {"type": "step", "index": index, "state": "running", "model": self.engine.label(alias),
+                   "detail": self._loading(alias, "")}
             metrics += load_metric(self.engine.ensure_chat(alias))
         info = self.engine.chat_info(alias)
         if info.get("reasoning"):
             max_tokens = max(max_tokens, demos.REASONING_BUDGET)
         yield {"type": "step", "index": index, "state": "running", "model": info["name"],
-               "detail": f"Generating with {info['name']} on the RTX GPU"}
+               "detail": f"Generating with {info['name']} on {self.engine.where(alias)}"}
         parts, done = [], None
         for event in self.engine.stream(prompt, system, max_tokens=max_tokens, alias=alias):
             if event["type"] == "token":
@@ -275,10 +292,10 @@ class DemoRunner:
         return "".join(parts)
 
     def _ensure_media(self, index, role, **warm):
-        label = MEDIA_MODELS[role]["label"]
+        self.engine.require_alias(role)
         if not self.engine.is_resident(role):
-            yield {"type": "step", "index": index, "state": "running", "model": label,
-                   "detail": f"Loading {label} on the RTX GPU and warming it up (first use only)"}
+            yield {"type": "step", "index": index, "state": "running", "model": self.engine.label(role),
+                   "detail": self._loading(role, " and warming it up")}
         return load_metric(self.engine.ensure_media(role, **warm))
 
     def _transcribe(self, index, name):
@@ -286,9 +303,9 @@ class DemoRunner:
         metrics = yield from self._ensure_media(index, "asr", warm_audio=wav)
         rate, pcm = media.read_wav(wav)
         duration = len(pcm) / rate
-        label = MEDIA_MODELS["asr"]["label"]
+        label = self.engine.label("asr")
         yield {"type": "step", "index": index, "state": "running", "model": label,
-               "detail": f"Transcribing {duration:.0f} seconds of audio on the RTX GPU"}
+               "detail": f"Transcribing {duration:.0f} seconds of audio on {self.engine.where('asr')}"}
         parts, spent, count = [], 0, 0
         with tempfile.TemporaryDirectory() as folder:
             for chunk in self.engine.transcribe(wav, folder):
@@ -309,9 +326,9 @@ class DemoRunner:
         image = self.media.require(name).read_bytes()
         warm_images = [self.media.require(other).read_bytes() for other in warm_names]
         metrics = yield from self._ensure_media(index, "vision", warm_images=warm_images)
-        label = MEDIA_MODELS["vision"]["label"]
+        label = self.engine.label("vision")
         yield {"type": "step", "index": index, "state": "running", "model": label,
-               "detail": f"Reading the image with {label} on the RTX GPU"}
+               "detail": f"Reading the image with {label} on {self.engine.where('vision')}"}
         parts, done = [], None
         for event in self.engine.see(image, prompt, system, max_tokens):
             if event["type"] == "token":
@@ -325,9 +342,9 @@ class DemoRunner:
 
     def _search(self, index, question, top=3):
         metrics = yield from self._ensure_media(index, "embed")
-        label = MEDIA_MODELS["embed"]["label"]
+        label = self.engine.label("embed")
         yield {"type": "step", "index": index, "state": "running", "model": label,
-               "detail": "Embedding the question and twelve policies on the RTX GPU"}
+               "detail": f"Embedding the question and twelve policies on {self.engine.where('embed')}"}
         passages = [f"{title}: {text}" for _, title, text in demos.POLICIES]
         vectors, elapsed = self.engine.embed(passages + [demos.QUERY_INSTRUCTION + question])
         query = vectors[-1]
@@ -447,10 +464,10 @@ class DemoRunner:
         for index, step in enumerate(demo["steps"]):
             alias = step["role"]
             output = yield from self._attempt(index, self._chat(index, alias, prompt, demo["system"],
-                                                                 demo["max_tokens"] if MODELS[alias]["reasoning"] else 900))
+                                                                 demo["max_tokens"] if self.engine.reasoning(alias) else 900))
             if output is not FAILED and not edited:
                 result = demos.schedule_check(output)
-                result["label"] = f"{MODELS[alias]['label']}: {result['label'][0].lower()}{result['label'][1:]}"
+                result["label"] = f"{self.engine.label(alias)}: {result['label'][0].lower()}{result['label'][1:]}"
                 yield result
 
     def _live_team(self, prompt, option, edited):
@@ -461,9 +478,9 @@ class DemoRunner:
         )
         for index, (alias, question, expected, label) in enumerate(tasks):
             answer = yield from self._attempt(index, self._chat(index, alias, question, "Answer briefly.",
-                                                                 1024 if MODELS[alias]["reasoning"] else 48))
+                                                                 1024 if self.engine.reasoning(alias) else 48))
             if answer is not FAILED:
-                yield demos.check(f"{MODELS[alias]['label']}: {label}", "Yes" if expected in answer else "No",
+                yield demos.check(f"{self.engine.label(alias)}: {label}", "Yes" if expected in answer else "No",
                                   expected in answer, "Ground truth is fixed in the demo.")
         transcript = yield from self._attempt(2, self._transcribe(2, "voice-memo.wav"))
         if transcript is not FAILED:
@@ -472,27 +489,33 @@ class DemoRunner:
                                                       "the amount only.", "Answer briefly.", 24,
                                                       [doc["media"] for doc in demos.DEMOS["vision"]["documents"].values()]))
         if total is not FAILED:
-            yield demos.check(f"{MEDIA_MODELS['vision']['label']}: receipt total is 93.53",
+            yield demos.check(f"{self.engine.label('vision')}: receipt total is 93.53",
                               "Yes" if "93.53" in total else "No", "93.53" in total, "Printed on the synthetic receipt.")
         found = yield from self._attempt(4, self._search(4, demos.DOCS_QUESTION, top=1))
         if found is not FAILED:
             hit = found[0][0] == demos.DOCS_EXPECTED
-            yield demos.check(f"{MEDIA_MODELS['embed']['label']}: top match is POL-03", found[0][0], hit,
+            yield demos.check(f"{self.engine.label('embed')}: top match is POL-03", found[0][0], hit,
                               "The lost-device policy should rank first.")
         yield from self._attempt(5, self._measure(5))
 
     def _measure(self, index):
+        expected = self.engine.expected_models()
+        missing = self.engine.unavailable_models()
+        total = len(expected) + len(missing)
+        selected = self.engine.state.get("selected_model") in LARGE_MODELS
+        gpu = selected or any(item["lane"] == "gpu" for item in expected)
+        counters = "GPU memory from Windows counters" if gpu else "this service's memory from Windows counters"
         yield {"type": "step", "index": index, "state": "running", "model": self.role_label("measure"),
-               "detail": "Reading loaded models from Foundry Local and GPU memory from Windows counters"}
+               "detail": f"Reading loaded models from Foundry Local and {counters}"}
         loaded = set(self.engine.resident())
-        expected = [(spec["label"], spec["id"]) for spec in (*MODELS.values(), *MEDIA_MODELS.values())]
-        present = [label for label, model_id in expected if model_id in loaded]
-        usage = gpu_runtime.gpu_memory_usage(os.getpid())
+        present = [item for item in expected if item["id"] in loaded]
+        usage = gpu_runtime.gpu_memory_usage(os.getpid()) if gpu else None
         private = gpu_runtime.process_private_bytes()
         budget = sum(item.get("reported_budget_mib", 0) for item in self.device.get("gpu_memory") or []) or None
-        lines = [f"{'Loaded' if model_id in loaded else 'Not loaded'}: {label} ({model_id})"
-                 for label, model_id in expected]
-        large = (self.engine.state.get("model") or {}) if self.engine.state.get("selected_model") in LARGE_MODELS else {}
+        lines = [f"{'Loaded' if item['id'] in loaded else 'Not loaded'}: {item['label']} ({item['id']}, {item['where']})"
+                 for item in expected]
+        lines += [f"Not available on this PC: {item['title']} ({item['blocker']})" for item in missing]
+        large = (self.engine.state.get("model") or {}) if selected else {}
         if large.get("id") in loaded:
             lines.append(f"Also loaded: {large['name']} ({large['id']}, {large.get('provider')}, {large.get('offload')}"
                          + (f"; at load: {large['gpu_memory']}" if large.get("gpu_memory") else "") + ")")
@@ -500,14 +523,17 @@ class DemoRunner:
             lines.append("Whole-GPU figures include every app using the GPU on this PC. Shared usage is system "
                          "memory the GPU borrows when dedicated memory is full.")
         yield {"type": "text", "index": index, "text": "\n".join(lines)}
-        yield {"type": "step", "index": index, "state": "done", "model": self.role_label("measure"), "metrics": [
-            metric("Models resident at once", f"{len(present)} of {len(expected)}"),
-            metric("GPU dedicated memory, this service", gib(usage and usage["process_dedicated_bytes"])),
-            metric("GPU shared memory, this service", gib(usage and usage["process_shared_bytes"])),
-            metric("GPU dedicated memory, whole GPU", gib(usage and usage["adapter_dedicated_bytes"])),
-            metric("GPU dedicated budget (driver)", gib(budget and budget * 2 ** 20)),
-            metric("Private memory, this service", gib(private))]}
-        yield demos.check("Models resident at the same time", f"{len(present)} of {len(expected)}",
-                          len(present) == len(expected),
-                          "Read from Foundry Local's loaded-model list. GPU memory is from Windows GPU memory "
-                          "counters" + ("." if usage else " (unavailable on this device)."))
+        metrics = [metric("Models resident at once", f"{len(present)} of {total}")]
+        if gpu:
+            metrics += [metric("GPU dedicated memory, this service", gib(usage and usage["process_dedicated_bytes"])),
+                        metric("GPU shared memory, this service", gib(usage and usage["process_shared_bytes"])),
+                        metric("GPU dedicated memory, whole GPU", gib(usage and usage["adapter_dedicated_bytes"])),
+                        metric("GPU dedicated budget (driver)", gib(budget and budget * 2 ** 20))]
+        metrics.append(metric("Private memory, this service", gib(private)))
+        yield {"type": "step", "index": index, "state": "done", "model": self.role_label("measure"), "metrics": metrics}
+        detail = "Read from Foundry Local's loaded-model list."
+        if gpu:
+            detail += " GPU memory is from Windows GPU memory counters" + ("." if usage else " (unavailable on this device).")
+        else:
+            detail += " No model here runs on the GPU, so only this service's private memory is read."
+        yield demos.check("Models resident at the same time", f"{len(present)} of {total}", len(present) == total, detail)

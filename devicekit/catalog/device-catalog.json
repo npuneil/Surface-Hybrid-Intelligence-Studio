@@ -1,0 +1,234 @@
+{
+  "schema": 1,
+  "catalogVersion": "2026.11.0",
+  "about": "Data-only knowledge for the Surface device kit. Nothing here is a measured result. NPU TOPS are vendor-rated figures, model sizes are file sizes from the Foundry Local catalog as seen on a Surface Laptop Ultra (CUDA and CPU variants), and every plan is re-checked against the live Foundry Local catalog at run time. Confirm everything on the exact SKU.",
+  "ramTiers": [8, 16, 24, 32, 48, 64, 96, 128],
+  "tierTolerance": 0.08,
+  "thresholds": {
+    "npuMinTopsForLlm": 40,
+    "copilotPlusMinRamGb": 16,
+    "copilotPlusMinTops": 40,
+    "gpuMinBudgetGb": 2.0,
+    "modelDriveMinFreeGb": 12
+  },
+  "budget": {
+    "note": "Gigabytes a lane can give model weights. A model needs sizeGb * multiplier + constantGb to load (runtime and KV cache). Budget = min(basis * fraction, basis - reserveGb).",
+    "overhead": { "multiplier": 1.15, "constantGb": 0.5 },
+    "gpu-discrete": { "basis": "vram", "fraction": 1.0, "reserveGb": 0.8 },
+    "gpu-unified": { "basis": "vram", "fraction": 1.0, "reserveGb": 2.0 },
+    "gpu-integrated": { "basis": "ram", "fraction": 0.45, "reserveGb": 6.0 },
+    "npu": { "basis": "ram", "fraction": 0.45, "reserveGb": 6.0 },
+    "cpu": { "basis": "ram", "fraction": 0.45, "reserveGb": 6.0 }
+  },
+  "modelClasses": {
+    "order": ["XS", "S", "M", "L", "XL"],
+    "describe": {
+      "XS": "up to 1B parameters",
+      "S": "1B to 4B parameters",
+      "M": "7B to 9B parameters",
+      "L": "12B to 15B parameters",
+      "XL": "20B parameters and up"
+    },
+    "laneCap": { "gpu-discrete": "XL", "gpu-unified": "XL", "gpu-integrated": "M", "npu": "M", "cpu": "M" }
+  },
+  "lanes": {
+    "npu": { "label": "NPU", "deviceType": "NPU" },
+    "gpu": { "label": "GPU", "deviceType": "GPU" },
+    "cpu": { "label": "CPU", "deviceType": "CPU" }
+  },
+  "laneOrder": {
+    "npu-first": ["npu", "gpu", "cpu"],
+    "gpu-first": ["gpu", "cpu"],
+    "igpu-first": ["gpu", "cpu"],
+    "cpu-only": ["cpu"]
+  },
+  "deviceClassLabels": {
+    "npu-first": "NPU-first",
+    "gpu-first": "GPU-first",
+    "igpu-first": "Integrated-GPU-first",
+    "cpu-only": "CPU-only"
+  },
+  "pcClassLabels": {
+    "builder": "Builder PC",
+    "copilot-plus": "Copilot+ PC class",
+    "npu": "AI PC with an NPU",
+    "gpu": "AI PC with an NVIDIA GPU",
+    "windows": "Windows 11 PC"
+  },
+  "eps": {
+    "note": "Execution provider tokens in preference order, matched case-insensitively against Foundry Local EP names.",
+    "npu": { "qualcomm": ["qnn"], "intel": ["openvino"], "amd": ["vitisai"] },
+    "gpu": {
+      "nvidia": ["cuda", "nvtensorrtrtx", "webgpu", "dml"],
+      "intel": ["openvino", "webgpu", "dml"],
+      "amd": ["webgpu", "dml"],
+      "qualcomm": ["webgpu", "dml"],
+      "other": ["webgpu", "dml"]
+    },
+    "cpu": { "any": ["cpu"] }
+  },
+  "surface": {
+    "productPattern": "^Surface",
+    "stripPrefixes": ["Microsoft "],
+    "stripSuffixes": [" for Business", " For Business"]
+  },
+  "silicon": [
+    {
+      "id": "nvidia-n1x", "label": "NVIDIA RTX Spark (N1X)", "vendor": "nvidia", "arch": "arm64",
+      "cpuMatch": "NVIDIA.*(N1X|RTX Spark)", "unifiedMemory": true, "copilotPlus": "listed", "builderPc": "listed",
+      "copilotPlusNote": "Microsoft's Surface Laptop Ultra page answers yes to \"Is Surface Laptop Ultra a Copilot+ PC?\" and its Hybrid Intelligence post lists the device as a Builder PC.",
+      "npu": { "vendor": "nvidia", "ratedTops": null, "runtime": false, "note": "An NVIDIA NPU device is present, but Foundry Local has no execution provider for it, so language models do not use it." }
+    },
+    {
+      "id": "snapdragon-x2", "label": "Snapdragon X2", "vendor": "qualcomm", "arch": "arm64",
+      "cpuMatch": "Snapdragon\\(R\\)\\s*X2|Snapdragon\\s+X2", "copilotPlus": "config",
+      "npu": { "vendor": "qualcomm", "ratedTops": 80, "runtime": true }
+    },
+    {
+      "id": "snapdragon-x", "label": "Snapdragon X", "vendor": "qualcomm", "arch": "arm64",
+      "cpuMatch": "Snapdragon\\(R\\)\\s*X\\b|Snapdragon\\s+X\\b|X1E|X1P", "copilotPlus": "config",
+      "npu": { "vendor": "qualcomm", "ratedTops": 45, "runtime": true }
+    },
+    {
+      "id": "snapdragon-legacy", "label": "Microsoft SQ / Snapdragon 8cx", "vendor": "qualcomm", "arch": "arm64",
+      "cpuMatch": "Microsoft SQ\\d|Snapdragon.*8cx|Qualcomm.*Kryo", "copilotPlus": "no",
+      "npu": null
+    },
+    {
+      "id": "intel-core-ultra-3", "label": "Intel Core Ultra (Series 3)", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Core\\(TM\\)\\s*Ultra\\s+(X\\s*)?[3579]\\s*3\\d\\d", "copilotPlus": "config",
+      "npu": { "vendor": "intel", "ratedTops": 50, "runtime": true }
+    },
+    {
+      "id": "intel-core-ultra-lunar", "label": "Intel Core Ultra 200V (Lunar Lake)", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Core\\(TM\\)\\s*Ultra\\s+[3579]\\s*2\\d\\dV", "copilotPlus": "config",
+      "npu": { "vendor": "intel", "ratedTops": 48, "runtime": true }
+    },
+    {
+      "id": "intel-core-ultra-arrow", "label": "Intel Core Ultra 200H/U (Arrow Lake)", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Core\\(TM\\)\\s*Ultra\\s+[3579]\\s*2\\d\\d(H|HX|U|K)\\b", "copilotPlus": "no",
+      "npu": { "vendor": "intel", "ratedTops": 13, "runtime": true }
+    },
+    {
+      "id": "intel-core-ultra-meteor", "label": "Intel Core Ultra (Series 1, Meteor Lake)", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Core\\(TM\\)\\s*Ultra\\s+[3579]\\s*1\\d\\d(H|U)\\b", "copilotPlus": "no",
+      "npu": { "vendor": "intel", "ratedTops": 11, "runtime": true }
+    },
+    {
+      "id": "intel-core", "label": "Intel Core (11th to 13th Gen)", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Intel\\(R\\)\\s*Core\\(TM\\)\\s*i[3579]-|Intel\\(R\\)\\s*Core\\(TM\\)\\s*i[3579]\\s", "copilotPlus": "no",
+      "npu": null
+    },
+    {
+      "id": "intel-other", "label": "Intel", "vendor": "intel", "arch": "x64",
+      "cpuMatch": "Intel", "copilotPlus": "no", "npu": null
+    },
+    {
+      "id": "amd-ryzen-ai", "label": "AMD Ryzen AI", "vendor": "amd", "arch": "x64",
+      "cpuMatch": "Ryzen\\s+AI", "copilotPlus": "config",
+      "npu": { "vendor": "amd", "ratedTops": 50, "runtime": true }
+    },
+    {
+      "id": "amd-ryzen", "label": "AMD Ryzen", "vendor": "amd", "arch": "x64",
+      "cpuMatch": "AMD|Ryzen", "copilotPlus": "no", "npu": null
+    }
+  ],
+  "gpuFamilies": [
+    { "id": "nvidia-n1x", "match": "NVIDIA.*(N1X|RTX Spark)", "vendor": "nvidia", "kind": "unified" },
+    { "id": "nvidia-gtx", "match": "NVIDIA.*GTX", "vendor": "nvidia", "kind": "discrete" },
+    { "id": "nvidia-rtx", "match": "NVIDIA.*(RTX|GeForce|Quadro)", "vendor": "nvidia", "kind": "discrete" },
+    { "id": "intel-arc", "match": "Intel\\(R\\)\\s*(Arc|Iris|UHD)|Intel.*Graphics", "vendor": "intel", "kind": "integrated" },
+    { "id": "amd-radeon", "match": "AMD|Radeon", "vendor": "amd", "kind": "integrated" },
+    { "id": "adreno", "match": "Adreno|Qualcomm", "vendor": "qualcomm", "kind": "integrated" }
+  ],
+  "models": {
+    "qwen2.5-0.5b": { "title": "Qwen2.5 0.5B", "params": 0.5, "class": "XS", "task": "chat", "sizeMb": { "gpu": 528, "cpu": 822 } },
+    "qwen2.5-coder-0.5b": { "title": "Qwen2.5-Coder 0.5B", "params": 0.5, "class": "XS", "task": "chat", "sizeMb": { "gpu": 528, "cpu": 822 } },
+    "qwen3-0.6b": { "title": "Qwen3 0.6B", "params": 0.6, "class": "XS", "task": "chat", "thinks": true, "sizeMb": { "gpu": 492, "cpu": 593 } },
+    "qwen2.5-1.5b": { "title": "Qwen2.5 1.5B", "params": 1.5, "class": "S", "task": "chat", "sizeMb": { "gpu": 1280, "cpu": 1822 } },
+    "qwen2.5-coder-1.5b": { "title": "Qwen2.5-Coder 1.5B", "params": 1.5, "class": "S", "task": "chat", "sizeMb": { "gpu": 1280, "cpu": 1822 } },
+    "qwen3-1.7b": { "title": "Qwen3 1.7B", "params": 1.7, "class": "S", "task": "chat", "thinks": true, "sizeMb": { "gpu": 1318, "cpu": 1354 } },
+    "qwen3.5-2b-text": { "title": "Qwen3.5 2B (text)", "params": 2.0, "class": "S", "task": "chat", "sizeMb": { "gpu": 1351, "cpu": 1464 } },
+    "phi-3.5-mini": { "title": "Phi-3.5 mini", "params": 3.8, "class": "S", "task": "chat", "sizeMb": { "gpu": 2181, "cpu": 2590 } },
+    "smollm3-3b": { "title": "SmolLM3 3B", "params": 3.0, "class": "S", "task": "chat", "sizeMb": { "gpu": 2069, "cpu": 2131 } },
+    "qwen3-4b": { "title": "Qwen3 4B", "params": 4.0, "class": "S", "task": "chat", "thinks": true, "sizeMb": { "gpu": 2692, "cpu": 2763 } },
+    "phi-4-mini": { "title": "Phi-4 mini", "params": 3.8, "class": "S", "task": "chat", "tools": true, "sizeMb": { "gpu": 3686, "cpu": 4915 } },
+    "phi-4-mini-reasoning": { "title": "Phi-4 mini reasoning", "params": 3.8, "class": "S", "task": "chat", "thinks": true, "sizeMb": { "gpu": 3225, "cpu": 4628 } },
+    "qwen2.5-7b": { "title": "Qwen2.5 7B", "params": 7.6, "class": "M", "task": "chat", "tools": true, "sizeMb": { "gpu": 4843, "cpu": 6307 } },
+    "qwen2.5-coder-7b": { "title": "Qwen2.5-Coder 7B", "params": 7.6, "class": "M", "task": "chat", "tools": true, "sizeMb": { "gpu": 4843, "cpu": 6307 } },
+    "mistral-7b-v0.2": { "title": "Mistral 7B v0.2", "params": 7.2, "class": "M", "task": "chat", "sizeMb": { "gpu": 4075, "cpu": 4167 } },
+    "olmo-3-7b-instruct": { "title": "OLMo 3 7B Instruct", "params": 7.0, "class": "M", "task": "chat", "tools": true, "sizeMb": { "gpu": 5193, "cpu": 5322 } },
+    "deepseek-r1-7b": { "title": "DeepSeek-R1 Distill Qwen 7B", "params": 7.6, "class": "M", "task": "chat", "thinks": true, "sizeMb": { "gpu": 5406, "cpu": 6584 } },
+    "qwen3-8b": { "title": "Qwen3 8B", "params": 8.2, "class": "M", "task": "chat", "thinks": true, "sizeMb": { "gpu": 5674, "cpu": 5806 } },
+    "mistral-nemo-12b-instruct": { "title": "Mistral NeMo 12B Instruct", "params": 12.2, "class": "L", "task": "chat", "tools": true, "sizeMb": { "gpu": 6766, "cpu": 6978 } },
+    "phi-4": { "title": "Phi-4 14B", "params": 14.7, "class": "L", "task": "chat", "sizeMb": { "gpu": 8570, "cpu": 10403 } },
+    "phi-4-reasoning": { "title": "Phi-4 reasoning 14B", "params": 14.7, "class": "L", "task": "chat", "thinks": true, "sizeMb": { "gpu": 8581, "cpu": 10403 } },
+    "qwen2.5-14b": { "title": "Qwen2.5 14B", "params": 14.8, "class": "L", "task": "chat", "tools": true, "sizeMb": { "gpu": 9000, "cpu": 11325 } },
+    "qwen2.5-coder-14b": { "title": "Qwen2.5-Coder 14B", "params": 14.8, "class": "L", "task": "chat", "tools": true, "sizeMb": { "gpu": 9000, "cpu": 11325 } },
+    "qwen3-14b": { "title": "Qwen3 14B", "params": 14.8, "class": "L", "task": "chat", "thinks": true, "sizeMb": { "gpu": 9302, "cpu": 9530 } },
+    "deepseek-r1-14b": { "title": "DeepSeek-R1 Distill Qwen 14B", "params": 14.8, "class": "L", "task": "chat", "thinks": true, "sizeMb": { "gpu": 10065, "cpu": 11786 } },
+    "gpt-oss-20b": { "title": "gpt-oss 20B", "params": 20.9, "class": "XL", "task": "chat", "thinks": true, "sizeMb": { "gpu": 11366, "cpu": 12552 } },
+    "whisper-tiny": { "title": "Whisper tiny", "params": 0.04, "class": "XS", "task": "stt", "sizeMb": { "gpu": 85, "cpu": 131 } },
+    "whisper-base": { "title": "Whisper base", "params": 0.07, "class": "XS", "task": "stt", "sizeMb": { "gpu": 123, "cpu": 205 } },
+    "whisper-small": { "title": "Whisper small", "params": 0.24, "class": "XS", "task": "stt", "sizeMb": { "gpu": 301, "cpu": 438 } },
+    "whisper-medium": { "title": "Whisper medium", "params": 0.77, "class": "XS", "task": "stt", "sizeMb": { "gpu": 639, "cpu": 937 } },
+    "whisper-large-v3-turbo": { "title": "Whisper large-v3 turbo", "params": 0.81, "class": "XS", "task": "stt", "sizeMb": { "gpu": 803, "cpu": 1284 } },
+    "qwen3-embedding-0.6b": { "title": "Qwen3 Embedding 0.6B", "params": 0.6, "class": "XS", "task": "embed", "sizeMb": { "gpu": 478, "cpu": 495 } },
+    "qwen3-embedding-8b": { "title": "Qwen3 Embedding 8B", "params": 8.0, "class": "M", "task": "embed", "sizeMb": { "gpu": 5640, "cpu": 5773 } },
+    "qwen3.5-0.8b": { "title": "Qwen3.5 0.8B (vision)", "params": 0.8, "class": "XS", "task": "vision", "sizeMb": { "gpu": 1483, "cpu": 1037 } },
+    "qwen3-vl-2b-instruct": { "title": "Qwen3-VL 2B", "params": 2.0, "class": "S", "task": "vision", "sizeMb": { "gpu": 2161, "cpu": 1374 } },
+    "qwen3-vl-4b-instruct": { "title": "Qwen3-VL 4B", "params": 4.0, "class": "S", "task": "vision", "sizeMb": { "gpu": 3561, "cpu": 2797 } },
+    "qwen3-vl-8b-instruct": { "title": "Qwen3-VL 8B", "params": 8.0, "class": "M", "task": "vision", "sizeMb": { "gpu": 6130, "cpu": 5081 } }
+  },
+  "workloads": {
+    "structured-json": {
+      "title": "Structured JSON generation",
+      "task": "chat",
+      "why": "Strict JSON needs reliable instruction following. Models that think out loud (reasoning models) are left out.",
+      "availableFrom": "qwen2.5-7b",
+      "candidates": ["qwen2.5-coder-14b", "qwen2.5-14b", "phi-4", "qwen2.5-7b", "qwen2.5-coder-7b", "phi-4-mini", "qwen2.5-1.5b", "qwen2.5-coder-1.5b", "qwen2.5-0.5b"]
+    },
+    "chat": {
+      "title": "General chat and writing",
+      "task": "chat",
+      "why": "Largest instruction-tuned model that fits the lane, then smaller ones.",
+      "availableFrom": "qwen2.5-7b",
+      "candidates": ["qwen2.5-14b", "phi-4", "qwen2.5-7b", "phi-4-mini", "qwen2.5-1.5b", "qwen2.5-0.5b"]
+    },
+    "code": {
+      "title": "Code and structured output",
+      "task": "chat",
+      "why": "Coder-tuned models for code, JSON and tool-shaped answers.",
+      "availableFrom": "qwen2.5-coder-7b",
+      "candidates": ["qwen2.5-coder-14b", "qwen2.5-coder-7b", "qwen2.5-coder-1.5b", "qwen2.5-coder-0.5b"]
+    },
+    "reasoning": {
+      "title": "Multi-step reasoning",
+      "task": "chat",
+      "why": "Reasoning models think before they answer, so they need the most memory.",
+      "availableFrom": "deepseek-r1-7b",
+      "candidates": ["gpt-oss-20b", "phi-4-reasoning", "deepseek-r1-14b", "deepseek-r1-7b", "phi-4-mini-reasoning"]
+    },
+    "speech-to-text": {
+      "title": "Speech to text",
+      "task": "stt",
+      "why": "Whisper sizes trade accuracy for memory.",
+      "availableFrom": "whisper-small",
+      "candidates": ["whisper-medium", "whisper-small", "whisper-base", "whisper-tiny"]
+    },
+    "embeddings": {
+      "title": "Embeddings for search and RAG",
+      "task": "embed",
+      "why": "Small embedding model first so it can sit beside a chat model.",
+      "availableFrom": "qwen3-embedding-0.6b",
+      "candidates": ["qwen3-embedding-0.6b", "qwen3-embedding-8b"]
+    },
+    "vision": {
+      "title": "Vision and image understanding",
+      "task": "vision",
+      "why": "Vision-language models for reading screenshots and documents.",
+      "availableFrom": "qwen3-vl-4b-instruct",
+      "candidates": ["qwen3-vl-8b-instruct", "qwen3-vl-4b-instruct", "qwen3-vl-2b-instruct", "qwen3.5-0.8b"]
+    }
+  }
+}

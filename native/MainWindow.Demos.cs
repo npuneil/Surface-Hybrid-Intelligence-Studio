@@ -41,6 +41,7 @@ internal sealed partial class MainWindow
     private readonly TextBlock _demoTitle = Id(H1(""), "DemoRunnerTitle");
     private readonly TextBlock _demoPitch = Id(Body(""), "DemoRunnerPitch");
     private readonly TextBlock _demoProof = Id(Small("", Ink), "DemoRunnerProof");
+    private readonly TextBlock _demoFitText = Id(Small("", Ink), "DemoRunnerFit");
     private readonly TextBlock _demoInputLabel = Id(Small(""), "DemoInputLabel");
     private readonly StackPanel _demoInputHost = Id(new StackPanel { Spacing = 10 }, "DemoInputHost");
     private readonly ComboBox _demoOption = Id(new ComboBox { HorizontalAlignment = HorizontalAlignment.Stretch }, "DemoOption");
@@ -50,7 +51,7 @@ internal sealed partial class MainWindow
     }, "DemoPrompt");
     private readonly HyperlinkButton _demoRestore = Id(new HyperlinkButton { Content = "Restore authored instruction", Padding = new Thickness(0), Foreground = Accent }, "DemoRestorePrompt");
     private readonly TextBlock _demoFixedNote = Id(Small(""), "DemoFixedNote");
-    private readonly Button _demoRunLive = Id(Primary("Run live on GPU"), "DemoRunLive");
+    private readonly Button _demoRunLive = Id(Primary("Run live on this PC"), "DemoRunLive");
     private readonly Button _demoRunRehearsal = Id(Secondary("Play rehearsal"), "DemoRunRehearsal");
     private readonly Button _demoStop = Id(Secondary("Stop"), "DemoStop");
     private readonly TextBlock _demoBlocker = Id(Small("", AmberInk), "DemoBlocker");
@@ -98,7 +99,7 @@ internal sealed partial class MainWindow
         };
         _demoRunAll.IsEnabled = _demoRunAllStop.IsEnabled = false;
         _demoPreflightSummary.Visibility = _demoPreflightList.Visibility = Visibility.Collapsed;
-        _demoGalleryHost.Children.Add(Body("Loading the demo list from the local GPU service..."));
+        _demoGalleryHost.Children.Add(Body("Loading the demo list from the local service..."));
 
         var readiness = Id(CardBorder(Stack(12,
             Text("READY TO PRESENT?", 11, Muted, FontWeights.SemiBold),
@@ -111,9 +112,10 @@ internal sealed partial class MainWindow
             _demoPreflightList), 20), "DemoReadinessCard");
 
         _demoGalleryView = Stack(22,
-            Stack(10, Eyebrow("Live demos"), H1("Show it working, on this laptop."),
-                Body("Every demo runs real models on the RTX GPU: speech recognition, vision, document search, chat and reasoning. " +
-                     "Inputs are synthetic and fictional, and live output is checked against ground truth written into them. The service listens only on this laptop.")),
+            Stack(10, Eyebrow("Live demos"), H1("Show it working, on this PC."),
+                Body("Every demo runs real models on this PC: speech recognition, vision, document search, chat and reasoning. " +
+                     "Each card names its models and where they run, and the list leads with the demos this PC does best. " +
+                     "Inputs are synthetic and fictional, and live output is checked against ground truth written into them. The service listens only on this PC.")),
             readiness,
             _demoGalleryHost);
         _demoRunnerView = BuildDemoRunner();
@@ -128,6 +130,7 @@ internal sealed partial class MainWindow
         _demoStop.IsEnabled = _demoCopy.IsEnabled = _demoExport.IsEnabled = false;
         _demoRunLive.IsEnabled = _demoRunRehearsal.IsEnabled = false;
         _demoBack.Click += (_, _) => CloseDemo();
+        Worded(_demoRunLive, w => $"Run live on {w.Where}");
         _demoOption.SelectionChanged += (_, _) =>
         {
             if (_demoOptionSync || _openDemo is not { } demo) return;
@@ -185,7 +188,7 @@ internal sealed partial class MainWindow
             Row(10, _demoCopy, _demoExport), _demoExportInfo,
             Small(Evidence.MetricCaveat + " " + Evidence.PrivacyNote)), 22);
 
-        var header = Stack(8, _demoBack, Row(10, _demoGlyph, _demoCategory), _demoTitle, _demoPitch, _demoProof);
+        var header = Stack(8, _demoBack, Row(10, _demoGlyph, _demoCategory), _demoTitle, _demoPitch, _demoProof, _demoFitText);
         return Stack(22, header, TwoPane(input, output, 440, 1000));
     }
 
@@ -195,11 +198,13 @@ internal sealed partial class MainWindow
 
     private static void Show(UIElement element, bool visible) => element.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
 
-    private string RoleLabel(string role)
+    /// <summary>The model this PC runs for a demo step's role. The demo's fit names it exactly, because the models differ from PC to PC.</summary>
+    private string RoleLabel(string role, DemoInfo? demo = null)
     {
+        if (demo?.Fit?.Steps.FirstOrDefault(s => s.Role == role) is { Available: true, Label: { Length: > 0 } fitted }) return fitted;
         if (_demoCatalog.MediaModels.FirstOrDefault(m => m.Role == role) is { } media) return media.Label;
         if (role == "chat") return _status?.Engine.Model?.Name ?? "Selected chat model";
-        if (role == "measure") return "Windows GPU counters";
+        if (role == "measure") return "Foundry Local and Windows counters";
         return _status?.Engine.Models.FirstOrDefault(m => m.Alias == role)?.Label ?? role;
     }
 
@@ -234,6 +239,7 @@ internal sealed partial class MainWindow
         UpdateDemoReadiness();
         UpdateDemoCards();
         UpdateDemoButtons();
+        RecomputeSales();
     }
 
     private void ApplyDemosStatus(StatusSnapshot status)
@@ -291,10 +297,15 @@ internal sealed partial class MainWindow
         else if (cached == media.Count) _demoPillModels.Set(loaded == 0 ? "Speech, vision, search: downloaded" : $"Speech, vision, search: {loaded} of {media.Count} loaded", GreenTint, GreenInk);
         else _demoPillModels.Set($"Speech, vision, search: {cached} of {media.Count} downloaded", AmberTint, AmberInk);
 
-        if (_demoCatalog.RuntimeReady) _demoPillRuntime.Set("GPU media libraries: ready", GreenTint, GreenInk);
-        else if (_demoCatalog.RuntimeState == "missing") _demoPillRuntime.Set("GPU media libraries: one-time prepare", AmberTint, AmberInk);
-        else if (_demoCatalog.RuntimeState == "unknown") _demoPillRuntime.Set("GPU media libraries: checking", Sand, Muted);
-        else _demoPillRuntime.Set($"GPU media libraries: {_demoCatalog.RuntimeState}", AccentTint, AccentDeep);
+        if (_demoCatalog.RuntimeState == "not_needed") Show(_demoPillRuntime.Root, false);
+        else
+        {
+            Show(_demoPillRuntime.Root, true);
+            if (_demoCatalog.RuntimeReady) _demoPillRuntime.Set("NVIDIA media libraries: ready", GreenTint, GreenInk);
+            else if (_demoCatalog.RuntimeState == "missing") _demoPillRuntime.Set("NVIDIA media libraries: one-time prepare", AmberTint, AmberInk);
+            else if (_demoCatalog.RuntimeState == "unknown") _demoPillRuntime.Set("NVIDIA media libraries: checking", Sand, Muted);
+            else _demoPillRuntime.Set($"NVIDIA media libraries: {_demoCatalog.RuntimeState}", AccentTint, AccentDeep);
+        }
 
         if (_demoCatalog.MediaState == "ready") _demoPillMedia.Set("Synthetic media: ready", GreenTint, GreenInk);
         else if (_demoCatalog.MediaState == "error") _demoPillMedia.Set("Synthetic media: error", AccentTint, AccentDeep);
@@ -306,7 +317,19 @@ internal sealed partial class MainWindow
             _demoReadinessDetail.Foreground = AccentDeep;
             return;
         }
-        var blockers = _demoCatalog.Demos.Select(d => _demoCatalog.LiveBlocker(d, engine)).ToList();
+        var target = _status?.Target;
+        if (target is { Simulated: true })
+        {
+            // A preview grades the demos against the Surface on screen; the live checks below are about this PC's own engine.
+            var fits = _demoCatalog.Demos.Select(d => d.Fit).OfType<DemoFit>().ToList();
+            int full = fits.Count(f => f.State == "ready"), limited = fits.Count(f => f.State == "limited");
+            _demoReadinessDetail.Text = fits.Count == 0 ? "Waiting for the demo list."
+                : $"Previewing {target.Label}: {full} of {fits.Count} demos would run in full, {limited} in part and {fits.Count - full - limited} not at all. " +
+                  "Live runs are paused; they would measure this PC, not the one on screen.";
+            _demoReadinessDetail.Foreground = AmberInk;
+            return;
+        }
+        var blockers = _demoCatalog.Demos.Select(d => _demoCatalog.LiveBlocker(d, engine, target)).ToList();
         int ready = blockers.Count(b => b is null);
         var reasons = blockers.OfType<string>().Distinct().ToList();
         _demoReadinessDetail.Text = _demoCatalog.Demos.Count == 0 ? "Waiting for the demo list."
@@ -316,21 +339,53 @@ internal sealed partial class MainWindow
 
     private void UpdateDemoCards()
     {
+        bool preview = _status?.Target is { Simulated: true };
         foreach (var demo in _demoCatalog.Demos)
         {
             if (!_demoCards.TryGetValue(demo.Id, out var card)) continue;
-            card.Models.Text = "Runs: " + string.Join(" \u2192 ", demo.Steps.Select(s => RoleLabel(s.Role)).Distinct());
-            string? blocker = _demoCatalog.LiveBlocker(demo, _status?.Engine);
+            card.Models.Text = CardModels(demo);
+            string? blocker = _demoCatalog.LiveBlocker(demo, _status?.Engine, _status?.Target);
             if (_activeDemo?.Demo.Id == demo.Id)
                 (card.Status.Text, card.Status.Foreground) = ("Running now...", AmberInk);
+            else if (preview)
+                (card.Status.Text, card.Status.Foreground) = demo.Fit is { } fit
+                    ? ($"Preview: {fit.Summary}", fit.State == "ready" ? GreenInk : AmberInk)
+                    : ("Preview: this demo's fit was not reported.", Muted);
             else if (_demoResults.TryGetValue(demo.Id, out var run))
                 (card.Status.Text, card.Status.Foreground) = ($"Last run: {(run.Live ? "LIVE" : "REHEARSAL")} \u00B7 {run.Outcome}{Seconds(run)}",
                     !run.Live ? AmberInk : run.Passed ? GreenInk : run.RanEndToEnd ? AmberInk : AccentDeep);
             else if (blocker is not null)
                 (card.Status.Text, card.Status.Foreground) = (blocker, AmberInk);
+            else if (demo.Fit is { State: "limited" } limited)
+                (card.Status.Text, card.Status.Foreground) = (limited.Summary, AmberInk);
             else
                 (card.Status.Text, card.Status.Foreground) = ("Ready to run live.", GreenInk);
         }
+    }
+
+    /// <summary>The models a card says it runs, and where. A demo's fit is exact because the models differ from PC to PC; without one the
+    /// card names the roles.</summary>
+    private string CardModels(DemoInfo demo)
+    {
+        if (demo.Fit is not { } fit) return "Runs: " + string.Join(" \u2192 ", demo.Steps.Select(s => RoleLabel(s.Role, demo)).Distinct());
+        var running = fit.Steps.Where(s => s.Available && s.Label is { Length: > 0 }).ToList();
+        if (running.Count == 0) return "Runs: no model in this PC's lineup fits";
+        var places = running.Select(s => s.Where).Distinct().ToList();
+        return places.Count == 1 ? $"Runs on {places[0]}: {string.Join(" \u2192 ", running.Select(s => s.Label).Distinct())}" : "Runs: " + fit.ModelLine;
+    }
+
+    /// <summary>The open demo's models on the PC shown, in the words of its fit, so a stand-in for the model the demo was tuned on is never hidden.</summary>
+    private void UpdateDemoFitText()
+    {
+        if (_openDemo?.Fit is not { } fit)
+        {
+            _demoFitText.Text = "";
+            Show(_demoFitText, false);
+            return;
+        }
+        var parts = new[] { fit.ModelLine.Length > 0 ? "Runs: " + fit.ModelLine + "." : null, fit.State == "ready" ? null : fit.Summary, fit.Note };
+        _demoFitText.Text = string.Join(" ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        Show(_demoFitText, _demoFitText.Text.Length > 0);
     }
 
     private static string Seconds(DemoRunRecord run) => run.Live && run.Summary?.TotalMs is double ms ? $" \u00B7 {ms / 1000:F1} s" : "";
@@ -363,7 +418,7 @@ internal sealed partial class MainWindow
             _demoPrompt.Text = demo.PromptFor(SelectedDemoOption);
             Show(_demoPrompt, demo.Editable || demo.Prompt.Length > 0);
             Show(_demoRestore, demo.Editable);
-            _demoFixedNote.Text = demo.Editable ? "" : "Fixed measurement: nothing to type. It gives each model a small real task, then reads residency from Foundry Local and GPU memory from Windows.";
+            _demoFixedNote.Text = demo.Editable ? "" : "Fixed measurement: nothing to type. It gives each model a small real task, then reads which models are loaded from Foundry Local and how much memory is in use from Windows counters.";
             Show(_demoFixedNote, !demo.Editable);
             _demoError.IsOpen = false;
             _demoExportInfo.IsOpen = false;
@@ -401,12 +456,14 @@ internal sealed partial class MainWindow
 
     private void UpdateDemoButtons()
     {
+        UpdateDemoFitText();
         bool online = _status is not null && !_serviceInfo.IsOpen;
         bool otherBusy = _running || _switching || _labRunning;
-        _demoRunAll.IsEnabled = online && !otherBusy && !_demoRunning && _status!.Engine.IsReady && _demoCatalog.Demos.Count > 0;
+        _demoRunAll.IsEnabled = online && !otherBusy && !_demoRunning && _status!.Engine.IsReady && _demoCatalog.Demos.Count > 0
+            && _status.Target is not { Simulated: true };
         _demoRunAllStop.IsEnabled = _preflightRunning && !_preflightStop;
         if (_openDemo is not { } demo) return;
-        string? blocker = _demoCatalog.LiveBlocker(demo, _status?.Engine);
+        string? blocker = _demoCatalog.LiveBlocker(demo, _status?.Engine, _status?.Target);
         bool ownRun = _activeDemo?.Demo.Id == demo.Id;
         _demoRunLive.IsEnabled = online && !otherBusy && !_demoRunning && blocker is null;
         _demoRunRehearsal.IsEnabled = online && !otherBusy && !_demoRunning && demo.RehearsalFor(SelectedDemoOption);
@@ -415,7 +472,7 @@ internal sealed partial class MainWindow
         _demoPrompt.IsReadOnly = _demoRunning || !demo.Editable;
         _demoBlocker.Text = _preflightRunning ? "Pre-flight is running every demo. Wait for it, or stop it from the demo list."
             : _demoRunning ? ""
-            : _running ? "The Live GPU workspace is running. Wait for it to finish."
+            : _running ? "The Live workspace is running. Wait for it to finish."
             : _labRunning ? _labActivity + " is running. Wait for it to finish."
             : _switching ? "A chat model switch is in progress."
             : blocker ?? "";
@@ -447,7 +504,8 @@ internal sealed partial class MainWindow
     /// <summary>Streams one demo run. Results are kept per demo so the gallery and runner can show them later.</summary>
     private async Task<DemoRunRecord> RunDemoCoreAsync(DemoInfo demo, string mode, string? option, string prompt, bool edited, Action<string>? progress)
     {
-        var active = new ActiveDemo(demo, mode, option, prompt, edited, demo.Steps.Select(s => new DemoStepRecord(s.Title, RoleLabel(s.Role))));
+        var active = new ActiveDemo(demo, mode, option, prompt, edited, demo.Steps.Select(s => new DemoStepRecord(s.Title, RoleLabel(s.Role, demo))),
+            _status?.Target, _status?.Words);
         _activeDemo = active;
         _demoRunning = true;
         _demoCts?.Dispose();
@@ -527,7 +585,7 @@ internal sealed partial class MainWindow
                     (row.Text, row.Foreground) = ("Not run (pre-flight stopped).", Muted);
                     continue;
                 }
-                if (_demoCatalog.LiveBlocker(_demoCatalog.Find(demo.Id) ?? demo, _status?.Engine) is string blocker)
+                if (_demoCatalog.LiveBlocker(_demoCatalog.Find(demo.Id) ?? demo, _status?.Engine, _status?.Target) is string blocker)
                 {
                     (row.Text, row.Foreground) = ("Skipped: " + blocker, AmberInk);
                     skipped++;
@@ -550,7 +608,7 @@ internal sealed partial class MainWindow
             _preflightRunning = false;
         }
         if (_closed) return;
-        _demoPreflightSummary.Text = $"{endToEnd} of {ran} live demos ran end to end on the GPU; {passed} passed every check"
+        _demoPreflightSummary.Text = $"{endToEnd} of {ran} live demos ran end to end on this PC; {passed} passed every check"
             + (skipped > 0 ? $"; {skipped} skipped" : "")
             + (_preflightStop ? "; stopped early" : "") + $". Pre-flight took {clock.Elapsed.TotalMinutes:F1} min.";
         _demoPreflightSummary.Foreground = passed == ran && skipped == 0 && !_preflightStop ? GreenInk : AmberInk;
@@ -562,7 +620,7 @@ internal sealed partial class MainWindow
     {
         _shownDemoRun = running ? null : run;
         IReadOnlyList<DemoStepRecord> steps = run?.Steps
-            ?? (_openDemo?.Steps.Select(s => new DemoStepRecord(s.Title, RoleLabel(s.Role))).ToList() ?? []);
+            ?? (_openDemo?.Steps.Select(s => new DemoStepRecord(s.Title, RoleLabel(s.Role, _openDemo))).ToList() ?? []);
         if (!ReferenceEquals(_demoStepsSource, steps) || _demoStepViews.Count != steps.Count)
         {
             _demoStepsSource = steps;
@@ -620,17 +678,21 @@ internal sealed partial class MainWindow
 
     private void SetDemoBanner(DemoRunRecord? run, bool running)
     {
+        string site = LiveSite(run?.Where ?? (_openDemo?.Fit?.Where is { Length: > 0 } fitted ? fitted : _words.Known ? _words.Where : null));
         (string text, Brush background, Brush foreground) = run switch
         {
-            null => (_openDemo?.Rehearsal == true ? "Ready. Run it live on the GPU, or play the labelled rehearsal." : "Ready. This demo runs live on the GPU.", Sand, Ink),
+            null => (_openDemo?.Rehearsal == true ? $"Ready. Run it live on {site}, or play the labelled rehearsal." : $"Ready. This demo runs live on {site}.", Sand, Ink),
             { Error: not null } r => (r.Live ? "LIVE RUN INCOMPLETE - no result is claimed" : "REHEARSAL INCOMPLETE", AccentTint, AccentDeep),
-            { Live: true } => (running ? "LIVE - running now on this laptop's RTX GPU" : "LIVE - generated on this laptop's RTX GPU", GreenTint, GreenInk),
+            { Live: true } => (running ? $"LIVE - running now on {site}" : $"LIVE - generated on {site}", GreenTint, GreenInk),
             _ => ("REHEARSAL - authored sample, not model output. No checks, no metrics.", AmberTint, AmberInk),
         };
         _demoBannerText.Text = text;
         _demoBannerText.Foreground = foreground;
         _demoBanner.Background = background;
     }
+
+    /// <summary>"this PC, on the NPU": where the models run, in the service's own words, or just "this PC" before it has said.</summary>
+    private static string LiveSite(string? where) => string.IsNullOrWhiteSpace(where) ? "this PC" : $"this PC, on {where}";
 
     private static FrameworkElement DemoCheckRow(int index, DemoCheck check)
     {
@@ -702,7 +764,7 @@ internal sealed partial class MainWindow
                 await bitmap.SetSourceAsync(stream);
                 if (version != _demoPreviewVersion) return;
                 image.Source = bitmap;
-                status.Text = $"Rendered on this laptop ({bitmap.PixelWidth} x {bitmap.PixelHeight} pixels). Every name and number is fictional.";
+                status.Text = $"Rendered on this PC ({bitmap.PixelWidth} x {bitmap.PixelHeight} pixels). Every name and number is fictional.";
                 _demoPreviewKey = media;
             }
             else if (demo.InputKind == "audio" && media is not null)
@@ -728,7 +790,7 @@ internal sealed partial class MainWindow
                 if (version != _demoPreviewVersion) return;
                 double? seconds = DemoParser.WavSeconds(bytes);
                 info.Text = (seconds is double s ? $"{s:F0}-second recording" : "Recording")
-                    + " made with Windows text-to-speech voices on this laptop. It plays through the speakers; nothing is recorded from the microphone.";
+                    + " made with Windows text-to-speech voices on this PC. It plays through the speakers; nothing is recorded from the microphone.";
                 play.IsEnabled = true;
                 play.Click += (_, _) =>
                 {
@@ -776,7 +838,7 @@ internal sealed partial class MainWindow
         {
             status.Text = _demoCatalog.MediaState == "error"
                 ? "Synthetic media could not be rendered: " + _demoCatalog.MediaDetail
-                : "Synthetic media is still rendering on this laptop; the preview appears when it is ready.";
+                : "Synthetic media is still rendering on this PC; the preview appears when it is ready.";
             return null;
         }
         var bytes = await _client.GetDemoMediaAsync(name, _lifetime.Token);
@@ -903,7 +965,8 @@ internal sealed partial class MainWindow
     }
 
     /// <summary>Mutable state of the run in progress; snapshots share its lists so views update incrementally.</summary>
-    private sealed class ActiveDemo(DemoInfo demo, string mode, string? option, string prompt, bool edited, IEnumerable<DemoStepRecord> steps)
+    private sealed class ActiveDemo(DemoInfo demo, string mode, string? option, string prompt, bool edited, IEnumerable<DemoStepRecord> steps,
+        TargetInfo? target, TargetWords? words)
     {
         internal DemoInfo Demo { get; } = demo;
         internal string Mode { get; } = mode;
@@ -914,7 +977,7 @@ internal sealed partial class MainWindow
         internal string? Error { get; set; }
         internal DemoSummary? Summary => _summary;
 
-        internal DemoRunRecord Snapshot() => new(Demo, Mode, option, prompt, edited, _started, _steps, _checks, _summary, Error);
+        internal DemoRunRecord Snapshot() => new(Demo, Mode, option, prompt, edited, _started, _steps, _checks, _summary, Error, target, words);
 
         internal string Progress
         {

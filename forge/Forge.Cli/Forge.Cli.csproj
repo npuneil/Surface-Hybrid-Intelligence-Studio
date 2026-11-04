@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The command line for the Offline PPTX Forge. It drives the same ForgeSession the app drives, so a deck written here is a deck the app
+       would write: use it to check a PC without opening the app, to measure a model, or to render a saved deck spec. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifiers>win-arm64;win-x64</RuntimeIdentifiers>
+    <RootNamespace>Forge.Cli</RootNamespace>
+    <AssemblyName>forge-cli</AssemblyName>
+    <NoWarn>$(NoWarn);CA1416;NU1603</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Forge.Engine\Forge.Engine.csproj" />
+  </ItemGroup>
+
+</Project>

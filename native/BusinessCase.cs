@@ -41,7 +41,12 @@ internal static class BusinessCase
 
 internal sealed record RunRecord(
     string ScenarioKey, string ScenarioTitle, string ScenarioLabel, string Prompt, string Source, string Mode,
-    string Output, RunMetrics? Metrics, long ReasoningCharactersWithheld, DateTimeOffset StartedAt, string? Error);
+    string Output, RunMetrics? Metrics, long ReasoningCharactersWithheld, DateTimeOffset StartedAt, string? Error,
+    TargetInfo? Target = null, TargetWords? Words = null)
+{
+    /// <summary>Where the model ran, as the service described the PC when the run started; null before the service said.</summary>
+    internal string? Where => Words is { Known: true } ? Words.Where : null;
+}
 
 internal static class Evidence
 {
@@ -81,7 +86,7 @@ internal static class Evidence
             ["exported_at"] = DateTimeOffset.Now.ToString("O"),
             ["exported_by"] = Brand.DisplayName + " (native WinUI 3) - explicit user export",
             ["mode"] = run.Mode,
-            ["mode_label"] = live ? "LIVE local inference on this device's RTX GPU" : "AUTHORED REHEARSAL - not model output; no performance metrics",
+            ["mode_label"] = live ? DemoEvidence.LiveLabel(run.Where) : "AUTHORED REHEARSAL - not model output; no performance metrics",
             ["started_at"] = run.StartedAt.ToString("O"),
             ["scenario"] = new JsonObject
             {
@@ -103,9 +108,18 @@ internal static class Evidence
             ["metric_caveat"] = MetricCaveat,
             ["privacy"] = PrivacyNote,
             ["device"] = Device(device),
+            ["target"] = Target(run.Target, run.Where, live),
             ["service_lifecycle"] = lifecycle,
         };
     }
+
+    /// <summary>The PC the pages described when the run started, and where its models ran. A rehearsal runs no model, so it names no lane,
+    /// and a previewed Surface never runs live.</summary>
+    internal static JsonObject? Target(TargetInfo? target, string? where, bool live) => target is null ? null : new JsonObject
+    {
+        ["label"] = target.Label, ["device_class"] = target.DeviceClassLabel, ["pc_class"] = target.PcClassLabel,
+        ["models_run_on"] = live ? where : null, ["preview"] = target.Simulated,
+    };
 
     internal static JsonObject BusinessCaseExport(JsonElement response) => new()
     {
@@ -117,11 +131,17 @@ internal static class Evidence
         ["note"] = "Illustrative capacity value, not cash savings, an ROI forecast or a software-subscription replacement.",
     };
 
-    internal static JsonObject SizingExport(SizingInput input, SizingResult result, TShirtSize? size, BudgetSource source) => new()
+    /// <summary>The estimate and the memory it was budgeted against. When a Surface was being previewed the budget is that Surface's profile,
+    /// so the export says so.</summary>
+    internal static JsonObject SizingExport(SizingInput input, SizingResult result, TShirtSize? size, BudgetSource source, SizingTarget? target = null) => new()
     {
         ["schema"] = Brand.SchemaPrefix + ".sizing-estimate/1",
         ["exported_at"] = DateTimeOffset.Now.ToString("O"),
         ["band"] = size?.ToString(),
+        ["target"] = target is null ? null : new JsonObject
+        {
+            ["preview"] = target.Preview, ["label"] = target.Preview ? target.Label : target.Facts?.DisplayName, ["gpu_kind"] = target.GpuKind,
+        },
         ["inputs"] = new JsonObject
         {
             ["parameter_billions"] = input.ParameterBillions, ["weight_bits"] = input.WeightBits,

@@ -1,0 +1,173 @@
+{
+ "harness": "1.0",
+ "brief": "contoso_sales",
+ "template": "surface",
+ "lane": "local",
+ "model": "qwen3-coder-30b",
+ "llm_calls": 1,
+ "prompt_tokens": 1752,
+ "completion_tokens": 1995,
+ "decode_tps": 40.1,
+ "ttft_s": 1.307,
+ "generate_s": 51.06,
+ "render_s": 0.21,
+ "total_s": 51.27,
+ "power": {
+  "seconds": 51.03,
+  "samples": 199,
+  "gpu_avg_w": 43.6,
+  "gpu_peak_w": 66.4,
+  "gpu_wh": 0.6176,
+  "platform_wh": 0.1417,
+  "total_wh": 0.7593
+ },
+ "economics": {
+  "lane": "local",
+  "energy_wh": 0.759,
+  "cost_usd": 9.9e-05,
+  "co2e_g": 0.279,
+  "water_ml": 0.0,
+  "basis": "measured GPU board power (nvidia-smi, 250 ms) + 10 W platform allowance; electricity only"
+ },
+ "grade": {
+  "auto_score": 86.1,
+  "auto_grade": "B",
+  "scores": {
+   "visual_richness": 21.2,
+   "text_lightness": 20.0,
+   "analogy": 6.0,
+   "brief_coverage": 13.9,
+   "claim_discipline": 15.0,
+   "structure": 10.0
+  },
+  "detail": {
+   "visual_richness": {
+    "infographic_share": 0.88,
+    "distinct_layouts": 7,
+    "icons_per_slide": 3.4,
+    "canvas_diagrams": 1
+   },
+   "text_lightness": {
+    "avg_words_per_slide": 23.4,
+    "max_words": 30
+   },
+   "analogy": {
+    "analogy_slides": 1,
+    "analogy_cue_slides": 0
+   },
+   "brief_coverage": {
+    "covered": 6.5,
+    "topics": 7,
+    "missing": [
+     "connectivity (notes only)"
+    ]
+   },
+   "claim_discipline": {
+    "numbers_on_canvas": 18,
+    "untraceable": [],
+    "guardrail_violations": []
+   },
+   "structure": {
+    "strict_json": true,
+    "slides": 10,
+    "notes_slides": 9,
+    "fallbacks": 0,
+    "overflows": 0,
+    "shrunk_texts": 0
+   }
+  }
+ },
+ "pptx": "decks/contoso_sales-v1.0/contoso_sales-surface.pptx",
+ "render_summary": [
+  {
+   "index": 0,
+   "layout": "title",
+   "words": 15,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 5,
+   "issues": []
+  },
+  {
+   "index": 1,
+   "layout": "analogy",
+   "words": 24,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 2,
+   "issues": []
+  },
+  {
+   "index": 2,
+   "layout": "stack",
+   "words": 22,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 3,
+   "issues": []
+  },
+  {
+   "index": 3,
+   "layout": "flow",
+   "words": 22,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 3,
+   "issues": []
+  },
+  {
+   "index": 4,
+   "layout": "compare",
+   "words": 30,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 7,
+   "issues": []
+  },
+  {
+   "index": 5,
+   "layout": "memory",
+   "words": 26,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 1,
+   "issues": []
+  },
+  {
+   "index": 6,
+   "layout": "matrix",
+   "words": 27,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 7,
+   "layout": "canvas",
+   "words": 17,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 6,
+   "issues": []
+  },
+  {
+   "index": 8,
+   "layout": "statement",
+   "words": 24,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 1,
+   "issues": []
+  },
+  {
+   "index": 9,
+   "layout": "cta",
+   "words": 27,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 3,
+   "issues": []
+  }
+ ]
+}

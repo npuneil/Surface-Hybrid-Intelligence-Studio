@@ -1,0 +1,73 @@
+{
+  "id": "litware_technical",
+  "client": "Litware",
+  "pitch_type": "technical",
+  "audience": "Platform engineering team at Litware. They care about developer productivity, code quality, and maintaining security of their proprietary payments codebase.",
+  "objective": "Secure approval for a 3-week pilot with 8 developers using Surface Laptop Ultra with NVIDIA RTX Spark for internal AI workloads.",
+  "template_hint": "microsoft",
+  "slide_range": [
+    8,
+    12
+  ],
+  "context": "Litware's platform engineering team consists of 40 developers working on a proprietary payments codebase that cannot be sent to public AI services. The team already uses GitHub Copilot for open-source work and runs builds on a shared CI farm. They want to evaluate code completion, test generation, and Q&A capabilities over internal design docs using an internal AI solution. The pilot will involve 8 developers over 3 weeks with measurements of time to first PR and review rework.",
+  "facts": [
+    "40 developers work on a proprietary payments codebase",
+    "Codebase cannot be sent to public AI services",
+    "Team already uses GitHub Copilot for open-source work",
+    "Builds run on a shared CI farm",
+    "3-week pilot with 8 developers",
+    "Measure time to first PR and review rework",
+    "Device: Surface Laptop Ultra with NVIDIA RTX Spark (Blackwell RTX GPU, 20 CPU cores, 128 GB installed memory).",
+    "On this device, Gemma 4 26B decodes at about 72 tokens per second and Qwen3-Coder 30B at about 86 tokens per second (single stream, Local-AI-Bench, October 2026)."
+  ],
+  "required_topics": {
+    "security_compliance": [
+      "proprietary code",
+      "internal ai",
+      "no public cloud",
+      "data protection"
+    ],
+    "developer_productivity": [
+      "code completion",
+      "test generation",
+      "q&a over docs",
+      "time to first pr"
+    ],
+    "hardware_specifications": [
+      "surface laptop ultra",
+      "nvidia rtx spark",
+      "portable workstation",
+      "gpu acceleration"
+    ],
+    "pilot_metrics": [
+      "review rework",
+      "time to first pr",
+      "3 week duration",
+      "8 developers"
+    ],
+    "existing_tools": [
+      "github copilot",
+      "shared ci farm",
+      "open source work",
+      "internal design docs"
+    ],
+    "device": [
+      "surface laptop ultra",
+      "rtx spark",
+      "surface"
+    ]
+  },
+  "guardrails": [
+    "Do not claim performance improvements over GitHub Copilot",
+    "Do not suggest this is a production deployment",
+    "Do not mention any specific cost or pricing information",
+    "Do not claim the solution works with public AI services",
+    "Use only numbers from the fact sheet; label any estimate as an estimate to validate.",
+    "Do not claim local AI replaces Microsoft 365 Copilot or any cloud subscription.",
+    "Do not claim air-gapped, certified offline or security certification; say disconnected use is validated in the pilot.",
+    "Do not cite TOPS or Copilot+ PC certification."
+  ],
+  "source": "prompt",
+  "prompt": "Technical briefing for Litware platform engineering. 40 developers work on a proprietary payments codebase that cannot be sent to public AI services. They want code completion, test generation and Q&A over internal design docs. Builds run on a shared CI farm; the team already uses GitHub Copilot for open-source work. Ask: a 3-week pilot with 8 developers on Surface Laptop Ultra, measuring time to first PR and review rework.",
+  "dropped": []
+}

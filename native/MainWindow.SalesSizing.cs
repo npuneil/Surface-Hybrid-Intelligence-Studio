@@ -18,6 +18,8 @@ internal sealed partial class MainWindow
     private readonly TextBlock _salesTalkTrack = Id(Set(Text("", 16, Ink), t => { t.LineHeight = 24; t.TextWrapping = TextWrapping.Wrap; }), "SalesTalkTrack");
     private readonly ProgressBar _salesUsage = Id(new ProgressBar { Minimum = 0, Maximum = 100, Height = 10, Foreground = Accent }, "SalesUsageBar");
     private readonly TextBlock _salesUsageText = Id(Small(""), "SalesUsageText");
+    private readonly TextBlock _salesUsageTitle = Id(Text("Memory used on this PC", 13, Ink, FontWeights.SemiBold), "SalesUsageTitle");
+    private TextBlock? _salesHereTitle;
     private readonly Dictionary<string, (TextBlock Verdict, TextBlock Detail, Border Card)> _salesDevices = [];
     private readonly StackPanel _salesRows = Id(Stack(10), "SalesWorkloadRows");
     private readonly StackPanel _salesDetails = Stack(18);
@@ -44,7 +46,7 @@ internal sealed partial class MainWindow
             Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(box, w.Name);
             var sizeBadge = Pill(w.Size.ToString(), AccentTint, AccentDeep);
             FrameworkElement actions;
-            if (w.LiveOnThisLaptop && w.DemoId is string demoId)
+            if (w.HasLiveDemo && w.DemoId is string demoId)
             {
                 var launch = Id(Primary("Run live demo"), "SalesDemo_" + w.Id);
                 launch.Content = Row(8, Glyph("\uE768", 14, White), Text("Run live demo", 13, White, FontWeights.SemiBold));
@@ -52,7 +54,7 @@ internal sealed partial class MainWindow
                 launch.Padding = new Thickness(12, 8, 12, 8);
                 launch.HorizontalAlignment = HorizontalAlignment.Stretch;
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(launch, "Run live demo: " + w.Name);
-                ToolTipService.SetToolTip(launch, "Open and run the matching demo on the GPU");
+                ToolTipService.SetToolTip(launch, "Open and run the matching demo on this PC");
                 launch.Click += async (_, _) => await LaunchSalesDemoAsync(demoId);
                 actions = Lead(10, sizeBadge, launch);
                 sizeBadge.VerticalAlignment = VerticalAlignment.Center;
@@ -73,11 +75,13 @@ internal sealed partial class MainWindow
         clear.Click += (_, _) => SetSalesSelection([]);
 
         var deviceGrid = new AdaptiveGrid(220, 3, 12);
-        foreach (var device in new[] { SalesSizing.ThisLaptop }.Concat(SalesSizing.Comparisons.Select(c => c.Device)))
+        foreach (var device in new[] { SalesSizing.Here(false, "") }.Concat(SalesSizing.Comparisons.Select(c => c.Device)))
         {
             var verdict = Id(Set(Text("-", 20, Ink, FontWeights.SemiBold), t => t.FontFamily = Display), "SalesDeviceFit_" + device.Id);
             var detail = Id(Small(""), "SalesDeviceDetail_" + device.Id);
-            var card = CardBorder(Stack(4, Text(device.Name, 14, Ink, FontWeights.SemiBold), verdict, detail), 16, device.Id == "this" ? AccentTint : Paper);
+            var title = Text(device.Name, 14, Ink, FontWeights.SemiBold);
+            if (device.Id == SalesSizing.HereId) _salesHereTitle = title;
+            var card = CardBorder(Stack(4, title, verdict, detail), 16, device.Id == SalesSizing.HereId ? AccentTint : Paper);
             _salesDevices[device.Id] = (verdict, detail, card);
             deviceGrid.With(card);
         }
@@ -92,7 +96,7 @@ internal sealed partial class MainWindow
         };
 
         _salesDetails.Children.Add(CardBorder(Stack(8, Text("SAY IT LIKE THIS", 11, AccentDeep, FontWeights.SemiBold), _salesTalkTrack), 18, Sand));
-        _salesDetails.Children.Add(Stack(6, Text("Memory used on this Surface Laptop Ultra", 13, Ink, FontWeights.SemiBold), _salesUsage, _salesUsageText));
+        _salesDetails.Children.Add(Stack(6, _salesUsageTitle, _salesUsage, _salesUsageText));
         _salesDetails.Children.Add(Stack(10, H3("Where this size fits (memory-only estimate)"), deviceGrid));
         _salesDetails.Children.Add(Stack(10, H3("Selected workloads"), _salesRows));
         _salesDetails.Children.Add(Row(10, _salesTechnical, _salesCopy));
@@ -109,7 +113,7 @@ internal sealed partial class MainWindow
                 Body("Pick the everyday workloads your bankers, operations and technology teams care about. The studio picks the model size they need and shows where it fits, with no technical inputs.")),
             CardBorder(Stack(12,
                 Lead(12, H3("Pick the firm's workloads"), Set(Row(12, _salesSelectionCount, clear), r => r.HorizontalAlignment = HorizontalAlignment.Right)),
-                Small("Check workloads to size them. Use Run live demo to see one working on this laptop."),
+                Small("Check workloads to size them. Use Run live demo to see one working on this PC."),
                 tiles), 22),
             results,
             planner);
@@ -149,7 +153,7 @@ internal sealed partial class MainWindow
         {
             ShowDemoError("Live demo cannot start", _demoBlocker.Text.Length > 0
                 ? _demoBlocker.Text
-                : "The local GPU service is unavailable. Check the service and try again.");
+                : "The local service is unavailable. Check the service and try again.");
             return;
         }
         await RunOpenDemoAsync("live");
@@ -166,8 +170,12 @@ internal sealed partial class MainWindow
         }
         _salesSelectionCount.Text = _salesSelected.Count == 1 ? "1 selected" : $"{_salesSelected.Count} selected";
         RecomputeUltra();
-        var rec = SalesSizing.Recommend(_salesSelected, _status?.Device);
+        var target = SizingNow;
+        bool preview = target.Preview;
+        var rec = SalesSizing.Recommend(_salesSelected, target.Facts, preview, target.GpuKind);
         _lastSales = rec;
+        if (_salesHereTitle is not null) _salesHereTitle.Text = SalesSizing.Here(preview, "").Name;
+        _salesUsageTitle.Text = $"Memory used on {target.Noun}";
         if (rec is null)
         {
             _salesVerdictText.Text = "PICK A WORKLOAD";
@@ -181,13 +189,13 @@ internal sealed partial class MainWindow
 
         _salesDetails.Visibility = Visibility.Visible;
         _salesTechnical.IsEnabled = _salesCopy.IsEnabled = true;
-        var here = rec.ThisLaptop;
+        var here = rec.ThisPc;
         _salesVerdictText.Text = here.Fit switch
         {
-            SalesFit.Comfortable => "COMFORTABLE ON THIS LAPTOP - ESTIMATE",
-            SalesFit.Tight => "TIGHT FIT ON THIS LAPTOP - ESTIMATE",
-            SalesFit.WontFit => "WON'T FIT ON THIS LAPTOP - ESTIMATE",
-            _ => "WAITING FOR THIS LAPTOP'S MEMORY REPORT"
+            SalesFit.Comfortable => preview ? "COMFORTABLE ON THE PREVIEWED SURFACE - ESTIMATE" : "COMFORTABLE ON THIS PC - ESTIMATE",
+            SalesFit.Tight => preview ? "TIGHT FIT ON THE PREVIEWED SURFACE - ESTIMATE" : "TIGHT FIT ON THIS PC - ESTIMATE",
+            SalesFit.WontFit => preview ? "WON'T FIT ON THE PREVIEWED SURFACE - ESTIMATE" : "WON'T FIT ON THIS PC - ESTIMATE",
+            _ => preview ? "LOADING THE PREVIEWED SURFACE'S PROFILE" : "WAITING FOR THIS PC'S MEMORY REPORT"
         };
         (_salesVerdictPill.Background, _salesVerdictText.Foreground) = FitColors(here.Fit);
         _salesRecommendation.Text = $"Recommended: {rec.Profile.Name} ({rec.Profile.Size}) model";
@@ -197,7 +205,7 @@ internal sealed partial class MainWindow
         _salesUsage.Foreground = here.Fit == SalesFit.Comfortable ? GreenInk : here.Fit == SalesFit.Tight ? AmberInk : Accent;
         _salesUsageText.Text = double.IsFinite(here.PercentUsed)
             ? $"About {Math.Round(here.PercentUsed):0}% of the memory available for AI after Windows and apps (estimate)."
-            : "Waiting for the local service to report this laptop's GPU memory budget.";
+            : preview ? "Waiting for the previewed Surface's memory profile." : "Waiting for the local service to report this PC's memory.";
 
         foreach (var fit in new[] { here }.Concat(rec.Comparisons))
         {
@@ -212,23 +220,28 @@ internal sealed partial class MainWindow
         _salesRows.Children.Clear();
         foreach (var w in rec.Workloads)
         {
-            var actions = Row(8, Pill(w.LiveOnThisLaptop ? "LIVE DEMO HERE" : "GUIDANCE ONLY", w.LiveOnThisLaptop ? GreenTint : Sand, w.LiveOnThisLaptop ? GreenInk : Muted));
+            var (liveText, liveFill, liveInk) = SalesLiveState(w, preview);
+            var actions = Row(8, Pill(liveText, liveFill, liveInk));
             if (w.DemoId is string demoId)
             {
-                var show = Id(Primary(w.LiveOnThisLaptop ? "Run live demo" : "Run related live demo"), "SalesLive_" + w.Id);
+                var show = Id(Primary(w.HasLiveDemo ? "Run live demo" : "Run related live demo"), "SalesLive_" + w.Id);
                 show.MinHeight = 40;
                 show.IsEnabled = DemoCatalog.KnownIds.Contains(demoId);
                 show.Click += async (_, _) => await LaunchSalesDemoAsync(demoId);
                 actions.Children.Add(show);
             }
+            var text = Stack(4,
+                Text(w.Name, 14, Ink, FontWeights.SemiBold),
+                Set(Small(SalesSizing.PlatformFit(w, here, preview), Ink), t => t.TextWrapping = TextWrapping.Wrap),
+                Set(Small(w.LiveNote + SalesSizing.LargeModelNote(w.Id, _status?.Engine.Models, preview)), t => t.TextWrapping = TextWrapping.Wrap));
+            var demo = w.DemoId is string id ? _demoCatalog.Find(id) : null;
+            if (demo?.Fit is not null)
+                text.Children.Add(Set(Small(CardModels(demo), Ink), t => t.TextWrapping = TextWrapping.Wrap));
+            text.Children.Add(actions);
             _salesRows.Children.Add(Id(new Border
             {
                 BorderBrush = Line, BorderThickness = new Thickness(0, 1, 0, 0), Padding = new Thickness(0, 10, 0, 0),
-                Child = Lead(12, Pill(w.Size.ToString(), AccentTint, AccentDeep), Stack(4,
-                    Text(w.Name, 14, Ink, FontWeights.SemiBold),
-                    Set(Small(SalesSizing.PlatformFit(w), Ink), t => t.TextWrapping = TextWrapping.Wrap),
-                    Set(Small(w.LiveNote), t => t.TextWrapping = TextWrapping.Wrap),
-                    actions))
+                Child = Lead(12, Pill(w.Size.ToString(), AccentTint, AccentDeep), text)
             }, "SalesRow_" + w.Id));
         }
     }

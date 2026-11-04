@@ -1,4 +1,4 @@
-"""Studio workbench: run a request down its hybrid lane, measure GPU speed, and test the builder endpoint.
+"""Studio workbench: run a request down its hybrid lane, measure speed on this PC, and test the builder endpoint.
 
 Nothing here sends data to a cloud service. Where a lane would use the cloud, the payload is shown and marked NOT SENT.
 """
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 import demos
 import hybrid
-from local_engine import HarmonyFilter, model_spec
+from local_engine import HarmonyFilter, ThinkFilter
 
 LOCAL_SYSTEM = ("You are an assistant running entirely on this PC with no internet access. Answer from the text and "
                 "your own knowledge. If the request needs current information (prices, rates, news, latest versions) "
@@ -19,17 +19,17 @@ LOCAL_SYSTEM = ("You are an assistant running entirely on this PC with no intern
                 "without it. Be concise.")
 
 DECODE_SYSTEM = "You are a clear technical writer. Write plain prose with no headings or lists."
-DECODE_PROMPT = ("Explain to a new developer how a laptop GPU runs a language model locally: where the weights live, "
+DECODE_PROMPT = ("Explain to a new developer how a laptop runs a language model locally: where the weights live, "
                  "what prefill and decoding are, and why tokens per second matters for an app. About 200 words.")
 PREFILL_SYSTEM = "Answer in one short sentence."
 PREFILL_TARGET = 10000
 SPEED_NOTE = ("One run on this PC with this model and prompt. Speeds vary with the model, prompt length, temperature "
-              "and whatever else the GPU is doing. Not a benchmark or a guarantee.")
+              "and whatever else this PC is doing. Not a benchmark or a guarantee.")
 
 
 def _reasoning(engine):
     try:
-        return bool(model_spec(engine.state.get("selected_model"))["reasoning"])
+        return bool(engine.reasoning(engine.state.get("selected_model")))
     except Exception:
         return False
 
@@ -56,7 +56,8 @@ def _stream(engine, prompt, system, max_tokens, stage):
 # ------------------------------------------------------------------ hybrid router run
 def hybrid_run(engine, text, network="online", scale="fits"):
     started = time.perf_counter()
-    decision = hybrid.route(text, network, scale)
+    where = engine.where()
+    decision = hybrid.route(text, network, scale, where=where)
     yield {"type": "route", "decision": decision}
     lane = decision["lane"]
     ran = False
@@ -65,7 +66,7 @@ def hybrid_run(engine, text, network="online", scale="fits"):
         yield {"type": "payload", "withheld": False, **decision["cloud_payload"]}
         note = "No model ran: nothing sensitive was found, so this goes to the cloud as written. The studio never sends it."
     elif lane == "local":
-        yield {"type": "stage", "stage": "local", "title": "Answer on this PC's GPU",
+        yield {"type": "stage", "stage": "local", "title": f"Answer on {where}",
                "detail": "The full text stays on the device."}
         yield from _stream(engine, text.strip(), LOCAL_SYSTEM, engine.generation_budget("brief"), "local")
         ran = True
@@ -76,7 +77,7 @@ def hybrid_run(engine, text, network="online", scale="fits"):
         elif decision["cloud_blocked"]:
             note = "The cloud step is blocked because the text holds credentials."
     else:
-        yield {"type": "stage", "stage": "redact", "title": "Redact on this PC's GPU",
+        yield {"type": "stage", "stage": "redact", "title": f"Redact on {where}",
                "detail": "The on-device model replaces identifiers with placeholders."}
         budget = max(engine.generation_budget("brief"), min(1600, len(text) // 3 + 200))
         prompt = hybrid.redaction_prompt(text)
@@ -180,7 +181,7 @@ def speedtest(engine):
                        "detail": "A fixed ~200-word explainer. Measures tokens generated per second."},
                       {"id": "prefill", "title": "Reading speed",
                        "detail": f"About {PREFILL_TARGET:,} characters of synthetic policy text. Measures how fast "
-                                 "the GPU reads a long prompt."}]}
+                                 f"{engine.where()} reads a long prompt."}]}
     yield {"type": "phase", "phase": "decode", "state": "running"}
     timeline, done = yield from _timed(engine, "decode", DECODE_PROMPT, DECODE_SYSTEM,
                                        768 if reasoning else 320, True)
@@ -235,7 +236,7 @@ def endpoint_test(engine, timeout=300):
 
 
 def visible_reply(message, reasoning_model):
-    """The final answer only. Private reasoning (a separate field or GPT-OSS channel framing) is counted, never shown."""
+    """The final answer only. Private reasoning (a separate field, GPT-OSS channel framing or <think> blocks) is counted, never shown."""
     content = message.get("content") or ""
     withheld = len(message.get("reasoning_content") or message.get("reasoning") or "")
     if reasoning_model or "<|channel|>" in content:
@@ -245,4 +246,7 @@ def visible_reply(message, reasoning_model):
         except RuntimeError:
             withheld += len(content)
             content = ""
+    if ThinkFilter.OPEN in content or ThinkFilter.CLOSE in content:
+        content, hidden = ThinkFilter().feed(content, final=True)
+        withheld += hidden
     return content.strip(), withheld

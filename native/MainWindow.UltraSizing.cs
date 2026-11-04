@@ -94,7 +94,7 @@ internal sealed partial class MainWindow
         var controls = new AdaptiveGrid(240, 3, 16).With(_ultraTogether, _ultraLong, Stack(8, _ultraBasis, _ultraCustom));
         var planner = Id(CardBorder(Stack(16,
             Stack(8, Eyebrow("Surface Laptop Ultra configurations"), H2("Which memory configuration fits these workloads?"),
-                Body("Uses the workloads picked above. Windows and the RTX GPU share the laptop's memory: part of it is set aside as dedicated GPU memory, " +
+                Body("A planning aid for the Surface Laptop Ultra, whichever PC this studio runs on. Uses the workloads picked above. Windows and the RTX GPU share the laptop's memory: part of it is set aside as dedicated GPU memory, " +
                      "and that share decides how large an AI model fits. Each card runs the same estimate against that configuration's GPU share.")),
             controls,
             _ultraPill, _ultraRecommendation,
@@ -109,8 +109,12 @@ internal sealed partial class MainWindow
     internal void RecomputeUltra()
     {
         if (!_ultraReady) return;
-        var device = _status?.Device;
-        if (_ultraBasis.Items[1] is RadioButton measured) measured.IsEnabled = UltraSizing.MeasuredShare(device) is not null;
+        var device = UltraDevice;
+        if (_ultraBasis.Items[1] is RadioButton measured)
+        {
+            measured.IsEnabled = UltraSizing.MeasuredShare(device) is not null;
+            if (!measured.IsEnabled && SelectedUltraBasis == SplitBasis.MeasuredThisPc) _ultraBasis.SelectedIndex = 0;
+        }
         var basis = SelectedUltraBasis;
         _ultraCustom.Visibility = basis == SplitBasis.Custom ? Visibility.Visible : Visibility.Collapsed;
         _ultraBasisNote.Text = UltraSizing.BasisNote(basis, device, _ultraCustom.Value);

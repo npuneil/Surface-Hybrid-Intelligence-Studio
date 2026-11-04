@@ -17,7 +17,7 @@ internal sealed partial class MainWindow
     private readonly NumberBox _runtime = SizingBox("Runtime allowance (GiB)", "SizingRuntime", 0.5, 1);
     private readonly RadioButtons _budgetSource = Id(new RadioButtons { Header = "Memory budget view (one at a time)" }, "SizingBudgetSource");
     private readonly NumberBox _budget = SizingBox("Memory budget (GiB)", "SizingBudget", 1, 8);
-    private readonly NumberBox _reserve = SizingBox("OS, apps and other GPU work reserve (GiB)", "SizingReserve", 1, 4);
+    private readonly NumberBox _reserve = SizingBox("OS, apps and other work reserve (GiB)", "SizingReserve", 1, 4);
     private readonly NumberBox _headroom = SizingBox("Safety headroom (GiB)", "SizingHeadroom", 0.5, 2);
     private readonly TextBlock _budgetNote = Id(Small(""), "SizingBudgetNote");
     private readonly Border _verdictPill = Id(new Border { CornerRadius = new CornerRadius(999), Padding = new Thickness(12, 4, 12, 5), HorizontalAlignment = HorizontalAlignment.Left }, "SizingVerdict");
@@ -60,9 +60,10 @@ internal sealed partial class MainWindow
         _verdictPill.Child = _verdictText;
 
         _sizePicker.SelectionChanged += (_, _) => { if (_sizePicker.SelectedIndex >= 0) ApplySizePreset(Sizing.Profiles[_sizePicker.SelectedIndex]); };
-        _budgetSource.SelectionChanged += (_, _) => { SyncBudgetBox(); RecomputeSizing(); };
+        _budgetSource.SelectionChanged += (_, _) => OnBudgetSourceChanged();
         foreach (var box in new[] { _params, _context, _kv, _runtime, _budget, _reserve, _headroom })
             box.ValueChanged += (_, _) => RecomputeSizing();
+        _reserve.ValueChanged += (_, _) => { if (!_suppressSizing) _reserveEdited = true; };
         _bits.SelectionChanged += (_, _) => RecomputeSizing();
         _sizingExport.Click += (_, _) => ExportSizing();
         var reset = Id(Secondary("Reset to defaults"), "SizingReset");
@@ -132,7 +133,7 @@ internal sealed partial class MainWindow
         }
 
         var observedCard = CardBorder(Stack(10,
-            H3("Observed on this laptop (actual metadata, not an estimate)"),
+            H3("Observed on this PC (actual metadata, not an estimate)"),
             _observed), 22);
         _observed.Children.Add(Small("Waiting for the local service to report model metadata."));
         ResetSizing();
@@ -208,10 +209,10 @@ internal sealed partial class MainWindow
         _suppressSizing = true;
         _bits.SelectedIndex = Array.IndexOf(Sizing.SupportedBits, Sizing.DefaultBits);
         _context.Value = Sizing.DefaultContextTokens;
-        _reserve.Value = Sizing.DefaultReserveGiB;
         _headroom.Value = Sizing.DefaultHeadroomGiB;
         _budget.Value = 32;
-        _budgetSource.SelectedIndex = 0;
+        _budgetSourceChosen = false;
+        _reserveEdited = false;
         _sizePicker.SelectedIndex = -1;
         _suppressSizing = false;
         _sizePicker.SelectedIndex = 2;
@@ -222,42 +223,39 @@ internal sealed partial class MainWindow
     private BudgetSource SelectedBudgetSource =>
         _budgetSource.SelectedItem is RadioButton { Tag: BudgetSource s } ? s : BudgetSource.GpuDriverBudget;
 
+    /// <summary>Follows the PC shown: opens the memory views it has, picks the first unless the person chose, resolves the budget and sets the
+    /// reserve that suits that view unless the person edited it.</summary>
     private void SyncBudgetBox()
     {
+        var target = SizingNow;
+        ChooseBudgetSource(target);
         var source = SelectedBudgetSource;
         bool custom = source == BudgetSource.Custom;
         _budget.IsEnabled = custom;
-        var device = _status?.Device;
+        bool previous = _suppressSizing;
+        _suppressSizing = true;
         if (!custom)
         {
-            double? resolved = Sizing.ResolveBudget(source, device, double.NaN);
-            _suppressSizing = true;
+            double? resolved = Sizing.ResolveBudget(source, target.Facts, double.NaN);
             _budget.Value = resolved is double v ? Math.Round(v, 2) : double.NaN;
-            _suppressSizing = false;
         }
-        string installed = device?.InstalledGiB is double i ? $"{Math.Round(i):N0} GB installed physical memory" : "Installed memory";
-        _budgetNote.Text = source switch
-        {
-            BudgetSource.GpuDriverBudget => device?.PrimaryGpuBudgetMiB is long mib
-                ? $"Driver-reported GPU budget: {mib:N0} MiB = {mib / 1024d:F2} GiB. Best view for GPU inference here. Not dedicated VRAM."
-                : "GPU budget not reported yet. Choose another view or enter a custom budget.",
-            BudgetSource.WindowsVisibleMemory => device?.OsVisibleGiB is double w
-                ? $"Windows-visible memory: {w:F2} GiB. A different view of the same machine; never added to the GPU budget."
-                : "Windows-visible memory not reported yet.",
-            _ => "Enter any budget, for example a banker, branch or operations device's memory. Useful for Snapdragon and Intel sizing conversations."
-        } + $" {installed} is shown for context and is not used as a budget.";
+        if (!_reserveEdited) _reserve.Value = target.ReserveFor(source);
+        _suppressSizing = previous;
+        _budgetNote.Text = BudgetNote(source, target);
     }
 
     private void ApplySizingStatus(StatusSnapshot status)
     {
         if (_sizePicker.SelectedIndex < 0) ResetSizing();
-        if (SelectedBudgetSource != BudgetSource.Custom) SyncBudgetBox();
+        SyncBudgetBox();
         RecomputeSizing();
         RecomputeSales();
         _observed.Children.Clear();
         var d = status.Device;
+        if (status.Target is { Error: null, Simulated: true })
+            _observed.Children.Add(Small("A Surface preview is on. This card always describes this PC, not the previewed Surface.", AmberInk));
         _observed.Children.Add(Body($"Memory views: {Gb(d.InstalledGiB)} installed physical  |  {d.OsVisibleGiB:F1} GiB Windows-visible  |  " +
-            (d.PrimaryGpuBudgetMiB is long mib ? $"{mib:N0} MiB GPU budget" : "GPU budget unavailable") + ". Distinct views; never summed.", Ink));
+            (d.PrimaryGpuBudgetMiB is long mib ? $"{mib:N0} MiB GPU budget" : "no separate GPU memory budget reported") + ". Distinct views; never summed.", Ink));
         foreach (var m in status.Engine.Models)
         {
             bool loaded = status.Engine.Model?.Alias == m.Alias;
@@ -277,7 +275,7 @@ internal sealed partial class MainWindow
         int bits = _bits.SelectedItem is ComboBoxItem { Tag: int b } ? b : 0;
         double budget = SelectedBudgetSource == BudgetSource.Custom
             ? _budget.Value
-            : Sizing.ResolveBudget(SelectedBudgetSource, _status?.Device, double.NaN) ?? double.NaN;
+            : Sizing.ResolveBudget(SelectedBudgetSource, SizingNow.Facts, double.NaN) ?? double.NaN;
         return new SizingInput(_params.Value, bits, _context.Value, _kv.Value, _runtime.Value, budget, _reserve.Value, _headroom.Value);
     }
 
@@ -358,7 +356,7 @@ internal sealed partial class MainWindow
         try
         {
             var size = _sizePicker.SelectedIndex >= 0 ? Sizing.Profiles[_sizePicker.SelectedIndex].Size : (TShirtSize?)null;
-            string path = Evidence.Save(Evidence.SizingExport(_lastSizingInput, _lastSizing, size, SelectedBudgetSource), ExportDirectory, "sizing-estimate");
+            string path = Evidence.Save(Evidence.SizingExport(_lastSizingInput, _lastSizing, size, SelectedBudgetSource, SizingNow), ExportDirectory, "sizing-estimate");
             _sizingInfo.Severity = InfoBarSeverity.Success; _sizingInfo.Title = "Estimate exported"; _sizingInfo.Message = path; _sizingInfo.IsOpen = true;
         }
         catch (Exception exception)

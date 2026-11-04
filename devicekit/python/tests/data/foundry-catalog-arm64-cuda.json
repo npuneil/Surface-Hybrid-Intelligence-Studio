@@ -1,0 +1,965 @@
+{
+ "about": "Live Foundry Local 2.1.0 catalog read on an Arm64 Surface with only the CUDA provider registered (96 builds). Nothing is cached here so the file is the same on every PC.",
+ "builds": [
+  {
+   "alias": "deepseek-r1-14b",
+   "id": "deepseek-r1-distill-qwen-14b-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 11786,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "deepseek-r1-14b",
+   "id": "deepseek-r1-distill-qwen-14b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 10065,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "deepseek-r1-7b",
+   "id": "deepseek-r1-distill-qwen-7b-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 6584,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "deepseek-r1-7b",
+   "id": "deepseek-r1-distill-qwen-7b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 5406,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "gemma-4-e2b-it",
+   "id": "gemma-4-e2b-it-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 6031,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "gemma-4-e2b-it",
+   "id": "gemma-4-e2b-it-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 5896,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "gpt-oss-20b",
+   "id": "gpt-oss-20b-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 12552,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "gpt-oss-20b",
+   "id": "gpt-oss-20b-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 11331,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "ministral-3-3b-instruct-2512",
+   "id": "ministral-3-3b-instruct-2512-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 4691,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "ministral-3-3b-instruct-2512",
+   "id": "ministral-3-3b-instruct-2512-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 3679,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "mistral-7b-v0.2",
+   "id": "mistralai-Mistral-7B-Instruct-v0-2-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 4167,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "mistral-7b-v0.2",
+   "id": "mistralai-Mistral-7B-Instruct-v0-2-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 4075,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "mistral-nemo-12b-instruct",
+   "id": "mistral-nemo-12b-instruct-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 6978,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "mistral-nemo-12b-instruct",
+   "id": "mistral-nemo-12b-instruct-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 6766,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-3.5-asr-streaming-0.6b",
+   "id": "nemotron-3.5-asr-streaming-0.6b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 756,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-3.5-asr-streaming-0.6b",
+   "id": "nemotron-3.5-asr-streaming-0.6b-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 756,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-speech-streaming-en-0.6b",
+   "id": "nemotron-speech-streaming-en-0.6b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 696,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-speech-streaming-en-0.6b",
+   "id": "nemotron-speech-streaming-en-0.6b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 696,
+   "version": 2,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-speech-streaming-es-0.6b",
+   "id": "nemotron-speech-streaming-es-0.6b-ft-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 729,
+   "version": 1,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "nemotron-speech-streaming-es-0.6b",
+   "id": "nemotron-speech-streaming-es-0.6b-ft-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 729,
+   "version": 2,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "olmo-3-7b-instruct",
+   "id": "olmo-3-7b-instruct-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 5322,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "olmo-3-7b-instruct",
+   "id": "olmo-3-7b-instruct-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 5193,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "parakeet-tdt-0.6b-v2",
+   "id": "parakeet-tdt-0.6b-v2-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 692,
+   "version": 1,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "parakeet-tdt-0.6b-v2",
+   "id": "parakeet-tdt-0.6b-v2-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 692,
+   "version": 1,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3-mini-128k",
+   "id": "Phi-3-mini-128k-instruct-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2600,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3-mini-128k",
+   "id": "Phi-3-mini-128k-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2181,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3-mini-4k",
+   "id": "Phi-3-mini-4k-instruct-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2590,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3-mini-4k",
+   "id": "Phi-3-mini-4k-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2181,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3.5-mini",
+   "id": "Phi-3.5-mini-instruct-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2590,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-3.5-mini",
+   "id": "Phi-3.5-mini-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2181,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4",
+   "id": "Phi-4-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 10403,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4",
+   "id": "Phi-4-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 8570,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-mini",
+   "id": "Phi-4-mini-instruct-generic-cpu:5",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 4915,
+   "version": 5,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-mini",
+   "id": "Phi-4-mini-instruct-cuda-gpu:5",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 3686,
+   "version": 5,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-mini-reasoning",
+   "id": "Phi-4-mini-reasoning-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 4628,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-mini-reasoning",
+   "id": "Phi-4-mini-reasoning-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 3225,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-reasoning",
+   "id": "Phi-4-reasoning-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 10403,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "phi-4-reasoning",
+   "id": "Phi-4-reasoning-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 8581,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-0.5b",
+   "id": "qwen2.5-0.5b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 822,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-0.5b",
+   "id": "qwen2.5-0.5b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 528,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-1.5b",
+   "id": "qwen2.5-1.5b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1822,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-1.5b",
+   "id": "qwen2.5-1.5b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 1280,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-14b",
+   "id": "qwen2.5-14b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 11325,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-14b",
+   "id": "qwen2.5-14b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 9000,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-7b",
+   "id": "qwen2.5-7b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 6307,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-7b",
+   "id": "qwen2.5-7b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 4843,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-0.5b",
+   "id": "qwen2.5-coder-0.5b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 822,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-0.5b",
+   "id": "qwen2.5-coder-0.5b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 528,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-1.5b",
+   "id": "qwen2.5-coder-1.5b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1822,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-1.5b",
+   "id": "qwen2.5-coder-1.5b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 1280,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-14b",
+   "id": "qwen2.5-coder-14b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 11325,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-14b",
+   "id": "qwen2.5-coder-14b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 9000,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-7b",
+   "id": "qwen2.5-coder-7b-instruct-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 6307,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen2.5-coder-7b",
+   "id": "qwen2.5-coder-7b-instruct-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 4843,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-0.6b",
+   "id": "qwen3-0.6b-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 593,
+   "version": 4,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-0.6b",
+   "id": "qwen3-0.6b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 492,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-1.7b",
+   "id": "qwen3-1.7b-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1354,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-1.7b",
+   "id": "qwen3-1.7b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 1318,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-14b",
+   "id": "qwen3-14b-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 9530,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-14b",
+   "id": "qwen3-14b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 9302,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-4b",
+   "id": "qwen3-4b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2763,
+   "version": 3,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-4b",
+   "id": "qwen3-4b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2692,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-8b",
+   "id": "qwen3-8b-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 5806,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-8b",
+   "id": "qwen3-8b-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 5674,
+   "version": 2,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-embedding-0.6b",
+   "id": "qwen3-embedding-0.6b-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 495,
+   "version": 1,
+   "task": "embeddings",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-embedding-0.6b",
+   "id": "qwen3-embedding-0.6b-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 478,
+   "version": 1,
+   "task": "embeddings",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-embedding-8b",
+   "id": "qwen3-embedding-8b-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 5773,
+   "version": 1,
+   "task": "embeddings",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-embedding-8b",
+   "id": "qwen3-embedding-8b-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 5640,
+   "version": 1,
+   "task": "embeddings",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-2b-instruct",
+   "id": "qwen3-vl-2b-instruct-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1374,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-2b-instruct",
+   "id": "qwen3-vl-2b-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2161,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-4b-instruct",
+   "id": "qwen3-vl-4b-instruct-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2797,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-4b-instruct",
+   "id": "qwen3-vl-4b-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 3561,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-8b-instruct",
+   "id": "qwen3-vl-8b-instruct-generic-cpu:2",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 5081,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3-vl-8b-instruct",
+   "id": "qwen3-vl-8b-instruct-cuda-gpu:2",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 6130,
+   "version": 2,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-0.8b",
+   "id": "qwen3.5-0.8b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1037,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-0.8b",
+   "id": "qwen3.5-0.8b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 1483,
+   "version": 4,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-2b",
+   "id": "qwen3.5-2b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1790,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-2b",
+   "id": "qwen3.5-2b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2928,
+   "version": 4,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-2b-text",
+   "id": "qwen3.5-2b-text-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1464,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-2b-text",
+   "id": "qwen3.5-2b-text-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 1351,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-4b",
+   "id": "qwen3.5-4b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 3085,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-4b",
+   "id": "qwen3.5-4b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 4181,
+   "version": 4,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-9b",
+   "id": "qwen3.5-9b-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 5569,
+   "version": 3,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "qwen3.5-9b",
+   "id": "qwen3.5-9b-cuda-gpu:4",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 7144,
+   "version": 4,
+   "task": "vision-language-chat",
+   "contextLength": null
+  },
+  {
+   "alias": "smollm3-3b",
+   "id": "smollm3-3b-generic-cpu:1",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 2131,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "smollm3-3b",
+   "id": "smollm3-3b-cuda-gpu:1",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 2069,
+   "version": 1,
+   "task": "chat-completion",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-base",
+   "id": "openai-whisper-base-generic-cpu:3",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 205,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-base",
+   "id": "openai-whisper-base-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 123,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-large-v3-turbo",
+   "id": "openai-whisper-large-v3-turbo-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 1284,
+   "version": 4,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-large-v3-turbo",
+   "id": "openai-whisper-large-v3-turbo-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 803,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-medium",
+   "id": "openai-whisper-medium-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 937,
+   "version": 4,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-medium",
+   "id": "openai-whisper-medium-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 639,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-small",
+   "id": "openai-whisper-small-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 438,
+   "version": 4,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-small",
+   "id": "openai-whisper-small-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 301,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-tiny",
+   "id": "openai-whisper-tiny-generic-cpu:4",
+   "device": "CPU",
+   "ep": "CPUExecutionProvider",
+   "mb": 131,
+   "version": 4,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  },
+  {
+   "alias": "whisper-tiny",
+   "id": "openai-whisper-tiny-cuda-gpu:3",
+   "device": "GPU",
+   "ep": "CUDAExecutionProvider",
+   "mb": 85,
+   "version": 3,
+   "task": "automatic-speech-recognition",
+   "contextLength": null
+  }
+ ]
+}

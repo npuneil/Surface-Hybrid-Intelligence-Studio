@@ -4,3 +4,11 @@ __pycache__/
 .venv/
 native/bin/
 native/obj/
+devicekit/dotnet/**/bin/
+devicekit/dotnet/**/obj/
+devicekit/python/**/.pytest_cache/
+forge/**/bin/
+forge/**/obj/
+forge/out/
+
+forge/dist/

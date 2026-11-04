@@ -343,6 +343,12 @@ Forge is found beside this repository (`..\Offline-PPTX-Forge`) or at
 `HYBRID_STUDIO_FORGE_ROOT`. Forge is started through Explorer, so closing the studio does
 not close Forge. `.\Start-NativeShowcase.ps1 -Section industries` opens the page directly.
 
+This repository also holds a standalone rebuild of the Forge for every Surface in `forge\`
+(see [forge/README.md](forge/README.md)): a WinUI 3 app, packaged per silicon family, that
+picks the deck model for the Surface it runs on. It is built on the reusable Surface device
+kit in `devicekit\` (see [devicekit/README.md](devicekit/README.md)). The **Prepare deck in
+Forge** button above still opens the external Forge.
+
 ### Hybrid Intelligence: router, show-off tools and builder hub
 
 Three pages turn "Hybrid Intelligence on Surface" from a slide into something people can
@@ -662,6 +668,9 @@ python -m unittest discover -s tests -v
 .\tests\Browser-Smoke.ps1 -IncludeLive
 .\tools\Test-Edition.ps1
 ```
+
+The Surface device kit and the standalone Forge have their own checks, in
+[devicekit/README.md](devicekit/README.md) and [forge/README.md](forge/README.md).
 
 Native checks exercise deterministic sizing boundaries, Sales-to-Technical
 parity, coding-lesson answers and progress storage, scenario parsing,

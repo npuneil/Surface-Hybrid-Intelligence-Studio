@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from content import DEFAULT_ASSUMPTIONS, SCENARIOS, calculate
+from fakes import service_for
 from local_engine import DEFAULT_MODEL, MODELS, PROVIDER, HarmonyFilter, LocalEngine
 from server import ShowcaseServer, read_device
 
@@ -201,8 +202,11 @@ class TutorScenarioTests(unittest.TestCase):
         self.assertTrue(SCENARIOS["tutor"]["prompt"].startswith(intro + "\n\n```python\n"))
 
 
-class FakeEngine:
+class FakeEngine(LocalEngine):
+    """A LocalEngine that never started, so the names, lanes and blockers it reports are the reference ones; inference is faked."""
+
     def __init__(self):
+        super().__init__()
         self.state = {"state": "ready", "detail": "Test engine", "model": None,
                       "selected_model": DEFAULT_MODEL, "models": []}
         self.calls = []
@@ -240,7 +244,7 @@ class ApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.engine = FakeEngine()
-        cls.server = ShowcaseServer(("127.0.0.1", 0), engine=cls.engine, device={"model": "fixture"})
+        cls.server = ShowcaseServer(("127.0.0.1", 0), engine=cls.engine, device={"model": "fixture"}, device_service=service_for())
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
 
@@ -489,10 +493,11 @@ class ApiTests(unittest.TestCase):
             self.assertIsNone(endpoint_port(8792))
 
 
-class ScriptedEngine:
+class ScriptedEngine(LocalEngine):
     """Replays a fixed reply so router and speedometer logic can be checked without a GPU."""
 
     def __init__(self, reply="", tokens=None, done=None, delay=0.0):
+        super().__init__()
         self.state = {"state": "ready", "detail": "Scripted", "model": {"name": "Scripted 1B"},
                       "selected_model": DEFAULT_MODEL}
         self.reply, self.tokens, self.done, self.delay = reply, tokens, done or {}, delay
@@ -552,6 +557,33 @@ class HybridRouterTests(unittest.TestCase):
         self.assertEqual(hybrid.route("Summarise our approach to onboarding.", scale="beyond_device")["lane"], "cloud")
         complaint = self.preset("complaint")["text"]
         self.assertEqual(hybrid.route(complaint, scale="beyond_device")["lane"], "hybrid")
+
+    def test_the_route_text_names_where_this_pc_answers_without_changing_the_decision(self):
+        secret = self.preset("secret")["text"]
+        default, npu = hybrid.route(secret), hybrid.route(secret, where="the NPU")
+        self.assertEqual(default["steps"][0]["text"], "Answer on this PC; nothing leaves the device.")
+        self.assertEqual(npu["steps"][0]["text"], "Answer on the NPU; nothing leaves the device.")
+        self.assertEqual({k: v for k, v in npu.items() if k != "steps"}, {k: v for k, v in default.items() if k != "steps"})
+        local = next(p for p in hybrid.PRESETS if p["expect"] == "local")
+        decision = hybrid.route(local["text"], local["network"], local["scale"], where="the CPU")
+        self.assertEqual(decision["steps"][0]["text"], "Answer on the CPU; nothing leaves the device.")
+
+    def test_patterns_are_worded_for_the_pc_they_are_shown_on(self):
+        def texts(wording=None):
+            patterns = hybrid.public(wording)["patterns"]
+            return [pattern["summary"] for pattern in patterns] + [step["text"] for pattern in patterns for step in pattern["flow"]]
+
+        wording = {"where": "the NPU", "routine": "7B for routine work",
+                   "depth": "A larger local model for depth, where this PC has the memory"}
+        reference, here = texts(), texts(wording)
+        for text in (*reference, *here):
+            self.assertNotRegex(text, r"\{(where|routine|depth)\}")
+        self.assertIn("Draft on the RTX GPU", reference)
+        self.assertIn("14B-20B for routine work", reference)
+        self.assertIn("Draft on the NPU", here)
+        self.assertIn("7B for routine work", here)
+        self.assertIn(wording["depth"], here)
+        self.assertNotIn("RTX", " ".join(here))
 
     def test_structured_identifiers_in_the_demo_email_are_masked(self):
         masked = hybrid.masked_text(demos.EMAIL)
@@ -715,6 +747,13 @@ class WorkbenchTests(unittest.TestCase):
         reply, withheld = workbench.visible_reply({"content": "<|channel|>analysis<|message|>PRIVATE<|call|>"}, True)
         self.assertEqual(reply, "")
         self.assertGreater(withheld, 0)
+
+    def test_endpoint_reply_never_shows_think_blocks(self):
+        framed = "<think>PRIVATE plan</think>\n\nHi there."
+        for reasoning_model in (False, True):
+            self.assertEqual(workbench.visible_reply({"content": framed}, reasoning_model), ("Hi there.", len("PRIVATE plan")))
+        self.assertEqual(workbench.visible_reply({"content": "Let me think.</think>Hi."}, True), ("Hi.", len("Let me think.")))
+        self.assertEqual(workbench.visible_reply({"content": "<think>never closed"}, True), ("", len("never closed")))
 
 
 class BuilderTests(unittest.TestCase):

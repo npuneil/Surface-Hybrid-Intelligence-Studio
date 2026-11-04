@@ -1,0 +1,320 @@
+{
+ "harness": "1.1",
+ "brief": "adventure_works_sales",
+ "template": "surface_ultra",
+ "lane": "local",
+ "model": "qwen3-coder-30b",
+ "llm_calls": 3,
+ "prompt_tokens": 16354,
+ "completion_tokens": 7624,
+ "decode_tps": 53.9,
+ "ttft_s": 1.988,
+ "generate_s": 148.18,
+ "render_s": 0.14,
+ "total_s": 148.32,
+ "power": {
+  "seconds": 148.17,
+  "samples": 578,
+  "gpu_avg_w": 27.0,
+  "gpu_peak_w": 67.7,
+  "gpu_wh": 1.1129,
+  "platform_wh": 0.4116,
+  "total_wh": 1.5245
+ },
+ "economics": {
+  "lane": "local",
+  "energy_wh": 1.524,
+  "cost_usd": 0.000198,
+  "co2e_g": 0.559,
+  "water_ml": 0.0,
+  "basis": "measured GPU board power (nvidia-smi, 250 ms) + 10 W platform allowance; electricity only"
+ },
+ "grade": {
+  "auto_score": 80.4,
+  "auto_grade": "B-",
+  "scores": {
+   "visual_richness": 23.0,
+   "text_lightness": 12.4,
+   "analogy": 10.0,
+   "brief_coverage": 10.0,
+   "claim_discipline": 15.0,
+   "structure": 10.0
+  },
+  "detail": {
+   "visual_richness": {
+    "infographic_share": 1.0,
+    "distinct_layouts": 8,
+    "icons_per_slide": 4.3,
+    "canvas_diagrams": 1
+   },
+   "text_lightness": {
+    "avg_words_per_slide": 41.5,
+    "max_words": 55
+   },
+   "analogy": {
+    "analogy_slides": 2,
+    "analogy_cue_slides": 0
+   },
+   "brief_coverage": {
+    "covered": 4.0,
+    "topics": 6,
+    "missing": [
+     "security_features",
+     "pilot_scope"
+    ]
+   },
+   "claim_discipline": {
+    "numbers_on_canvas": 25,
+    "untraceable": [],
+    "guardrail_violations": []
+   },
+   "structure": {
+    "strict_json": true,
+    "slides": 11,
+    "notes_slides": 11,
+    "fallbacks": 0,
+    "overflows": 0,
+    "shrunk_texts": 2
+   }
+  }
+ },
+ "pptx": "decks/adventure_works_sales-v1.1/adventure_works_sales-surface_ultra.pptx",
+ "render_summary": [
+  {
+   "index": 0,
+   "layout": "title",
+   "words": 19,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 5,
+   "issues": []
+  },
+  {
+   "index": 1,
+   "layout": "kpis",
+   "words": 38,
+   "overflows": 0,
+   "shrunk": 1,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 2,
+   "layout": "analogy",
+   "words": 55,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 2,
+   "issues": []
+  },
+  {
+   "index": 3,
+   "layout": "compare",
+   "words": 47,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 7,
+   "issues": []
+  },
+  {
+   "index": 4,
+   "layout": "canvas",
+   "words": 40,
+   "overflows": 0,
+   "shrunk": 1,
+   "icons": 7,
+   "issues": []
+  },
+  {
+   "index": 5,
+   "layout": "matrix",
+   "words": 39,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 6,
+   "layout": "analogy",
+   "words": 52,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 2,
+   "issues": []
+  },
+  {
+   "index": 7,
+   "layout": "stack",
+   "words": 51,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 8,
+   "layout": "flow",
+   "words": 42,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 5,
+   "issues": []
+  },
+  {
+   "index": 9,
+   "layout": "timeline",
+   "words": 34,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 10,
+   "layout": "cta",
+   "words": 39,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  }
+ ],
+ "lint_history": [
+  {
+   "pass": "draft",
+   "issues": 19,
+   "codes": [
+    "fit",
+    "notes",
+    "takeaway_long",
+    "title_label",
+    "topic",
+    "words",
+    "woven_analogy"
+   ]
+  },
+  {
+   "pass": "repair1",
+   "issues": 18,
+   "accepted": true,
+   "fixed_slides": 11,
+   "codes": [
+    "fit",
+    "takeaway_long",
+    "title_label",
+    "topic",
+    "words",
+    "woven_analogy"
+   ]
+  },
+  {
+   "pass": "repair2",
+   "issues": 20,
+   "accepted": false,
+   "fixed_slides": 4,
+   "codes": [
+    "analogy_adjacent",
+    "arc_layout",
+    "fit",
+    "takeaway_long",
+    "topic",
+    "words",
+    "woven_analogy"
+   ]
+  }
+ ],
+ "lint_remaining": [
+  {
+   "slide": 1,
+   "code": "woven_analogy",
+   "msg": "weave a short, accurate analogy into the takeaway using 'like' (<= 12 words)"
+  },
+  {
+   "slide": 3,
+   "code": "woven_analogy",
+   "msg": "weave a short, accurate analogy into the takeaway using 'like' (<= 12 words)"
+  },
+  {
+   "slide": -1,
+   "code": "topic",
+   "msg": "topic 'security_features' is not visible on any slide; work one of these words into a fitting slide's label or takeaway: confidential data handling, guest wifi security, data protection"
+  },
+  {
+   "slide": -1,
+   "code": "topic",
+   "msg": "topic 'pilot_scope' is not visible on any slide; work one of these words into a fitting slide's label or takeaway: 2 week duration, 10 rep sample, field testing"
+  },
+  {
+   "slide": 1,
+   "code": "words",
+   "msg": "38 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 1,
+   "code": "fit",
+   "msg": "some text does not fit its shape; shorten the longest labels/details"
+  },
+  {
+   "slide": 2,
+   "code": "words",
+   "msg": "55 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 2,
+   "code": "takeaway_long",
+   "msg": "takeaway <= 12 words"
+  },
+  {
+   "slide": 3,
+   "code": "words",
+   "msg": "47 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 4,
+   "code": "words",
+   "msg": "40 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 4,
+   "code": "fit",
+   "msg": "some text does not fit its shape; shorten the longest labels/details"
+  },
+  {
+   "slide": 5,
+   "code": "words",
+   "msg": "39 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 6,
+   "code": "words",
+   "msg": "52 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 7,
+   "code": "words",
+   "msg": "51 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 8,
+   "code": "words",
+   "msg": "42 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 9,
+   "code": "words",
+   "msg": "34 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 9,
+   "code": "title_label",
+   "msg": "title reads as a label; rewrite as an insight claim with a verb (<= 7 words)"
+  },
+  {
+   "slide": 10,
+   "code": "words",
+   "msg": "39 visible words; cut to <= 28 (shorter details, fewer items)"
+  }
+ ],
+ "measured_facts": []
+}

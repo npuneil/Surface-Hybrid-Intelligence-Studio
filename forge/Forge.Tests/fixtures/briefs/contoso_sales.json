@@ -1,0 +1,40 @@
+{
+  "id": "contoso_sales",
+  "client": "Contoso",
+  "pitch_type": "sales",
+  "audience": "Contoso executive sponsors: COO, CIO and the Consulting practice lead. Business-minded, not deeply technical.",
+  "objective": "Win approval for a 2-week, 10-user pilot of Surface Laptop Ultra with NVIDIA RTX Spark running local AI for traveling consultants, alongside Microsoft 365 Copilot.",
+  "template_hint": "microsoft",
+  "slide_range": [8, 12],
+  "context": "Contoso is a fictional professional-services firm. Its consultants travel to client sites, where guest Wi-Fi is often restricted and client documents are sensitive. They spend a lot of time turning interview notes and site documents into client summaries. Contoso already uses Microsoft 365 Copilot and will keep it; the pitch is to add a local AI lane on the device for sensitive, repeated drafting work, not to replace anything.",
+  "facts": [
+    "Contoso has 4,000 employees.",
+    "1,200 of them are traveling consultants.",
+    "Each consultant writes about 6 client summaries per week.",
+    "A client summary takes about 25 minutes to draft today.",
+    "About 30% of client sites restrict guest Wi-Fi.",
+    "Illustrative capacity: if a local assistant saved 5 minutes per summary, 1,200 consultants x 6 summaries x 5 minutes x 46 working weeks = 27,600 hours per year. Unvalidated; the pilot measures the real number.",
+    "Device: Surface Laptop Ultra with NVIDIA RTX Spark (Blackwell RTX GPU, 20 CPU cores, 128 GB installed memory).",
+    "On this device, Gemma 4 26B decodes at about 72 tokens per second and Qwen3-Coder 30B at about 86 tokens per second (single stream, Local-AI-Bench, October 2026).",
+    "28 open models are installed in the local catalog on this device.",
+    "Microsoft 365 Copilot stays in place; local AI adds a second lane (hybrid).",
+    "Pilot: 10 users for 2 weeks (14 days), measuring task time, draft quality and user experience.",
+    "This deck was generated on this Surface Laptop Ultra by a local model, with no cloud calls."
+  ],
+  "required_topics": {
+    "consultant_pain": ["summary", "summaries", "25 min", "minutes", "drafting"],
+    "connectivity": ["wi-fi", "wifi", "connectivity", "client site", "restricted"],
+    "data_stays_local": ["data stays", "on device", "on-device", "local", "private", "sensitive"],
+    "hybrid_with_copilot": ["copilot", "hybrid", "two lanes", "both lanes", "cloud lane"],
+    "capacity_value": ["27,600", "hours", "capacity"],
+    "device": ["surface laptop ultra", "rtx spark", "surface"],
+    "pilot_ask": ["pilot", "10 users", "2 weeks", "two weeks"]
+  },
+  "guardrails": [
+    "Do not claim dollar savings, ROI or license savings.",
+    "Do not claim local AI replaces Microsoft 365 Copilot or any subscription.",
+    "Do not claim air-gapped, certified offline or security certification; say disconnected use is validated in the pilot.",
+    "Do not cite TOPS or Copilot+ PC certification.",
+    "The 27,600 hours figure is illustrative and must be labeled as an estimate to validate."
+  ]
+}

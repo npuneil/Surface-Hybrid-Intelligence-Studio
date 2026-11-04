@@ -1,0 +1,37 @@
+{
+  "id": "litware_technical",
+  "client": "Litware",
+  "pitch_type": "technical",
+  "audience": "Platform engineering team at Litware. They care about developer productivity, code quality, and maintaining security of their proprietary payments codebase.",
+  "objective": "Secure approval for a 3-week pilot with 8 developers using {device} for internal AI workloads.",
+  "template_hint": "microsoft",
+  "slide_range": [8, 12],
+  "context": "Litware's platform engineering team consists of 40 developers working on a proprietary payments codebase that cannot be sent to public AI services. The team already uses GitHub Copilot for open-source work and runs builds on a shared CI farm. They want to evaluate code completion, test generation, and Q&A over internal design docs using an AI solution that stays inside their boundary. The pilot will involve 8 developers over 3 weeks with measurements of time to first PR and review rework.",
+  "facts": [
+    "40 developers work on a proprietary payments codebase.",
+    "The codebase cannot be sent to public AI services.",
+    "The team already uses GitHub Copilot for open-source work.",
+    "Builds run on a shared CI farm.",
+    "3-week pilot with 8 developers.",
+    "Measure time to first PR and review rework."
+  ],
+  "required_topics": {
+    "security_compliance": ["proprietary code", "internal", "no public cloud", "data protection", "stays on"],
+    "developer_productivity": ["code completion", "test generation", "q&a", "docs", "time to first pr"],
+    "hardware": ["hardware", "silicon", "portable", "acceleration", "workstation"],
+    "pilot_metrics": ["review rework", "time to first pr", "3-week", "3 week", "8 developers"],
+    "existing_tools": ["github copilot", "ci farm", "open source", "open-source", "design docs"],
+    "device": ["{device}", "surface"],
+    "made_on_device": ["this deck", "drafted on", "built this", "this device"]
+  },
+  "guardrails": [
+    "Do not claim performance improvements over GitHub Copilot.",
+    "Do not suggest this is a production deployment.",
+    "Do not mention any specific cost or pricing information.",
+    "Do not claim the solution works with public AI services.",
+    "Use only numbers from the fact sheet; label any estimate as an estimate to validate.",
+    "Do not claim local AI replaces Microsoft 365 Copilot or any cloud subscription.",
+    "Do not claim air-gapped, certified offline or security certification; say disconnected use is validated in the pilot.",
+    "Do not cite TOPS or Copilot+ PC certification."
+  ]
+}

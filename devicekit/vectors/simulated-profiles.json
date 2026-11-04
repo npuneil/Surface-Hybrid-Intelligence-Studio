@@ -1,0 +1,271 @@
+{
+  "schema": 1,
+  "note": "Raw hardware inputs for simulated devices. Each one runs through the same classifier as a probed PC. Only 'nvidia-n1x-128' was measured (on a Surface Laptop Ultra); the rest are representative values typed in by hand, so confirm shipping configurations on the exact SKU. NPU TOPS are never in here: they come from the catalog's silicon table as vendor-rated figures.",
+  "defaults": {
+    "manufacturer": "Microsoft Corporation",
+    "osVersion": "Windows 11 25H2 (build 26200)",
+    "osBuild": 26200,
+    "modelDrive": "C:",
+    "freeDiskGb": 200,
+    "totalDiskGb": 512,
+    "nvidiaSmi": false,
+    "powerPoint": true,
+    "powerPointVersion": "16.0"
+  },
+  "profiles": [
+    {
+      "id": "snapdragon-x-plus-16", "group": "snapdragon", "label": "Surface Laptop 7 · Snapdragon X Plus · 16 GB",
+      "note": "Snapdragon X Plus with 16 GB. The smallest memory option for Copilot+ class.",
+      "raw": {
+        "product": "Surface Laptop, 7th Edition", "cpu": "Snapdragon(R) X Plus - X1P64100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 10,
+        "osArch": "arm64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X1-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X Plus - X1P64100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x-elite-16", "group": "snapdragon", "label": "Surface Pro 11 · Snapdragon X Elite · 16 GB",
+      "note": "Snapdragon X Elite with 16 GB.",
+      "raw": {
+        "product": "Surface Pro, 11th Edition", "cpu": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X1-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x-elite-32", "group": "snapdragon", "label": "Surface Laptop 7 · Snapdragon X Elite · 32 GB",
+      "note": "Snapdragon X Elite with 32 GB.",
+      "raw": {
+        "product": "Surface Laptop, 7th Edition", "cpu": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "installedRamGb": 32, "visibleRamGb": 31.4,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X1-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x-elite-64", "group": "snapdragon", "label": "Surface Laptop 7 · Snapdragon X Elite · 64 GB",
+      "note": "Snapdragon X Elite with 64 GB.",
+      "raw": {
+        "product": "Surface Laptop, 7th Edition", "cpu": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "installedRamGb": 64, "visibleRamGb": 63.4,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X1-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x2-plus-8", "group": "snapdragon", "label": "Snapdragon X2 Plus Surface · 8 GB (representative)",
+      "note": "Representative low-memory configuration: an 80 TOPS NPU does not make a Copilot+ PC without 16 GB of RAM. Shows how the plan shrinks.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Snapdragon(R) X2 Plus - X2P-64-100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 10,
+        "osArch": "arm64", "installedRamGb": 8, "visibleRamGb": 7.7,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X2-45 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X2 Plus - X2P-64-100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x2-plus-16", "group": "snapdragon", "label": "Snapdragon X2 Plus Surface · 16 GB (representative)",
+      "note": "Representative Snapdragon X2 Plus with 16 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Snapdragon(R) X2 Plus - X2P-64-100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 10,
+        "osArch": "arm64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X2-45 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X2 Plus - X2P-64-100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x2-elite-24", "group": "snapdragon", "label": "Snapdragon X2 Elite Surface · 24 GB (representative)",
+      "note": "Representative Snapdragon X2 Elite with 24 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Snapdragon(R) X2 Elite - X2E-88-100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "installedRamGb": 24, "visibleRamGb": 23.4,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X2-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X2 Elite - X2E-88-100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x2-elite-64", "group": "snapdragon", "label": "Snapdragon X2 Elite Surface · 64 GB (representative)",
+      "note": "Representative Snapdragon X2 Elite with 64 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Snapdragon(R) X2 Elite - X2E-88-100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "installedRamGb": 64, "visibleRamGb": 63.4,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X2-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X2 Elite - X2E-88-100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-x-elite-16-emulated", "group": "snapdragon", "label": "Snapdragon X Elite · 16 GB, x64 build under emulation",
+      "note": "The x64 build run on an ARM64 PC. NPU and GPU runtimes cannot load in emulation, so everything falls to the CPU lane.",
+      "raw": {
+        "product": "Surface Pro, 11th Edition", "cpu": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Oryon(TM) CPU", "logicalCores": 12,
+        "osArch": "arm64", "processArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) X1-85 GPU", "vramGb": 0 } ],
+        "npus": [ { "name": "Snapdragon(R) X Elite - X1E80100 - Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+    {
+      "id": "snapdragon-sq3-16", "group": "snapdragon", "label": "Surface Pro 9 5G · Microsoft SQ3 · 16 GB",
+      "note": "Older Snapdragon (SQ3). Its NPU is not rated for language models, so the plan stays on the GPU and CPU lanes.",
+      "raw": {
+        "product": "Surface Pro 9 with 5G", "cpu": "Microsoft SQ3", "logicalCores": 8,
+        "osArch": "arm64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Qualcomm(R) Adreno(TM) 8cx Gen 3", "vramGb": 0 } ],
+        "npus": [ { "name": "Qualcomm(R) Hexagon(TM) NPU" } ]
+      }
+    },
+
+    {
+      "id": "intel-lunar-lake-16", "group": "intel", "label": "Intel Core Ultra 7 268V · 16 GB (representative)",
+      "note": "Representative Lunar Lake: NPU 4 rated 48 TOPS, Arc 140V graphics.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Intel(R) Core(TM) Ultra 7 268V", "logicalCores": 8,
+        "osArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Intel(R) Arc(TM) 140V GPU (16GB)", "vramGb": 0.12 } ],
+        "npus": [ { "name": "Intel(R) AI Boost" } ]
+      }
+    },
+    {
+      "id": "intel-lunar-lake-32", "group": "intel", "label": "Intel Core Ultra 7 268V · 32 GB (representative)",
+      "note": "Representative Lunar Lake with 32 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Intel(R) Core(TM) Ultra 7 268V", "logicalCores": 8,
+        "osArch": "x64", "installedRamGb": 32, "visibleRamGb": 31.4,
+        "gpus": [ { "name": "Intel(R) Arc(TM) 140V GPU (16GB)", "vramGb": 0.12 } ],
+        "npus": [ { "name": "Intel(R) AI Boost" } ]
+      }
+    },
+    {
+      "id": "intel-series-3-24", "group": "intel", "label": "Intel Core Ultra X7 358H · 24 GB (representative)",
+      "note": "Representative Core Ultra Series 3 with 24 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Intel(R) Core(TM) Ultra X7 358H", "logicalCores": 16,
+        "osArch": "x64", "installedRamGb": 24, "visibleRamGb": 23.4,
+        "gpus": [ { "name": "Intel(R) Arc(TM) B390 GPU", "vramGb": 0.12 } ],
+        "npus": [ { "name": "Intel(R) AI Boost" } ]
+      }
+    },
+    {
+      "id": "intel-series-3-64", "group": "intel", "label": "Intel Core Ultra X9 388H · 64 GB (representative)",
+      "note": "Representative Core Ultra Series 3 with 64 GB.",
+      "raw": {
+        "product": "Surface Laptop", "cpu": "Intel(R) Core(TM) Ultra X9 388H", "logicalCores": 16,
+        "osArch": "x64", "installedRamGb": 64, "visibleRamGb": 63.4,
+        "gpus": [ { "name": "Intel(R) Arc(TM) B390 GPU", "vramGb": 0.12 } ],
+        "npus": [ { "name": "Intel(R) AI Boost" } ]
+      }
+    },
+    {
+      "id": "intel-meteor-lake-16", "group": "intel", "label": "Surface Laptop 6 for Business · Core Ultra 7 165H · 16 GB",
+      "note": "Meteor Lake: the NPU is rated for light background AI only, so language models run on the GPU lane.",
+      "raw": {
+        "product": "Surface Laptop 6 for Business", "cpu": "Intel(R) Core(TM) Ultra 7 165H", "logicalCores": 22,
+        "osArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.6,
+        "gpus": [ { "name": "Intel(R) Arc(TM) Graphics", "vramGb": 0.12 } ],
+        "npus": [ { "name": "Intel(R) AI Boost" } ]
+      }
+    },
+    {
+      "id": "intel-12th-gen-16", "group": "intel", "label": "Surface Pro 9 · Core i7-1255U · 16 GB",
+      "note": "12th Gen Intel Core: no NPU, integrated Iris Xe graphics.",
+      "raw": {
+        "product": "Surface Pro 9", "cpu": "12th Gen Intel(R) Core(TM) i7-1255U", "logicalCores": 12,
+        "osArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.7,
+        "gpus": [ { "name": "Intel(R) Iris(R) Xe Graphics", "vramGb": 0.12 } ],
+        "npus": []
+      }
+    },
+    {
+      "id": "intel-pentium-8", "group": "intel", "label": "Surface Go 3 · Pentium Gold 6500Y · 8 GB",
+      "note": "The smallest configuration here: 8 GB, no NPU, entry-level graphics. Plans stay with the smallest models.",
+      "raw": {
+        "product": "Surface Go 3", "cpu": "Intel(R) Pentium(R) CPU 6500Y @ 1.10GHz", "logicalCores": 4,
+        "osArch": "x64", "installedRamGb": 8, "visibleRamGb": 7.8,
+        "gpus": [ { "name": "Intel(R) UHD Graphics 615", "vramGb": 0.12 } ],
+        "npus": []
+      }
+    },
+
+    {
+      "id": "nvidia-dgpu-16", "group": "nvidia", "label": "Surface Laptop Studio 2 · RTX 4050 6 GB · 16 GB",
+      "note": "13th Gen Intel Core with a dedicated 6 GB RTX GPU and 16 GB of RAM.",
+      "raw": {
+        "product": "Surface Laptop Studio 2", "cpu": "13th Gen Intel(R) Core(TM) i7-13700H", "logicalCores": 20,
+        "osArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.7, "nvidiaSmi": true,
+        "gpus": [ { "name": "Intel(R) Iris(R) Xe Graphics", "vramGb": 0.12 }, { "name": "NVIDIA GeForce RTX 4050 Laptop GPU", "vramGb": 6 } ],
+        "npus": []
+      }
+    },
+    {
+      "id": "nvidia-dgpu-24", "group": "nvidia", "label": "RTX 4070 Laptop 8 GB · 24 GB (representative)",
+      "note": "Representative dedicated-GPU laptop with 24 GB of RAM.",
+      "raw": {
+        "product": "Surface Laptop Studio", "cpu": "13th Gen Intel(R) Core(TM) i7-13700H", "logicalCores": 20,
+        "osArch": "x64", "installedRamGb": 24, "visibleRamGb": 23.7, "nvidiaSmi": true,
+        "gpus": [ { "name": "Intel(R) Iris(R) Xe Graphics", "vramGb": 0.12 }, { "name": "NVIDIA GeForce RTX 4070 Laptop GPU", "vramGb": 8 } ],
+        "npus": []
+      }
+    },
+    {
+      "id": "nvidia-dgpu-32", "group": "nvidia", "label": "Surface Laptop Studio 2 · RTX 4060 8 GB · 32 GB",
+      "note": "13th Gen Intel Core with a dedicated 8 GB RTX GPU and 32 GB of RAM.",
+      "raw": {
+        "product": "Surface Laptop Studio 2", "cpu": "13th Gen Intel(R) Core(TM) i7-13700H", "logicalCores": 20,
+        "osArch": "x64", "installedRamGb": 32, "visibleRamGb": 31.7, "nvidiaSmi": true,
+        "gpus": [ { "name": "Intel(R) Iris(R) Xe Graphics", "vramGb": 0.12 }, { "name": "NVIDIA GeForce RTX 4060 Laptop GPU", "vramGb": 8 } ],
+        "npus": []
+      }
+    },
+    {
+      "id": "nvidia-dgpu-64", "group": "nvidia", "label": "Surface Laptop Studio 2 · RTX 2000 Ada 8 GB · 64 GB",
+      "note": "13th Gen Intel Core with a dedicated 8 GB RTX Ada GPU and 64 GB of RAM.",
+      "raw": {
+        "product": "Surface Laptop Studio 2 for Business", "cpu": "13th Gen Intel(R) Core(TM) i7-13700H", "logicalCores": 20,
+        "osArch": "x64", "installedRamGb": 64, "visibleRamGb": 63.7, "nvidiaSmi": true,
+        "gpus": [ { "name": "Intel(R) Iris(R) Xe Graphics", "vramGb": 0.12 }, { "name": "NVIDIA RTX 2000 Ada Generation Laptop GPU", "vramGb": 8 } ],
+        "npus": []
+      }
+    },
+    {
+      "id": "nvidia-n1x-32", "group": "nvidia", "label": "Surface Laptop Ultra-class · RTX Spark N1X · 32 GB (assumed split)",
+      "note": "ASSUMPTION: a 32 GB N1X splits memory about 50/50 like the measured 128 GB one (about 16 GB visible to Windows, about 16 GB reported as video memory). Not measured.",
+      "raw": {
+        "product": "Surface Laptop Ultra", "cpu": "NVIDIA RTX Spark N1X (6144-core GPU, 20-core CPU)", "logicalCores": 20,
+        "osArch": "arm64", "installedRamGb": 32, "visibleRamGb": 15.99, "nvidiaSmi": true,
+        "gpus": [ { "name": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)", "driver": "32.0.16.1742", "vramGb": 15.63 } ],
+        "npus": [ { "name": "NVIDIA NPU", "driver": "32.0.16.1742" } ]
+      }
+    },
+    {
+      "id": "nvidia-n1x-64", "group": "nvidia", "label": "Surface Laptop Ultra-class · RTX Spark N1X · 64 GB (assumed split)",
+      "note": "ASSUMPTION: a 64 GB N1X splits memory about 50/50 like the measured 128 GB one (about 32 GB visible to Windows, about 31 GB reported as video memory). Not measured.",
+      "raw": {
+        "product": "Surface Laptop Ultra", "cpu": "NVIDIA RTX Spark N1X (6144-core GPU, 20-core CPU)", "logicalCores": 20,
+        "osArch": "arm64", "installedRamGb": 64, "visibleRamGb": 31.99, "nvidiaSmi": true,
+        "gpus": [ { "name": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)", "driver": "32.0.16.1742", "vramGb": 31.25 } ],
+        "npus": [ { "name": "NVIDIA NPU", "driver": "32.0.16.1742" } ]
+      }
+    },
+    {
+      "id": "nvidia-n1x-128", "group": "nvidia", "label": "Surface Laptop Ultra · RTX Spark N1X · 128 GB (measured)",
+      "note": "Measured on a Surface Laptop Ultra: 128 GB installed, 63.98 GB visible to Windows, 62.5 GB reported as video memory (nvidia-smi shows 64000 MiB).",
+      "raw": {
+        "product": "Microsoft Surface Laptop Ultra", "sku": "Surface_Laptop_Ultra_For_Business_2115",
+        "cpu": "NVIDIA RTX Spark N1X (6144-core GPU, 20-core CPU)", "logicalCores": 20,
+        "osArch": "arm64", "installedRamGb": 128, "visibleRamGb": 63.98, "nvidiaSmi": true,
+        "gpus": [ { "name": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)", "driver": "32.0.16.1742", "vramGb": 62.5 } ],
+        "npus": [ { "name": "NVIDIA NPU", "driver": "32.0.16.1742" } ]
+      }
+    },
+
+    {
+      "id": "amd-ryzen-16", "group": "other", "label": "Surface Laptop 4 · AMD Ryzen 7 4980U · 16 GB",
+      "note": "AMD Ryzen without an NPU and with integrated Radeon graphics.",
+      "raw": {
+        "product": "Surface Laptop 4", "cpu": "AMD Ryzen 7 4980U with Radeon Graphics", "logicalCores": 16,
+        "osArch": "x64", "installedRamGb": 16, "visibleRamGb": 15.4,
+        "gpus": [ { "name": "AMD Radeon(TM) Graphics", "vramGb": 0.5 } ],
+        "npus": []
+      }
+    }
+  ]
+}

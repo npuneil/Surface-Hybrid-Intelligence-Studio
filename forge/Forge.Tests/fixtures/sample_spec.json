@@ -1,0 +1,57 @@
+{
+  "title": "Local AI on Surface",
+  "client": "Sample",
+  "slides": [
+    {"layout": "title", "kicker": "Theme gallery", "title": "Local AI, made tangible", "subtitle": "Every layout in the Forge catalog, rendered natively", "hero_icons": ["cloud", "laptop", "shield", "ai"]},
+    {"layout": "stack", "title": "The on-device AI stack", "takeaway": "Four layers turn silicon into answers.", "data": {"side_label": "100% on this PC", "layers": [
+      {"label": "Apps & agents", "detail": "Copilot-style drafting, code, search", "icon": "apps"},
+      {"label": "Models", "detail": "Qwen3-Coder 30B, GPT-OSS 20B", "icon": "ai"},
+      {"label": "Runtime", "detail": "llama.cpp CUDA, Foundry Local", "icon": "gears"},
+      {"label": "Silicon", "detail": "RTX Spark GPU, 20-core CPU, NPU", "icon": "chip"}]}},
+    {"layout": "flow", "title": "From prompt to slide", "takeaway": "Five local steps, zero cloud calls.", "data": {"steps": [
+      {"label": "Brief", "detail": "Facts and audience in", "icon": "document"},
+      {"label": "Plan", "detail": "Local model drafts the story", "icon": "ai"},
+      {"label": "Design", "detail": "Pick infographic layouts", "icon": "sliders"},
+      {"label": "Render", "detail": "Native shapes, editable", "icon": "tools"},
+      {"label": "Review", "detail": "Human signs off", "icon": "approve"}]}},
+    {"layout": "hub", "title": "One device, many assistants", "takeaway": "A single local model hub serves every workflow.", "data": {"center": {"label": "Local model", "icon": "ai"}, "spokes": [
+      {"label": "Code drafts", "icon": "code"}, {"label": "Meeting notes", "icon": "mic"}, {"label": "Search docs", "icon": "search"},
+      {"label": "Summaries", "icon": "document"}, {"label": "Translation", "icon": "globe"}, {"label": "Slides", "icon": "barchart"}]}},
+    {"layout": "compare", "title": "Two lanes, one strategy", "takeaway": "Keep cloud. Add a local lane.", "data": {
+      "left": {"title": "Cloud AI", "icon": "cloud", "points": ["Largest models", "Shared tenant services", "Needs connectivity"]},
+      "right": {"title": "Local AI", "icon": "laptop", "points": ["Data stays on device", "Works on a plane", "No per-token bill"]},
+      "verdict": "Route each task to the lane that fits it best."}},
+    {"layout": "kpis", "title": "Measured on this device", "takeaway": "Numbers from the local benchmark study.", "data": {"items": [
+      {"value": "86", "label": "tokens/s, Qwen3-Coder 30B", "icon": "speed", "source": "Local-AI-Bench, Oct 2026"},
+      {"value": "28", "label": "models in local catalog", "icon": "library", "source": "installed.json"},
+      {"value": "128 GB", "label": "installed memory", "icon": "memory", "source": "Win32_PhysicalMemory"}]}},
+    {"layout": "analogy", "title": "Think of it like a kitchen", "takeaway": "Local AI is cooking at home instead of ordering in.", "data": {
+      "concept": {"label": "Local AI", "icon": "laptop"}, "analog": {"label": "Home kitchen", "icon": "home"}, "pairs": [
+        {"concept": "GPU", "analog": "The stove"}, {"concept": "Model weights", "analog": "The recipe book"},
+        {"concept": "Memory", "analog": "Counter space"}, {"concept": "Your data", "analog": "Ingredients that never leave"}]}},
+    {"layout": "bars", "title": "Throughput by model", "takeaway": "MoE models run fastest on RTX Spark.", "data": {"unit": "tok/s", "highlight": "Qwen3-Coder 30B", "icon": "speed",
+      "caption": "Single-stream decode, shared-machine observation.", "bars": [
+        {"label": "Qwen3-Coder 30B", "value": 86}, {"label": "Gemma4 26B", "value": 72}, {"label": "Qwen3.6 27B", "value": 13}]}},
+    {"layout": "timeline", "title": "Pilot in four beats", "takeaway": "Two weeks from kickoff to decision.", "data": {"milestones": [
+      {"when": "Day 1", "label": "Baseline task times"}, {"when": "Day 3", "label": "Deploy models"},
+      {"when": "Day 10", "label": "Measure quality"}, {"when": "Day 14", "label": "Go / adapt / stop"}]}},
+    {"layout": "matrix", "title": "Where local AI fits", "takeaway": "Sensitive and frequent tasks win first.", "data": {"x_axis": "Task frequency", "y_axis": "Data sensitivity", "highlight": 1, "quadrants": [
+      {"label": "Case by case", "detail": "Sensitive but rare", "icon": "lock"}, {"label": "Start here", "detail": "Sensitive and frequent", "icon": "star"},
+      {"label": "Cloud is fine", "detail": "Public and rare", "icon": "cloud"}, {"label": "Either lane", "detail": "Public and frequent", "icon": "swap"}]}},
+    {"layout": "memory", "title": "What fits in the GPU budget", "takeaway": "A 30B coder plus context leaves real headroom.", "data": {"capacity": 64, "unit": "GB", "capacity_label": "GPU memory budget reported by nvidia-smi",
+      "caption": "Distinct memory views; never add them together.", "blocks": [
+        {"label": "Qwen3-Coder 30B", "size": 17.3}, {"label": "KV cache", "size": 3.2}, {"label": "Desktop + apps", "size": 8}]}},
+    {"layout": "canvas", "title": "Hybrid routing, sketched", "takeaway": "A router decides which lane handles each request.", "data": {"elements": [
+      {"type": "box", "x": 0.2, "y": 2.3, "w": 2.4, "h": 1.4, "label": "Request", "icon": "chat", "tone": "card"},
+      {"type": "circle", "x": 4.6, "y": 1.9, "w": 2.2, "h": 2.2, "label": "Router", "tone": "primary"},
+      {"type": "box", "x": 9.0, "y": 0.4, "w": 2.8, "h": 1.4, "label": "Local lane", "icon": "laptop", "tone": "accent1"},
+      {"type": "box", "x": 9.0, "y": 4.2, "w": 2.8, "h": 1.4, "label": "Cloud lane", "icon": "cloud", "tone": "accent2"},
+      {"type": "arrow", "x": 2.6, "y": 3.0, "x2": 4.6, "y2": 3.0},
+      {"type": "arrow", "x": 6.8, "y": 2.6, "x2": 9.0, "y2": 1.1, "label": "sensitive"},
+      {"type": "arrow", "x": 6.8, "y": 3.4, "x2": 9.0, "y2": 4.9, "label": "heavy"}]}},
+    {"layout": "statement", "title": "The big idea", "data": {"icon": "idea", "text": "Your laptop is now an AI workstation.", "sub": "Prove it with one workflow, ten users, two weeks."}},
+    {"layout": "cta", "title": "Next steps", "takeaway": "Start small, measure honestly.", "data": {"steps": [
+      {"label": "Pick a workflow", "detail": "One repeated task", "icon": "target"}, {"label": "Run the pilot", "detail": "10 users, 2 weeks", "icon": "people"},
+      {"label": "Decide", "detail": "Stop, adapt or scale", "icon": "approve"}], "ask": "Approve a two-week local AI pilot."}}
+  ]
+}

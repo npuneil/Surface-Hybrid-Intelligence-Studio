@@ -12,7 +12,7 @@ internal sealed partial class MainWindow
 {
     private static readonly string[] ScenarioOrder = ["brief", "code", "field", "meeting"];
 
-    private readonly ComboBox _modelPicker = Id(new ComboBox { Header = "Model on the RTX GPU", HorizontalAlignment = HorizontalAlignment.Stretch }, "LiveModelPicker");
+    private readonly ComboBox _modelPicker = Id(new ComboBox { Header = "Chat model", HorizontalAlignment = HorizontalAlignment.Stretch }, "LiveModelPicker");
     private readonly Button _loadModel = Id(Secondary("Load selected model"), "LiveLoadModel");
     private readonly TextBlock _engineText = Id(Small("Connecting to the local service"), "LiveEngineState");
     private readonly TextBlock _modelNote = Id(Set(Small(""), t => { t.TextWrapping = TextWrapping.Wrap; t.Visibility = Visibility.Collapsed; }), "LiveModelNote");
@@ -31,11 +31,11 @@ internal sealed partial class MainWindow
         IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, FontFamily = Mono, FontSize = 12, MaxHeight = 260,
         HorizontalAlignment = HorizontalAlignment.Stretch
     }, "LiveSourceText");
-    private readonly Button _runLive = Id(Primary("Run live on GPU"), "LiveRunButton");
+    private readonly Button _runLive = Id(Primary("Run live"), "LiveRunButton");
     private readonly Button _runRehearsal = Id(Secondary("Play authored rehearsal"), "LiveRehearsalButton");
     private readonly Button _stop = Id(Secondary("Stop"), "LiveStopButton");
     private readonly Border _modeBanner = Id(new Border { CornerRadius = new CornerRadius(8), Padding = new Thickness(14, 10, 14, 10), Background = Sand }, "LiveModeBanner");
-    private readonly TextBlock _modeText = Id(Text("Ready. Choose a workflow, then run it live on the GPU.", 13, Ink, FontWeights.SemiBold), "LiveModeText");
+    private readonly TextBlock _modeText = Id(Text("Ready. Choose a workflow, then run it live.", 13, Ink, FontWeights.SemiBold), "LiveModeText");
     private readonly InfoBar _runError = Id(new InfoBar { Severity = InfoBarSeverity.Error, IsClosable = true, Title = "The run did not complete" }, "LiveErrorInfoBar");
     private readonly TextBlock _outputTitle = Id(H2("Output"), "LiveOutputTitle");
     private readonly TextBox _output = Id(new TextBox
@@ -60,6 +60,7 @@ internal sealed partial class MainWindow
     private bool _modelsPopulated;
     private RunRecord? _lastRun;
     private int _lastTokenEvents;
+    private (bool Live, bool Running, bool Failed)? _banner;
     private readonly List<string> _scenarioKeys = [];
 
     private FrameworkElement BuildLive()
@@ -70,6 +71,11 @@ internal sealed partial class MainWindow
         _stop.IsEnabled = false;
         _copy.IsEnabled = _export.IsEnabled = false;
         _runLive.IsEnabled = _runRehearsal.IsEnabled = _loadModel.IsEnabled = false;
+        WordedHeader(_modelPicker, w => $"Model on {w.Where}");
+        Worded(_runLive, w => $"Run live on {w.Where}");
+        _wordBindings.Add(_ => ShowModeBanner());
+        _wordBindings.Add(_ => UpdateScenarioNote());
+        ShowModeBanner();
 
         _loadModel.Click += async (_, _) => await SwitchModelAsync();
         _modelPicker.SelectionChanged += (_, _) => UpdateModelNote();
@@ -104,7 +110,7 @@ internal sealed partial class MainWindow
         var controls = CardBorder(Stack(14,
             modelRow,
             Lead(8, _engineRing, _engineText),
-            Small("One chat model is selected at a time; loading another unloads the current one. Qwen2.5-Coder 14B and GPT-OSS 20B run through Foundry Local; the 30B+ models run through llama.cpp CUDA."),
+            Small("One chat model is selected at a time; loading another unloads the current one. Foundry Local runs each model on the processor named under it; the 30B+ models appear only on NVIDIA GPUs and run through llama.cpp CUDA."),
             _modelNote,
             new Border { Height = 1, Background = Line },
             _scenarioPicker,
@@ -126,8 +132,8 @@ internal sealed partial class MainWindow
 
         var layout = TwoPane(controls, output, 420, 1000);
         return Page(Stack(22,
-            Stack(10, Eyebrow("Live GPU workspace"), H1("Real models. Real time. On this laptop."),
-                Body("Every live run streams from a model loaded on the RTX GPU through the CUDA execution provider. Sources are synthetic, outputs are drafts, and generated code is shown as text only.")),
+            Stack(10, Eyebrow("Live workspace"), H1("Real models. Real time. On this PC."),
+                Worded(Body(""), w => $"Every live run streams from a model loaded on {w.Where} through {w.Provider}. Sources are synthetic, outputs are drafts, and generated code is shown as text only.")),
             layout));
     }
 
@@ -201,9 +207,15 @@ internal sealed partial class MainWindow
         _prompt.Text = s.Prompt;
         _source.Text = s.Source;
         _outputTitle.Text = s.Title;
-        if (IsPlatformFit(s))
+        UpdateScenarioNote();
+    }
+
+    private void UpdateScenarioNote()
+    {
+        if (SelectedScenario is { } s && IsPlatformFit(s))
         {
-            _scenarioNote.Text = "Platform-fit workflow (recommended pilot pattern). Here it runs live on this laptop's RTX GPU as a text fixture: no microphone, transcription or vision, and not evidence of QNN or OpenVINO execution.";
+            _scenarioNote.Text = $"Platform-fit workflow (recommended pilot pattern). Here it runs live on {_words.Where} as a text fixture: no microphone, transcription or vision. " +
+                "It shows what this PC does, not what a PC with a different processor would do.";
             _scenarioNoteCard.Visibility = Visibility.Visible;
         }
         else _scenarioNoteCard.Visibility = Visibility.Collapsed;
@@ -216,6 +228,8 @@ internal sealed partial class MainWindow
         _engineRing.IsActive = engine.IsBusy;
         _engineRing.Visibility = engine.IsBusy ? Visibility.Visible : Visibility.Collapsed;
         _engineText.Text = engine.State == "error" ? $"{engine.Detail}: {engine.Error}" : engine.Detail;
+        if (status.Target is { Simulated: true } preview)
+            _engineText.Text = $"Previewing {preview.Label}: live runs are paused. " + _engineText.Text;
         _engineText.Foreground = engine.State == "error" ? AccentDeep : engine.IsReady ? GreenInk : Muted;
         if (!_modelsPopulated && engine.Models.Count > 0 && !_modelPicker.IsDropDownOpen)
         {
@@ -254,7 +268,9 @@ internal sealed partial class MainWindow
                   (selected.Exclusive
                       ? "It needs the GPU to itself: Foundry Local models unload while it is selected, so multi-model and speech or vision demos wait until you switch back."
                       : "Speech, vision and second-model demos can still load Foundry Local models beside it.")
-                : $"{selected.Label} is a CUDA variant run through Foundry Local.");
+                : $"{selected.Label} runs " + (string.IsNullOrWhiteSpace(selected.Where) ? "" : $"on {selected.Where} ") +
+                  (string.IsNullOrWhiteSpace(selected.Ep) ? "" : $"through the {selected.Ep} execution provider ") + "in Foundry Local." +
+                  (string.IsNullOrWhiteSpace(selected.Note) ? "" : " " + selected.Note));
         foreach (var m in models.Where(m => !m.Available))
             lines.Add($"{m.Label}: {m.Blocker}" + (string.IsNullOrWhiteSpace(m.Published) ? "" : $" {m.Published}"));
         _modelNote.Text = string.Join("\n", lines);
@@ -273,7 +289,8 @@ internal sealed partial class MainWindow
         bool ready = online && _status!.Engine.IsReady && !_switching;
         // The service runs one inference at a time, so the Live demos tab and this workspace interlock.
         bool idle = !_running && !_demoRunning && !_labRunning;
-        _runLive.IsEnabled = ready && idle && SelectedScenario is not null;
+        bool preview = _status?.Target?.Simulated == true;
+        _runLive.IsEnabled = ready && idle && !preview && SelectedScenario is not null;
         _runRehearsal.IsEnabled = online && idle && !_switching && SelectedScenario is not null;
         _loadModel.IsEnabled = online && idle && !_switching && _status!.Engine.State is "ready" or "error" && _modelPicker.SelectedItem is not null;
         _stop.IsEnabled = _running;
@@ -339,7 +356,7 @@ internal sealed partial class MainWindow
         _lastTokenEvents = 0;
         ResetMetrics();
         SetModeBanner(live, running: true);
-        _runStatus.Text = live ? "Waiting for the first visible text from the GPU..." : "Playing the authored rehearsal...";
+        _runStatus.Text = live ? $"Waiting for the first visible text from {_words.Where}..." : "Playing the authored rehearsal...";
         UpdateLiveButtons();
         _statusTimer.Interval = TimeSpan.FromSeconds(3);
 
@@ -348,6 +365,7 @@ internal sealed partial class MainWindow
         RunMetrics? metrics = null;
         string? error = null;
         var started = DateTimeOffset.Now;
+        var (runTarget, runWords) = (_status?.Target, _status?.Words);
         var clock = Stopwatch.StartNew();
         try
         {
@@ -391,7 +409,7 @@ internal sealed partial class MainWindow
 
         if (error is not null) metrics = null;
         _lastRun = new RunRecord(scenario.Key, scenario.Title, scenario.Label, prompt, scenario.Source, mode,
-            text.ToString(), metrics, live ? reasoning : 0, started, error);
+            text.ToString(), metrics, live ? reasoning : 0, started, error, runTarget, runWords);
         if (error is not null)
         {
             ShowRunError("The run did not complete", error);
@@ -403,7 +421,7 @@ internal sealed partial class MainWindow
             SetModeBanner(live, running: false);
             ShowMetrics(live, metrics!, reasoning);
             _runStatus.Text = live
-                ? $"Completed live on {metrics!.Provider ?? "the GPU"}: {text.Length:N0} visible characters."
+                ? $"Completed live on {_words.Where}" + (metrics!.Provider is { Length: > 0 } provider ? $" ({ProviderLabel(provider)})" : "") + $": {text.Length:N0} visible characters."
                 : "Authored rehearsal shown. Not model output; no performance metrics.";
         }
         UpdateLiveButtons();
@@ -428,11 +446,28 @@ internal sealed partial class MainWindow
         _mTokens.Text = m.OutputTokens is double tokens ? $"{tokens:N0}" : "-";
         _mRate.Text = m.TokensPerSecond is double rate ? $"{rate:F1}" : "-";
         _mReasoning.Text = $"{reasoning:N0} chars";
-        _mModel.Text = $"{m.ModelName ?? "Unknown"}\n{(m.Provider == "CUDAExecutionProvider" ? "CUDA EP" : m.Provider ?? "provider not reported")}";
+        _mModel.Text = $"{m.ModelName ?? "Unknown"}\n{(m.Provider is null ? "provider not reported" : ProviderLabel(m.Provider))}";
     }
+
+    /// <summary>"CUDAExecutionProvider" reads as "CUDA EP"; a name that does not follow that pattern is shown as reported.</summary>
+    internal static string ProviderLabel(string provider) =>
+        provider.EndsWith("ExecutionProvider", StringComparison.Ordinal) && provider.Length > "ExecutionProvider".Length
+            ? provider[..^"ExecutionProvider".Length] + " EP" : provider;
 
     private void SetModeBanner(bool live, bool running, bool failed = false)
     {
+        _banner = (live, running, failed);
+        ShowModeBanner();
+    }
+
+    private void ShowModeBanner()
+    {
+        if (_banner is not { } state)
+        {
+            _modeText.Text = $"Ready. Choose a workflow, then run it live on {_words.Where}.";
+            return;
+        }
+        var (live, running, failed) = state;
         if (failed)
         {
             _modeBanner.Background = AccentTint;
@@ -443,7 +478,7 @@ internal sealed partial class MainWindow
         _modeBanner.Background = live ? GreenTint : AmberTint;
         _modeText.Foreground = live ? GreenInk : AmberInk;
         _modeText.Text = live
-            ? (running ? "LIVE - generating now on this laptop's RTX GPU" : "LIVE - generated on this laptop's RTX GPU")
+            ? (running ? $"LIVE - generating now on {_words.Where}" : $"LIVE - generated on {_words.Where}")
             : "REHEARSAL - authored sample, not model output. No metrics.";
     }
 

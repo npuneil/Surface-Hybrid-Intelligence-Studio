@@ -89,25 +89,42 @@ internal sealed partial class MainWindow : Window
         titleBar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var brand = Row(10, Logo(20, "TitleBarLogo"),
             Text(Brand.DisplayName, 13, Ink, FontWeights.SemiBold),
-            Text(Brand.Device, 13, Muted));
+            _brandDevice);
         brand.VerticalAlignment = VerticalAlignment.Center;
         titleBar.Children.Add(brand);
         var eventPill = Pill(Event.Name + "  |  " + Event.DateShort, Hex(Event.GoldTint), AccentDeep);
         eventPill.BorderBrush = Hex(Event.Gold);
         eventPill.BorderThickness = new Thickness(1);
-        eventPill.HorizontalAlignment = HorizontalAlignment.Right;
-        eventPill.Margin = new Thickness(0, 0, 12, 0);
         Id(eventPill, "TitleBarEventPill");
-        Grid.SetColumn(eventPill, 1);
-        titleBar.Children.Add(eventPill);
+        _devicePill.Child = _devicePillText;
+        var badges = Row(8, _devicePill, eventPill);
+        badges.HorizontalAlignment = HorizontalAlignment.Right;
+        badges.VerticalAlignment = VerticalAlignment.Center;
+        badges.Margin = new Thickness(0, 0, 12, 0);
+        Grid.SetColumn(badges, 1);
+        titleBar.Children.Add(badges);
+        // The event pill is the first to go when the title bar is too narrow for everything; the device class and the engine state stay.
+        void FitBadges()
+        {
+            eventPill.Visibility = Visibility.Visible;
+            badges.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            double room = titleBar.ActualWidth - titleBar.Padding.Left - titleBar.Padding.Right - brand.ActualWidth - _enginePill.ActualWidth;
+            if (titleBar.ActualWidth > 0 && badges.DesiredSize.Width + badges.Margin.Right > room) eventPill.Visibility = Visibility.Collapsed;
+        }
+        titleBar.SizeChanged += (_, _) => FitBadges();
+        brand.SizeChanged += (_, _) => FitBadges();
+        _enginePill.SizeChanged += (_, _) => FitBadges();
         _enginePill.Child = _enginePillText;
         Grid.SetColumn(_enginePill, 2);
         titleBar.Children.Add(_enginePill);
         _root.Children.Add(titleBar);
         SetTitleBar(titleBar);
 
-        Grid.SetRow(_serviceInfo, 1);
-        _root.Children.Add(_serviceInfo);
+        var notices = Stack(0, _previewInfo, _serviceInfo);
+        _previewInfo.IsOpen = false;
+        _previewInfo.ActionButton = _previewBack;
+        Grid.SetRow(notices, 1);
+        _root.Children.Add(notices);
 
         _nav.PaneDisplayMode = NavigationViewPaneDisplayMode.Auto;
         _nav.IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed;
@@ -123,7 +140,8 @@ internal sealed partial class MainWindow : Window
             Children = { Logo(32, "NavLogo"), Stack(0, Id(Text(Brand.Mark, 15, Accent, FontWeights.Bold), "NavMark"), Small(Brand.MarkSubtitle)) }
         };
         AddNav("overview", "Firm overview", "\uE80F", "NavOverview");
-        AddNav("live", "Live GPU workspace", "\uE945", "NavLive");
+        AddNav("device", "This PC", "\uE7F4", "NavDevice");
+        AddNav("live", "Live workspace", "\uE945", "NavLive");
         AddNav("demos", "Live demos", "\uE768", "NavDemos");
         AddNav("hybrid", "Hybrid router", "\uE8AB", "NavHybrid");
         AddNav("industries", "Banking scenarios", "\uE7BE", "NavIndustries");
@@ -147,6 +165,7 @@ internal sealed partial class MainWindow : Window
         };
 
         _pages["overview"] = BuildOverview();
+        _pages["device"] = BuildDevicePage();
         _pages["live"] = BuildLive();
         _pages["demos"] = BuildDemos();
         _pages["hybrid"] = BuildHybrid();
@@ -188,6 +207,7 @@ internal sealed partial class MainWindow : Window
         _currentSection = tag;
         if (!ReferenceEquals(_nav.Content, _pages[tag])) _nav.Content = _pages[tag];
         if (tag == "demos" && _status is not null) _ = RefreshDemoCatalogAsync();
+        if (tag == "device" && _status is not null) _ = RefreshDeviceAsync();
         if (tag == "hybrid" && _status is not null) _ = LoadHybridCatalogAsync();
         if (tag == "build" && _status is not null && !_labRunning) _ = RefreshBuilderAsync();
         if (tag == "showoff") _ = RefreshToolsAsync();
@@ -225,7 +245,7 @@ internal sealed partial class MainWindow : Window
         catch (Exception exception) when (!_lifetime.IsCancellationRequested)
         {
             Program.LogError(_options, exception);
-            ShowServiceError("Local GPU service unavailable", exception.Message + " Overview, sizing, platform and playbook sections still work.");
+            ShowServiceError("Local service unavailable", exception.Message + " Overview, sizing, platform and playbook sections still work.");
             SetEnginePill("Service offline", AccentTint, AccentDeep);
         }
         catch (Exception) when (_lifetime.IsCancellationRequested)
@@ -254,7 +274,7 @@ internal sealed partial class MainWindow : Window
         catch (Exception exception) when (!_lifetime.IsCancellationRequested)
         {
             SetEnginePill("Service offline", AccentTint, AccentDeep);
-            ShowServiceError("Lost contact with the local GPU service", exception.Message);
+            ShowServiceError("Lost contact with the local service", exception.Message);
             UpdateLiveButtons();
         }
         catch (Exception) when (_lifetime.IsCancellationRequested)
@@ -271,11 +291,13 @@ internal sealed partial class MainWindow : Window
     private void ApplyStatus(StatusSnapshot status)
     {
         var engine = status.Engine;
-        if (engine.IsReady) SetEnginePill($"{engine.Model!.Name} ready on GPU", GreenTint, GreenInk);
+        ApplyTarget(status);
+        if (engine.IsReady) SetEnginePill($"{engine.Model!.Name} ready on {(string.IsNullOrWhiteSpace(engine.Model.Where) ? "this PC" : engine.Model.Where)}", GreenTint, GreenInk);
         else if (engine.State == "error") SetEnginePill("Model unavailable", AccentTint, AccentDeep);
         else if (engine.State == "disabled") SetEnginePill("Rehearsal only", AmberTint, AmberInk);
         else SetEnginePill(string.IsNullOrEmpty(engine.Detail) ? "Preparing model" : engine.Detail, AmberTint, AmberInk);
         ApplyOverviewStatus(status);
+        ApplyPlatformStatus(status);
         ApplyLiveStatus(status);
         ApplyDemosStatus(status);
         ApplySizingStatus(status);
@@ -345,7 +367,13 @@ internal sealed partial class MainWindow : Window
         panel.Children.Add(new Border { Height = 1, Background = Line, Margin = new Thickness(0, 6, 0, 6) });
         panel.Children.Add(Body("Installed, Windows-visible and GPU-budget figures are distinct reported views of one machine. They are never added together, and the GPU figure is a driver-reported budget, not dedicated VRAM."));
         panel.Children.Add(Small(d?.MemorySource ?? ""));
-        panel.Children.Add(Small("GPU budget source: nvidia-smi memory.total. Inference runs on the RTX GPU through the CUDA execution provider; there is no silent CPU fallback."));
+        panel.Children.Add(Small("The GPU budget comes from nvidia-smi memory.total on NVIDIA PCs; a PC without it shows no budget here, and the This PC page estimates one from the detected hardware."));
+        string running = _status?.Engine.Model is { } live
+            ? $"Inference runs {(string.IsNullOrWhiteSpace(live.Where) ? "on this PC" : live.Where)}" + (string.IsNullOrWhiteSpace(live.Ep) ? "" : $" through the {live.Ep} execution provider") + ". If a model fails to load, the error names it and the model chosen instead."
+            : "No model is loaded yet, so no inference is running.";
+        panel.Children.Add(Small(running));
+        if (_status?.Target is { Simulated: true } preview)
+            panel.Children.Add(Small($"A preview of {preview.Label} is shown. The figures above are this PC's own hardware, not the preview's.", AmberInk));
         panel.Children.Add(Small("Service: " + _host.Lifecycle));
         if (d?.Error is string err) panel.Children.Add(Small("Inventory error: " + err, AccentDeep));
         var dialog = new ContentDialog

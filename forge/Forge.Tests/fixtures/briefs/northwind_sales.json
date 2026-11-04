@@ -1,0 +1,38 @@
+{
+  "id": "northwind_sales",
+  "client": "Northwind Traders",
+  "pitch_type": "sales",
+  "audience": "Northwind executive sponsors: VP of Store Operations, CIO and the Head of Merchandising. Business-minded, not technical.",
+  "objective": "Win approval for a 3-week, 8-user pilot of Surface Laptop Ultra with NVIDIA RTX Spark running local AI for district managers, alongside Microsoft 365 Copilot.",
+  "template_hint": "surface",
+  "slide_range": [8, 12],
+  "context": "Northwind Traders is a fictional specialty-grocery retailer. District managers spend their days in stores, often working from back offices with weak connectivity, and write a visit report after every store walk covering shelf gaps, planogram compliance and staffing. Reports reference confidential supplier cost sheets and promotion plans. Northwind already uses Microsoft 365 Copilot and will keep it; the pitch adds a local AI lane on the device for sensitive, repeated report drafting, not a replacement.",
+  "facts": [
+    "Northwind Traders operates 350 stores.",
+    "60 district managers each visit about 12 stores per week.",
+    "A store visit report takes about 30 minutes to write today.",
+    "Visit reports reference confidential supplier cost sheets and promotion plans.",
+    "About 1 in 4 stores has unreliable back-office Wi-Fi (Northwind IT estimate).",
+    "Illustrative capacity: if a local assistant saved 10 minutes per report, 60 managers x 12 reports x 10 minutes x 48 working weeks = 5,760 hours per year. Unvalidated; the pilot measures the real number.",
+    "Device: Surface Laptop Ultra with NVIDIA RTX Spark (Blackwell RTX GPU, 20 CPU cores, 128 GB installed memory).",
+    "On this device, Gemma 4 26B decodes at about 72 tokens per second (single stream, Local-AI-Bench, October 2026).",
+    "Microsoft 365 Copilot stays in place; local AI adds a second lane (hybrid).",
+    "Pilot: 8 district managers for 3 weeks (21 days), measuring report time, report quality and user experience."
+  ],
+  "required_topics": {
+    "manager_pain": ["visit report", "store walk", "30 min", "minutes", "report"],
+    "connectivity": ["wi-fi", "wifi", "connectivity", "back office", "back-office"],
+    "data_stays_local": ["supplier", "cost sheet", "confidential", "on device", "on-device", "local", "sensitive"],
+    "hybrid_with_copilot": ["copilot", "hybrid", "two lanes", "both lanes", "cloud lane"],
+    "capacity_value": ["5,760", "hours", "capacity"],
+    "device": ["surface laptop ultra", "rtx spark", "surface"],
+    "pilot_ask": ["pilot", "8 district managers", "3 weeks", "three weeks", "21 days"]
+  },
+  "guardrails": [
+    "Do not claim dollar savings, ROI, margin or sales uplift.",
+    "Do not claim local AI replaces Microsoft 365 Copilot or any subscription.",
+    "Do not claim air-gapped, certified offline or security certification; say disconnected use is validated in the pilot.",
+    "Do not cite TOPS or Copilot+ PC certification.",
+    "The 5,760 hours figure is illustrative and must be labeled as an estimate to validate."
+  ]
+}

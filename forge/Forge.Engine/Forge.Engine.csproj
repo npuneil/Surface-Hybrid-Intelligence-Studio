@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything between Forge.Core and a real PC: it turns the device kit's detection and the loaded Foundry Local model into the
+       harness's ILlm, the story a deck may tell about its PC, a power meter, a measured speed log and the run policy. No UI in here,
+       so the WinUI app and the command line use exactly the same code. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.22621.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifiers>win-arm64;win-x64</RuntimeIdentifiers>
+    <RootNamespace>Forge.Engine</RootNamespace>
+    <AssemblyName>Forge.Engine</AssemblyName>
+    <NoWarn>$(NoWarn);CA1416;NU1603</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Forge.Core\Forge.Core.csproj" />
+    <ProjectReference Include="..\..\devicekit\dotnet\SurfaceDeviceKit\SurfaceDeviceKit.csproj" />
+    <ProjectReference Include="..\..\devicekit\dotnet\SurfaceDeviceKit.FoundryLocal\SurfaceDeviceKit.FoundryLocal.csproj" />
+  </ItemGroup>
+
+</Project>

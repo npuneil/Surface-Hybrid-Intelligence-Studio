@@ -125,12 +125,15 @@ internal static class SelfTest
         {
             var platforms = PlatformGuide.Platforms;
             Check("platform-three-profiles", platforms.Select(p => p.Id).SequenceEqual(["rtx", "snapdragon", "intel"]));
-            Check("platform-only-rtx-current", platforms.Count(p => p.CurrentDevice) == 1 && platforms.Single(p => p.CurrentDevice).Id == "rtx");
-            foreach (var p in platforms.Where(p => !p.CurrentDevice))
+            foreach (var p in platforms)
             {
-                Check($"platform-{p.Id}-labelled-pilot", p.Status.Contains("Recommended pilot") && p.Status.Contains("illustrative") && p.Status.Contains("not run on this laptop"));
-                Check($"platform-{p.Id}-verified-per-sku", p.AcceleratorAndRuntime.Contains("verified per SKU"));
+                Check($"platform-{p.Id}-labelled-pilot", p.Status.Contains("Recommended pilot") && p.Status.Contains("illustrative") && p.Status.Contains("not run on this PC"));
                 Check($"platform-{p.Id}-has-verification", p.VerifyBeforePilot.Length >= 3);
+                Check($"platform-{p.Id}-not-tied-to-one-product", !p.Name.Contains("this ", StringComparison.OrdinalIgnoreCase));
+            }
+            foreach (var p in platforms.Where(p => p.Id != "rtx"))
+            {
+                Check($"platform-{p.Id}-verified-per-sku", p.AcceleratorAndRuntime.Contains("verified per SKU"));
                 Check($"platform-{p.Id}-small-models", p.UseCases.All(u => u.Size is TShirtSize.S or TShirtSize.M));
             }
             Check("platform-rtx-heavier", platforms[0].UseCases.Any(u => u.Size == TShirtSize.L));
@@ -145,12 +148,28 @@ internal static class SelfTest
             Check("intel-meeting-whisper", intel.UseCases.Any(u => u.Workflow.Contains("Whisper") && u.LiveScenarioKey == "meeting"));
             Check("foundry-list-not-proof", PlatformGuide.FoundryDistinction.Contains("does not prove"));
             Check("genie-separate-path", PlatformGuide.GenieDistinction.Contains("not the only way"));
-            Check("no-inference-claim", PlatformGuide.NoInferenceHere.Contains("not run on this laptop") && PlatformGuide.NoInferenceHere.Contains("never switches providers automatically"));
+
+            var npu = new TargetWords("the NPU", "the QNN execution provider");
+            var notices = new Dictionary<string, string>
+            {
+                ["unknown"] = PlatformGuide.NoInferenceHere(TargetWords.Neutral, false),
+                ["known"] = PlatformGuide.NoInferenceHere(npu, false),
+                ["preview"] = PlatformGuide.NoInferenceHere(npu, true),
+            };
+            foreach (var (name, text) in notices)
+                Check($"no-inference-claim-{name}", text.Contains("not run on this PC") && text.Contains("never switches providers automatically"), text);
+            Check("no-inference-names-where-this-pc-runs", notices["known"].Contains("on the NPU") && notices["known"].Contains("the QNN execution provider")
+                && !notices["unknown"].Contains("NPU") && !notices["unknown"].Contains("GPU"));
+            Check("no-inference-preview-runs-nothing", notices["preview"].Contains("nothing runs on it") && notices["preview"].Contains("live runs are paused")
+                && !notices["preview"].Contains("the NPU"));
             Check("runtime-not-inferred", PlatformGuide.RuntimeNotInferred.Contains("never inferred"));
             foreach (string term in PlatformGuide.ForbiddenClaims)
             {
                 var hits = PlatformGuide.AllText().Where(t => Regex.IsMatch(t, $@"\b{Regex.Escape(term)}", RegexOptions.IgnoreCase)).ToArray();
                 Check($"no-claim-{term.Replace(' ', '-')}", hits.Length == 0, string.Join(" | ", hits));
+                // The notice may name the NPU when that is where this PC runs its models; every other forbidden claim stays out of it.
+                if (term != "NPU")
+                    Check($"no-claim-{term.Replace(' ', '-')}-in-notice", !notices.Values.Any(t => Regex.IsMatch(t, $@"\b{Regex.Escape(term)}", RegexOptions.IgnoreCase)));
             }
             Check("sources-approved", platforms.SelectMany(p => p.Sources).All(s => ApprovedLinks.IsApproved(s.Url)));
             Check("links-reject-http", !ApprovedLinks.IsApproved("http://github.com/openvinotoolkit/openvino.genai"));
@@ -159,49 +178,121 @@ internal static class SelfTest
             Check("links-reject-null", !ApprovedLinks.IsApproved(null) && !ApprovedLinks.IsApproved("javascript:alert(1)"));
         });
 
+        Guard("target", () =>
+        {
+            static StatusSnapshot Status(string target, string? model = null)
+            {
+                string json = """{"app_id":"@app","token":"t","engine":{"state":"ready","detail":"d","model":@model,"models":[]},"device":{"installed_ram_bytes":34359738368,"os_visible_ram_bytes":34359738368,"gpu_memory":[],"accelerators":[]},"target":@target,"assumptions":{"users":100}}"""
+                    .Replace("@app", Brand.ServiceAppId).Replace("@model", model ?? "null").Replace("@target", target);
+                using var doc = JsonDocument.Parse(json);
+                return StatusParser.Parse(doc.RootElement);
+            }
+            static string Target(string lane, string laneJson, bool simulated = false, string where = "the NPU") =>
+                $$"""{"simulated":{{(simulated ? "true" : "false")}},"label":"Test Surface","headline":"Test Surface, 32 GB","deviceClass":"npu-first","deviceClassLabel":"NPU-first","pcClassLabel":"Copilot+ PC","where":"{{where}}","lane":{{lane}},"lanes":[{{laneJson}}]}""";
+            const string snapdragonLanes = """{"id":"npu","available":true,"device":"Qualcomm Hexagon NPU","vendor":"qualcomm"},{"id":"gpu","available":true,"device":"Qualcomm Adreno GPU","vendor":"qualcomm"},{"id":"cpu","available":true,"device":"Qualcomm Oryon","vendor":"qualcomm"}""";
+            const string intelLanes = """{"id":"npu","available":true,"device":"Intel AI Boost","vendor":"intel"},{"id":"gpu","available":true,"device":"Intel Arc","vendor":"intel"},{"id":"cpu","available":true,"device":"Intel Core Ultra","vendor":"intel"}""";
+            const string nvidiaLanes = """{"id":"npu","available":false,"device":null,"vendor":"nvidia"},{"id":"gpu","available":true,"device":"NVIDIA RTX","vendor":"nvidia"},{"id":"cpu","available":true,"device":"NVIDIA Grace","vendor":"nvidia"}""";
+            const string amdLanes = """{"id":"npu","available":true,"device":"AMD Ryzen AI NPU","vendor":"amd"},{"id":"cpu","available":true,"device":"AMD Ryzen","vendor":"amd"}""";
+
+            var snapdragon = Status(Target("\"npu\"", snapdragonLanes)).Target!;
+            Check("target-snapdragon-npu-is-snapdragon", snapdragon is { Error: null, Lane: "npu", Simulated: false } && snapdragon.Platform == "snapdragon" && snapdragon.HasLane("npu"));
+            Check("target-snapdragon-lane-vendors", snapdragon.Lanes.Count == 3 && snapdragon.Lanes.All(l => l.Vendor == "qualcomm"));
+            Check("target-intel-npu-is-intel", Status(Target("\"npu\"", intelLanes)).Target!.Platform == "intel");
+            Check("target-intel-gpu-lane-is-still-intel", Status(Target("\"gpu\"", intelLanes, where: "the GPU")).Target!.Platform == "intel");
+            Check("target-nvidia-gpu-is-rtx", Status(Target("\"gpu\"", nvidiaLanes, where: "the RTX GPU")).Target!.Platform == "rtx");
+            Check("target-amd-has-no-card", Status(Target("\"npu\"", amdLanes)).Target!.Platform is null);
+            Check("target-no-lane-yet-has-no-card", Status(Target("null", snapdragonLanes)).Target!.Platform is null);
+            Check("target-unavailable-lane-has-no-card", Status(Target("\"npu\"", nvidiaLanes)).Target!.Platform is null);
+            Check("target-error-has-no-card", Status("""{"error":"detection failed"}""").Target is { Error: "detection failed", Platform: null });
+
+            var onNpu = Status(Target("\"npu\"", snapdragonLanes), """{"name":"Phi Silica","alias":"phi","id":"i","provider":"QNNExecutionProvider","reasoning":false,"lane":"npu","device":"NPU","ep":"QNN","where":"the NPU"}""");
+            Check("words-follow-the-loaded-model", onNpu.Words is { Where: "the NPU", Known: true } && onNpu.Words.Provider == "the QNN execution provider" && onNpu.Words.WhereCap == "The NPU");
+            var previewed = Status(Target("\"npu\"", snapdragonLanes, simulated: true), """{"name":"Qwen2.5-Coder 14B","alias":"q","id":"i","provider":"CUDAExecutionProvider","reasoning":false,"lane":"gpu","device":"GPU","ep":"CUDA","where":"the RTX GPU"}""");
+            Check("words-describe-the-previewed-surface", previewed.Words is { Where: "the NPU" } && previewed.Words.Provider == TargetWords.Neutral.Provider && previewed.Target!.Simulated);
+            Check("words-neutral-before-the-service-says", Status("""{"error":"x"}""").Words == TargetWords.Neutral && !TargetWords.Neutral.Known);
+        });
+
         Guard("sales", () =>
         {
             var w = SalesSizing.Workloads;
             Check("sales-workload-ids-unique", w.Select(x => x.Id).Distinct().Count() == w.Length && w.Length >= 8, $"{w.Length}");
             Check("sales-core-mapping", SalesSizing.Find("transcription")?.Size == TShirtSize.S && SalesSizing.Find("translation")?.Size == TShirtSize.M
                 && SalesSizing.Find("coding")?.Size == TShirtSize.L && SalesSizing.Find("prototyping")?.Size == TShirtSize.XL
-                && SalesSizing.Find("frontier") is { Size: TShirtSize.XXL, LiveOnThisLaptop: false, DemoId: null });
+                && SalesSizing.Find("frontier") is { Size: TShirtSize.XXL, HasLiveDemo: false, DemoId: null });
             Check("sales-every-size-represented", Enum.GetValues<TShirtSize>().All(s => w.Any(x => x.Size == s)));
             Check("sales-demo-ids-known", w.Where(x => x.DemoId is not null).All(x => DemoCatalog.KnownIds.Contains(x.DemoId))
-                && w.Where(x => x.LiveOnThisLaptop).All(x => x.DemoId is not null));
-            Check("sales-guidance-only-labelled", w.Where(x => !x.LiveOnThisLaptop).All(x => x.LiveNote.Contains("only") || x.LiveNote.Contains("estimate")));
+                && w.Where(x => x.HasLiveDemo).All(x => x.DemoId is not null));
+            Check("sales-guidance-only-labelled", w.Where(x => !x.HasLiveDemo).All(x => x.LiveNote.Contains("only") || x.LiveNote.Contains("estimate")));
             Check("sales-defaults-match-technical", Sizing.DefaultBits == 4 && Sizing.DefaultContextTokens == 8192 && Sizing.DefaultReserveGiB == 6 && Sizing.DefaultHeadroomGiB == 2);
             Check("sales-empty-selection-null", SalesSizing.Recommend([], device) is null && SalesSizing.Recommend(["unknown"], device) is null);
 
             var coding = SalesSizing.Recommend(["coding"], device)!;
             var engine = Sizing.Estimate(new SizingInput(14, 4, 8192, 0.19, 2, 62.5, 6, 2));
-            Check("sales-uses-engine-arithmetic", coding.ThisLaptop.Result is { } cr && Near(cr.RequiredGiB, engine.RequiredGiB) && Near(cr.UsableGiB, engine.UsableGiB),
-                $"{coding.ThisLaptop.Result?.RequiredGiB} vs {engine.RequiredGiB}");
-            Check("sales-coding-large-comfortable-here", coding.Profile.Size == TShirtSize.L && coding.ThisLaptop.Fit == SalesFit.Comfortable);
-            Check("sales-percent-from-engine", Near(coding.ThisLaptop.PercentUsed, engine.RequiredGiB / engine.UsableGiB * 100), $"{coding.ThisLaptop.PercentUsed}");
+            Check("sales-uses-engine-arithmetic", coding.ThisPc.Result is { } cr && Near(cr.RequiredGiB, engine.RequiredGiB) && Near(cr.UsableGiB, engine.UsableGiB),
+                $"{coding.ThisPc.Result?.RequiredGiB} vs {engine.RequiredGiB}");
+            Check("sales-coding-large-comfortable-here", coding.Profile.Size == TShirtSize.L && coding.ThisPc.Fit == SalesFit.Comfortable);
+            Check("sales-percent-from-engine", Near(coding.ThisPc.PercentUsed, engine.RequiredGiB / engine.UsableGiB * 100), $"{coding.ThisPc.PercentUsed}");
             var by = coding.Comparisons.ToDictionary(c => c.Device.Id);
             Check("sales-large-wont-fit-16gb", by["laptop16"].Fit == SalesFit.WontFit && by["laptop32"].Fit == SalesFit.Comfortable);
-            Check("sales-talk-track-16gb-contrast", coding.TalkTrack.Contains("16 GB laptop would not have room") && coding.TalkTrack.Contains($"{Math.Round(coding.ThisLaptop.PercentUsed):0}%"), coding.TalkTrack);
+            Check("sales-talk-track-16gb-contrast", coding.TalkTrack.Contains("16 GB laptop would not have room") && coding.TalkTrack.Contains($"{Math.Round(coding.ThisPc.PercentUsed):0}%"), coding.TalkTrack);
             Check("sales-not-pilot-for-large", !coding.PilotCandidate);
 
             var small = SalesSizing.Recommend(["transcription"], device)!;
-            Check("sales-small-fits-everywhere", small.Profile.Size == TShirtSize.S && small.ThisLaptop.Fit == SalesFit.Comfortable
+            Check("sales-small-fits-everywhere", small.Profile.Size == TShirtSize.S && small.ThisPc.Fit == SalesFit.Comfortable
                 && small.Comparisons.All(c => c.Fit == SalesFit.Comfortable) && small.PilotCandidate, small.TalkTrack);
-            Check("sales-small-suggests-verified-pilot", small.TalkTrack.Contains("Snapdragon or Intel AI PC pilot") && small.TalkTrack.Contains("verify"));
+            Check("sales-small-suggests-verified-pilot", small.TalkTrack.Contains("pilot on a 16 GB AI PC") && small.TalkTrack.Contains("verify the model, runtime and accelerator"), small.TalkTrack);
             var mixed = SalesSizing.Recommend(["transcription", "translation", "coding"], device)!;
             Check("sales-largest-workload-wins", mixed.Profile.Size == TShirtSize.L && mixed.Workloads.Count == 3, $"{mixed.Profile.Size}");
             Check("sales-names-joined", mixed.TalkTrack.StartsWith("Transcription & meeting notes, Translation and Local coding assistant need a Large (L)"), mixed.TalkTrack);
             var xl = SalesSizing.Recommend(["prototyping"], device)!;
-            Check("sales-xl-fits-here-not-16gb", xl.ThisLaptop.Fit == SalesFit.Comfortable && xl.Comparisons.Single(c => c.Device.Id == "laptop16").Fit == SalesFit.WontFit);
+            Check("sales-xl-fits-here-not-16gb", xl.ThisPc.Fit == SalesFit.Comfortable && xl.Comparisons.Single(c => c.Device.Id == "laptop16").Fit == SalesFit.WontFit);
             var unknown = SalesSizing.Recommend(["coding"], null)!;
-            Check("sales-no-device-is-unknown", unknown.ThisLaptop.Fit == SalesFit.Unknown && unknown.TalkTrack.Contains("Connect to the local service"), unknown.TalkTrack);
+            Check("sales-no-device-is-unknown", unknown.ThisPc.Fit == SalesFit.Unknown && unknown.TalkTrack.Contains("Connect to the local service"), unknown.TalkTrack);
             var tinyDevice = device with { GpuBudgets = [new GpuBudget("Test RTX GPU", 8 * 1024)] };
-            Check("sales-small-budget-wont-fit", SalesSizing.Recommend(["coding"], tinyDevice)!.ThisLaptop.Fit == SalesFit.WontFit);
-            Check("sales-budget-never-windows-or-installed", Near(coding.ThisLaptop.Input!.BudgetGiB, 62.5));
+            Check("sales-small-budget-wont-fit", SalesSizing.Recommend(["coding"], tinyDevice)!.ThisPc.Fit == SalesFit.WontFit);
+            Check("sales-budget-prefers-gpu-never-installed", Near(coding.ThisPc.Input!.BudgetGiB, 62.5));
+
+            // The leader view follows the PC shown: the GPU's own budget when it has one, else the memory Windows can see, never installed memory.
+            var noGpu = device with { GpuBudgets = [] };
+            var shared = SalesSizing.Recommend(["coding"], noGpu)!;
+            Check("sales-falls-back-to-windows-visible-memory", Near(shared.ThisPc.Input!.BudgetGiB, 68699033600 / Sizing.BytesPerGiB)
+                && shared.ThisPc.Input.ReserveGiB == Sizing.DefaultReserveGiB && shared.ThisPc.Device.Detail.Contains("Windows"), $"{shared.ThisPc.Input?.BudgetGiB}");
+            Check("sales-without-visible-memory-is-unknown", SalesSizing.Recommend(["coding"], noGpu with { OsVisibleBytes = null })!.ThisPc.Fit == SalesFit.Unknown);
+            var smallDiscrete = device with { GpuBudgets = [new GpuBudget("Test RTX GPU", 8 * 1024)] };
+            Check("sales-discrete-gpu-keeps-a-small-reserve",
+                SalesSizing.Recommend(["transcription"], smallDiscrete, false, "discrete")!.ThisPc is { Fit: SalesFit.Comfortable, Input.ReserveGiB: 1 }
+                && SalesSizing.Recommend(["translation"], smallDiscrete, false, "discrete")!.ThisPc.Fit == SalesFit.WontFit
+                && SalesSizing.Recommend(["transcription"], smallDiscrete)!.ThisPc is { Fit: SalesFit.WontFit, Input.ReserveGiB: Sizing.DefaultReserveGiB }
+                && SalesSizing.Recommend(["transcription"], smallDiscrete, false, "unified")!.ThisPc.Fit == SalesFit.WontFit);
+            var previewed = SalesSizing.Recommend(["coding"], device, true, "unified")!;
+            Check("sales-preview-names-the-previewed-surface", previewed.ThisPc.Device.Name == "The previewed Surface"
+                && previewed.TalkTrack.Contains("The previewed Surface has room for that size") && previewed.TalkTrack.Contains("where the previewed Surface stands out")
+                && !previewed.TalkTrack.Contains("This PC"), previewed.TalkTrack);
+            var loading = SalesSizing.Recommend(["coding"], null, true)!;
+            Check("sales-preview-loading-never-uses-this-pc", loading.ThisPc.Fit == SalesFit.Unknown && loading.TalkTrack.Contains("memory profile is still loading")
+                && !loading.TalkTrack.Contains("Connect"), loading.TalkTrack);
+            var translation = SalesSizing.Find("translation")!;
+            var codingWorkload = SalesSizing.Find("coding")!;
+            var roomy = SalesSizing.Evaluate(SalesSizing.Here(false, ""), TShirtSize.L, 62.5);
+            var cramped = SalesSizing.Evaluate(SalesSizing.Here(false, ""), TShirtSize.XXL, 16);
+            Check("sales-platform-fit-is-computed", SalesSizing.PlatformFit(translation).Contains("pilot candidate for a 16 GB AI PC")
+                && SalesSizing.PlatformFit(codingWorkload).Contains("16 GB AI PC would not have room")
+                && SalesSizing.PlatformFit(codingWorkload, roomy).Contains("This PC has room for it")
+                && !SalesSizing.PlatformFit(codingWorkload, cramped).Contains("has room")
+                && SalesSizing.PlatformFit(translation, roomy, true).Contains("The previewed Surface has room too"));
+            ModelChoice Large(string alias, string label, bool available, bool exclusive, double? need) =>
+                new(alias, alias, label, false, true, 1000, "llama.cpp", Runtime: "llama.cpp", Available: available, Exclusive: exclusive, NeedGib: need);
+            var offered = new[] { Large("qwen3-coder-30b", "Qwen3-Coder 30B-A3B", true, false, 22.5), Large("llama3.3-70b", "Llama 3.3 70B", true, true, 43.6) };
+            string frontierNote = SalesSizing.LargeModelNote("frontier", offered, false), prototypingNote = SalesSizing.LargeModelNote("prototyping", offered, false);
+            Check("sales-names-a-large-model-only-when-offered", frontierNote.Contains("Llama 3.3 70B") && frontierNote.Contains("43.6 GiB") && frontierNote.Contains("GPU to itself")
+                && prototypingNote.Contains("Qwen3-Coder 30B-A3B") && !prototypingNote.Contains("itself")
+                && SalesSizing.LargeModelNote("frontier", [], false) == "" && SalesSizing.LargeModelNote("frontier", null, false) == ""
+                && SalesSizing.LargeModelNote("frontier", [Large("llama3.3-70b", "Llama 3.3 70B", false, true, 43.6)], false) == ""
+                && SalesSizing.LargeModelNote("frontier", offered, true) == "" && SalesSizing.LargeModelNote("coding", offered, false) == "", frontierNote + prototypingNote);
 
             // 100-level: talk tracks avoid jargon; all sales copy avoids unsupported claims.
             var tracks = w.Select(x => SalesSizing.Recommend([x.Id], device)!.TalkTrack)
-                .Concat([mixed.TalkTrack, unknown.TalkTrack, SalesSizing.Recommend(w.Select(x => x.Id), device)!.TalkTrack]).ToArray();
+                .Concat([mixed.TalkTrack, unknown.TalkTrack, SalesSizing.Recommend(w.Select(x => x.Id), device)!.TalkTrack, shared.TalkTrack, previewed.TalkTrack, loading.TalkTrack]).ToArray();
             string[] jargon = ["GiB", "KV", "bit", "token", "quantiz", "parameter", "CUDA", "context window"];
             foreach (string term in jargon)
             {
@@ -215,8 +306,53 @@ internal static class SelfTest
             }
             Check("sales-article-an-extra-large", xl.TalkTrack.Contains("needs an Extra large (XL) AI model"), xl.TalkTrack);
             var frontier = SalesSizing.Recommend(["frontier"], device)!;
-            Check("sales-xxl-here-not-32gb", frontier.Profile.Size == TShirtSize.XXL && frontier.ThisLaptop.Fit == SalesFit.Comfortable
+            Check("sales-xxl-here-not-32gb", frontier.Profile.Size == TShirtSize.XXL && frontier.ThisPc.Fit == SalesFit.Comfortable
                 && frontier.Comparisons.All(c => c.Fit == SalesFit.WontFit) && frontier.TalkTrack.Contains("a Double extra large (XXL)"), frontier.TalkTrack);
+        });
+
+        Guard("sizing-target", () =>
+        {
+            static DeviceReport Report(string gpuKind, double vramGb, bool gpuAvailable = true, bool simulated = true, string label = "Test Surface")
+            {
+                string json = FormattableString.Invariant($$"""
+                    {"simulated":{{(simulated ? "true" : "false")}},"report":{"profile":{"label":"{{label}}","headline":"{{label}}, 32 GB","cpu":{"name":"Test CPU","logicalCores":12},
+                    "os":{"version":"10.0.26100","arch":"arm64"},"memory":{"installedGb":32,"visibleGb":31.4},
+                    "gpus":[{"name":"Test GPU","kind":"{{gpuKind}}","vramGb":{{vramGb}}}],"npus":[],
+                    "lanes":[{"id":"gpu","kind":"gpu-{{gpuKind}}","available":{{(gpuAvailable ? "true" : "false")}},"device":"Test GPU","vendor":"nvidia"}],"capabilities":[]}
+                    },"detected":{},"simulation":{"id":"test","devices":[]},"models":[],"demos":[]}
+                    """);
+                using var doc = JsonDocument.Parse(json);
+                return DeviceReport.Parse(doc.RootElement);
+            }
+
+            var discrete = Report("discrete", 8);
+            var unified = Report("unified", 31.25);
+            var integrated = Report("integrated", 0.5);
+            var noGpuLane = Report("discrete", 8, gpuAvailable: false);
+            Check("report-keeps-the-primary-gpu", discrete is { GpuName: "Test GPU", GpuKind: "discrete" } && Near(discrete.GpuMemoryGb ?? 0, 8), $"{discrete.GpuKind} {discrete.GpuMemoryGb}");
+            Check("report-facts-discrete-and-unified-have-a-gpu-budget", discrete.ToFacts().PrimaryGpuBudgetMiB == 8192 && unified.ToFacts().PrimaryGpuBudgetMiB == 32000,
+                $"{discrete.ToFacts().PrimaryGpuBudgetMiB} {unified.ToFacts().PrimaryGpuBudgetMiB}");
+            Check("report-facts-integrated-gpu-has-no-budget", integrated.ToFacts().GpuBudgets.Count == 0 && noGpuLane.ToFacts().GpuBudgets.Count == 0);
+            var facts = discrete.ToFacts();
+            Check("report-facts-memory-views", Near(facts.InstalledGiB ?? 0, 32) && Near(facts.OsVisibleGiB ?? 0, 31.4) && facts.Model == "Test Surface" && facts.MemorySource!.Contains("estimate"));
+
+            var thisPc = new DeviceFacts("This PC", null, null, null, [], 32L << 30, 31L << 30, [], "test", null, null, null, null);
+            var previewing = new TargetInfo(true, "Test Surface", "Test Surface, 32 GB", null, null, null, null, [], null);
+            Check("sizing-target-is-this-pc-without-a-preview", SizingTarget.For(thisPc, null, null) is { Preview: false } own && ReferenceEquals(own.Facts, thisPc)
+                && SizingTarget.For(thisPc, previewing with { Simulated = false }, Report("unified", 31.25, simulated: false)) is { Preview: false, GpuKind: "unified" });
+            Check("sizing-target-preview-uses-the-previewed-profile", SizingTarget.For(thisPc, previewing, discrete) is { Preview: true, GpuKind: "discrete", Label: "Test Surface" } shown
+                && shown.Facts!.Model == "Test Surface" && shown.Facts.PrimaryGpuBudgetMiB == 8192 && shown.Noun == "the previewed Surface");
+            Check("sizing-target-preview-never-borrows-this-pcs-memory", SizingTarget.For(thisPc, previewing, null) is { Preview: true, Facts: null }
+                && SizingTarget.For(thisPc, previewing, Report("discrete", 8, label: "Another Surface")) is { Preview: true, Facts: null }
+                && SizingTarget.For(thisPc, previewing, Report("discrete", 8, simulated: false)) is { Preview: true, Facts: null });
+            Check("sizing-target-reserve-follows-the-memory-pool",
+                new SizingTarget(thisPc, false, null, "discrete").ReserveFor(BudgetSource.GpuDriverBudget) == SizingTarget.DedicatedGpuReserveGiB
+                && new SizingTarget(thisPc, false, null, "discrete").ReserveFor(BudgetSource.WindowsVisibleMemory) == Sizing.DefaultReserveGiB
+                && new SizingTarget(thisPc, false, null, "unified").ReserveFor(BudgetSource.GpuDriverBudget) == Sizing.DefaultReserveGiB
+                && new SizingTarget(thisPc, false, null, null).ReserveFor(BudgetSource.GpuDriverBudget) == Sizing.DefaultReserveGiB);
+            var export = Evidence.SizingExport(baseInput, Sizing.Estimate(baseInput), TShirtSize.L, BudgetSource.GpuDriverBudget, new SizingTarget(null, true, "Test Surface", "discrete"));
+            Check("sizing-export-marks-a-preview", export["target"] is JsonObject marked && marked["preview"]!.GetValue<bool>() && marked["label"]!.GetValue<string>() == "Test Surface"
+                && marked["gpu_kind"]!.GetValue<string>() == "discrete");
         });
 
         Guard("ultra", () =>

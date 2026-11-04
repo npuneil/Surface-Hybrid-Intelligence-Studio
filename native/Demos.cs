@@ -12,7 +12,7 @@ internal sealed record DemoInfo(
     string Id, string Title, string Category, string Glyph, string Workload, string Pitch, string Proof,
     string InputKind, string InputLabel, string? InputMedia, string Source, string? OptionLabel,
     IReadOnlyList<DemoOption> Options, string? DefaultOption, string Prompt, string PromptLabel,
-    bool Editable, bool Rehearsal, IReadOnlyList<DemoStepInfo> Steps)
+    bool Editable, bool Rehearsal, IReadOnlyList<DemoStepInfo> Steps, DemoFit? Fit = null)
 {
     internal DemoOption? Option(string? id) => Options.FirstOrDefault(o => o.Id == id);
     internal string PromptFor(string? option) => Option(option)?.Prompt ?? Prompt;
@@ -39,19 +39,26 @@ internal sealed record DemoCatalog(
 
     internal bool RuntimeReady => RuntimeState is "active" or "not_needed";
 
-    /// <summary>Why a live run cannot start yet, or null when it can. Rehearsal never needs models or media.</summary>
-    internal string? LiveBlocker(DemoInfo demo, EngineState? engine)
+    /// <summary>
+    /// Why a live run cannot start yet, or null when it can. Rehearsal never needs models or media. While another Surface is previewed
+    /// live runs are paused (they would measure this PC, not the one on screen). A chat or reasoning step is matched to its downloaded
+    /// state by the label this PC shows for it, because the models differ from device to device.
+    /// </summary>
+    internal string? LiveBlocker(DemoInfo demo, EngineState? engine, TargetInfo? target = null)
     {
-        if (engine is null) return "Waiting for the local GPU service.";
-        if (!engine.IsReady) return "Waiting for the chat model to finish loading on the GPU.";
+        if (target is { Simulated: true })
+            return $"Preview is on ({target.Label}). Live runs use this PC's real hardware, so they are paused. Go back to this PC to run live.";
+        if (engine is null) return "Waiting for the local service.";
+        if (!engine.IsReady) return "Waiting for the chat model to finish loading.";
+        if (demo.Fit is { Unavailable: true } fit) return fit.Summary;
         var roles = demo.Roles.ToHashSet(StringComparer.Ordinal);
         bool needsMedia = roles.Overlaps(["asr", "vision"]) || demo.InputKind is "audio" or "image";
         if (engine.Models.FirstOrDefault(m => m.Alias == engine.Model?.Alias) is { Exclusive: true } large
             && (needsMedia || roles.Overlaps(MediaRoles) || roles.Any(r => engine.Models.Any(m => m.Alias == r && m.Alias != large.Alias))))
             return $"{large.Label} is using most of the GPU memory, so this demo's other models cannot load beside it. " +
-                   "Select Qwen2.5-Coder 14B, GPT-OSS 20B or Qwen3-Coder 30B in the Live GPU workspace first.";
+                   "Select Qwen2.5-Coder 14B, GPT-OSS 20B or Qwen3-Coder 30B in the Live workspace first.";
         if (roles.Overlaps(MediaRoles) && !RuntimeReady)
-            return string.IsNullOrWhiteSpace(RuntimeDetail) ? "The GPU speech and vision libraries are not prepared." : RuntimeDetail;
+            return string.IsNullOrWhiteSpace(RuntimeDetail) ? "The speech and vision runtime is not prepared." : RuntimeDetail;
         foreach (string role in roles.Where(MediaRoles.Contains))
         {
             var model = MediaModels.FirstOrDefault(m => m.Role == role);
@@ -60,7 +67,10 @@ internal sealed record DemoCatalog(
         }
         foreach (string role in roles)
         {
-            var choice = engine.Models.FirstOrDefault(m => m.Alias == role);
+            var step = demo.Fit?.Steps.FirstOrDefault(s => s.Role == role && s.Available);
+            var choice = step?.Label is string label
+                ? engine.Models.FirstOrDefault(m => m.Label == label)
+                : engine.Models.FirstOrDefault(m => m.Alias == role);
             if (choice is not null && !choice.Cached) return $"{choice.Label} is not downloaded yet. Run Start-Showcase.ps1 -Prepare once.";
         }
         if (needsMedia && MediaState != "ready")
@@ -102,9 +112,13 @@ internal sealed class DemoStepRecord(string title, string model)
 
 internal sealed record DemoRunRecord(
     DemoInfo Demo, string Mode, string? Option, string Prompt, bool Edited, DateTimeOffset StartedAt,
-    IReadOnlyList<DemoStepRecord> Steps, IReadOnlyList<DemoCheck> Checks, DemoSummary? Summary, string? Error)
+    IReadOnlyList<DemoStepRecord> Steps, IReadOnlyList<DemoCheck> Checks, DemoSummary? Summary, string? Error,
+    TargetInfo? Target = null, TargetWords? Words = null)
 {
     internal bool Live => Mode == "live";
+    /// <summary>Where this run's models ran, as the service described the PC when the run started (the demo's own fit names every lane it
+    /// uses); null before the service said. It is captured with the run so a Surface previewed later cannot rewrite it.</summary>
+    internal string? Where => Demo.Fit?.Where ?? (Words is { Known: true } ? Words.Where : null);
     internal bool Completed => Error is null && Summary is not null;
     internal bool Passed => Completed && Summary!.AllPassed;
     /// <summary>Every step ran; checks may still have graded an answer wrong (shown amber, not as a failure).</summary>
@@ -178,7 +192,7 @@ internal static class DemoParser
         return new DemoInfo(id, title, S(d, "category"), S(d, "glyph", "\uE768"), S(d, "workload"), S(d, "pitch"), S(d, "proof"),
             kind, label, string.IsNullOrEmpty(inputMedia) ? null : inputMedia, S(d, "source"), StatusParser.Str(d, "option_label"),
             options, StatusParser.Str(d, "default_option"), S(d, "prompt"), S(d, "prompt_label", "Instruction"),
-            StatusParser.Bool(d, "editable"), StatusParser.Bool(d, "rehearsal"), steps);
+            StatusParser.Bool(d, "editable"), StatusParser.Bool(d, "rehearsal"), steps, DemoFit.Parse(d));
     }
 
     internal static DemoEvent ParseEvent(string line)
@@ -248,7 +262,7 @@ internal static class DemoEvidence
         ["exported_by"] = Brand.DisplayName + " (native WinUI 3) - explicit user export",
         ["demo"] = new JsonObject { ["id"] = run.Demo.Id, ["title"] = run.Demo.Title, ["category"] = run.Demo.Category, ["data"] = "Synthetic, fictional inputs" },
         ["mode"] = run.Mode,
-        ["mode_label"] = run.Live ? "LIVE local inference on this device's RTX GPU" : "AUTHORED REHEARSAL - not model output; no checks scored",
+        ["mode_label"] = run.Live ? LiveLabel(run.Where) : "AUTHORED REHEARSAL - not model output; no checks scored",
         ["option"] = run.Option,
         ["prompt"] = run.Prompt,
         ["prompt_edited"] = run.Edited,
@@ -276,9 +290,14 @@ internal static class DemoEvidence
         ["metric_caveat"] = Evidence.MetricCaveat,
         ["privacy"] = Evidence.PrivacyNote,
         ["device"] = Evidence.Device(device),
+        ["target"] = Evidence.Target(run.Target, run.Where, run.Live),
         ["service_lifecycle"] = lifecycle,
     };
 
     internal const string CheckNote =
         "Checks compare live output with ground truth written into the synthetic inputs. They show this run's result, not a general accuracy rate.";
+
+    /// <summary>The live label names the lane the service reported ("LIVE local inference on this device, on the NPU"), or none before it has.</summary>
+    internal static string LiveLabel(string? where) =>
+        "LIVE local inference on this device" + (string.IsNullOrWhiteSpace(where) ? "" : $", on {where}");
 }

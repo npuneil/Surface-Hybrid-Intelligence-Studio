@@ -1,0 +1,257 @@
+{
+ "harness": "1.1",
+ "brief": "litware_technical",
+ "template": "microsoft",
+ "lane": "local",
+ "model": "qwen3-coder-30b",
+ "llm_calls": 2,
+ "prompt_tokens": 9800,
+ "completion_tokens": 5926,
+ "decode_tps": 52.2,
+ "ttft_s": 4.1,
+ "generate_s": 120.57,
+ "render_s": 0.12,
+ "total_s": 120.69,
+ "power": {
+  "seconds": 120.55,
+  "samples": 471,
+  "gpu_avg_w": 25.3,
+  "gpu_peak_w": 56.4,
+  "gpu_wh": 0.8478,
+  "platform_wh": 0.3349,
+  "total_wh": 1.1826
+ },
+ "economics": {
+  "lane": "local",
+  "energy_wh": 1.183,
+  "cost_usd": 0.000154,
+  "co2e_g": 0.434,
+  "water_ml": 0.0,
+  "basis": "measured GPU board power (nvidia-smi, 250 ms) + 10 W platform allowance; electricity only"
+ },
+ "grade": {
+  "auto_score": 88.1,
+  "auto_grade": "B+",
+  "scores": {
+   "visual_richness": 22.8,
+   "text_lightness": 15.3,
+   "analogy": 10.0,
+   "brief_coverage": 15.0,
+   "claim_discipline": 15.0,
+   "structure": 10.0
+  },
+  "detail": {
+   "visual_richness": {
+    "infographic_share": 1.0,
+    "distinct_layouts": 7,
+    "icons_per_slide": 3.9,
+    "canvas_diagrams": 1
+   },
+   "text_lightness": {
+    "avg_words_per_slide": 37.1,
+    "max_words": 50
+   },
+   "analogy": {
+    "analogy_slides": 2,
+    "analogy_cue_slides": 0
+   },
+   "brief_coverage": {
+    "covered": 6.0,
+    "topics": 6,
+    "missing": []
+   },
+   "claim_discipline": {
+    "numbers_on_canvas": 24,
+    "untraceable": [],
+    "guardrail_violations": []
+   },
+   "structure": {
+    "strict_json": true,
+    "slides": 10,
+    "notes_slides": 9,
+    "fallbacks": 0,
+    "overflows": 0,
+    "shrunk_texts": 3
+   }
+  }
+ },
+ "pptx": "decks/litware_technical-v1.1/litware_technical-microsoft.pptx",
+ "render_summary": [
+  {
+   "index": 0,
+   "layout": "title",
+   "words": 14,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 1,
+   "layout": "compare",
+   "words": 50,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 7,
+   "issues": []
+  },
+  {
+   "index": 2,
+   "layout": "stack",
+   "words": 49,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  },
+  {
+   "index": 3,
+   "layout": "kpis",
+   "words": 29,
+   "overflows": 0,
+   "shrunk": 2,
+   "icons": 3,
+   "issues": []
+  },
+  {
+   "index": 4,
+   "layout": "bars",
+   "words": 30,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 1,
+   "issues": []
+  },
+  {
+   "index": 5,
+   "layout": "analogy",
+   "words": 46,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 2,
+   "issues": []
+  },
+  {
+   "index": 6,
+   "layout": "flow",
+   "words": 38,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 5,
+   "issues": []
+  },
+  {
+   "index": 7,
+   "layout": "analogy",
+   "words": 35,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 2,
+   "issues": []
+  },
+  {
+   "index": 8,
+   "layout": "canvas",
+   "words": 40,
+   "overflows": 0,
+   "shrunk": 1,
+   "icons": 7,
+   "issues": []
+  },
+  {
+   "index": 9,
+   "layout": "cta",
+   "words": 40,
+   "overflows": 0,
+   "shrunk": 0,
+   "icons": 4,
+   "issues": []
+  }
+ ],
+ "lint_history": [
+  {
+   "pass": "draft",
+   "issues": 12,
+   "codes": [
+    "fit",
+    "notes",
+    "words",
+    "woven_analogy"
+   ]
+  },
+  {
+   "pass": "repair1",
+   "issues": 12,
+   "accepted": false,
+   "fixed_slides": 9,
+   "codes": [
+    "fit",
+    "takeaway_long",
+    "words"
+   ]
+  }
+ ],
+ "lint_remaining": [
+  {
+   "slide": 1,
+   "code": "woven_analogy",
+   "msg": "weave a short, accurate analogy into the takeaway using 'like' (<= 12 words)"
+  },
+  {
+   "slide": 2,
+   "code": "woven_analogy",
+   "msg": "weave a short, accurate analogy into the takeaway using 'like' (<= 12 words)"
+  },
+  {
+   "slide": 0,
+   "code": "notes",
+   "msg": "add 2-3 sentences of speaker notes (<= 45 words)"
+  },
+  {
+   "slide": 1,
+   "code": "words",
+   "msg": "50 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 2,
+   "code": "words",
+   "msg": "49 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 3,
+   "code": "fit",
+   "msg": "some text does not fit its shape; shorten the longest labels/details"
+  },
+  {
+   "slide": 5,
+   "code": "words",
+   "msg": "46 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 6,
+   "code": "words",
+   "msg": "38 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 7,
+   "code": "words",
+   "msg": "35 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 8,
+   "code": "words",
+   "msg": "40 visible words; cut to <= 28 (shorter details, fewer items)"
+  },
+  {
+   "slide": 8,
+   "code": "fit",
+   "msg": "some text does not fit its shape; shorten the longest labels/details"
+  },
+  {
+   "slide": 9,
+   "code": "words",
+   "msg": "40 visible words; cut to <= 28 (shorter details, fewer items)"
+  }
+ ],
+ "measured_facts": []
+}

@@ -1,0 +1,20 @@
+<Application
+    x:Class="OfflinePptxForge.ForgeApp"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+            <!-- Surface sapphire, the same blue the Surface deck theme uses -->
+            <Color x:Key="SystemAccentColor">#1F5FBF</Color>
+            <Color x:Key="SystemAccentColorLight1">#4A7DD0</Color>
+            <Color x:Key="SystemAccentColorLight2">#7BA0DE</Color>
+            <Color x:Key="SystemAccentColorLight3">#B4C9EC</Color>
+            <Color x:Key="SystemAccentColorDark1">#194D99</Color>
+            <Color x:Key="SystemAccentColorDark2">#133B76</Color>
+            <Color x:Key="SystemAccentColorDark3">#0D2A55</Color>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

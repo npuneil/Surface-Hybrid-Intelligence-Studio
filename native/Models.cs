@@ -4,17 +4,19 @@ namespace HybridIntelligenceStudio;
 
 internal sealed record ModelChoice(string Alias, string Id, string Label, bool Reasoning, bool Cached, double? SizeMb, string? Provider,
     string? Runtime = null, string? Params = null, bool Available = true, string? Blocker = null, bool Exclusive = false,
-    string? Published = null, string? PublishedSource = null, double? NeedGib = null)
+    string? Published = null, string? PublishedSource = null, double? NeedGib = null,
+    string? Where = null, string? Lane = null, string? Ep = null, string? Slot = null, string? Note = null)
 {
     internal bool IsLlamaCpp => Runtime == "llama.cpp";
 
-    /// <summary>One-line picker subtitle: runtime, parameters, file size and state. File size is on disk, not runtime memory.</summary>
+    /// <summary>One-line picker subtitle: runtime, where it runs, parameters, file size and state. File size is on disk, not runtime memory.</summary>
     internal string Subtitle
     {
         get
         {
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(Runtime)) parts.Add(Runtime!);
+            if (!string.IsNullOrWhiteSpace(Where)) parts.Add("on " + Where);
             if (!string.IsNullOrWhiteSpace(Params)) parts.Add(Params!);
             if (SizeMb is double mb) parts.Add(IsLlamaCpp ? $"{mb / 1000:N1} GB weights file" : $"{mb:N0} MB catalog file");
             if (!Available) parts.Add("not available on this PC");
@@ -26,7 +28,8 @@ internal sealed record ModelChoice(string Alias, string Id, string Label, bool R
     }
 }
 
-internal sealed record ActiveModel(string Name, string Alias, string Id, string Provider, bool Reasoning, string? License);
+internal sealed record ActiveModel(string Name, string Alias, string Id, string Provider, bool Reasoning, string? License,
+    string? Lane = null, string? Device = null, string? Ep = null, string? Where = null);
 
 internal sealed record EngineState(string State, string Detail, string? SelectedModel, ActiveModel? Model,
     IReadOnlyList<ModelChoice> Models, string? Error)
@@ -59,7 +62,11 @@ internal sealed record DeviceFacts(
 }
 
 internal sealed record StatusSnapshot(string AppId, EngineState Engine, DeviceFacts Device,
-    IReadOnlyDictionary<string, double> Assumptions);
+    IReadOnlyDictionary<string, double> Assumptions, TargetInfo? Target = null)
+{
+    /// <summary>The words this PC's pages use for where models run, from the loaded model or the service's device description.</summary>
+    internal TargetWords Words => TargetWords.From(Target, Engine.Model);
+}
 
 internal sealed record Scenario(string Key, string Title, string Label, string Prompt, string Source,
     string? Industry = null, string? Client = null, string? DeckObjective = null);
@@ -79,7 +86,7 @@ internal static class StatusParser
         if (root.TryGetProperty("assumptions", out var a) && a.ValueKind == JsonValueKind.Object)
             foreach (var p in a.EnumerateObject())
                 if (p.Value.ValueKind == JsonValueKind.Number) assumptions[p.Name] = p.Value.GetDouble();
-        return new StatusSnapshot(appId, engine, device, assumptions);
+        return new StatusSnapshot(appId, engine, device, assumptions, TargetInfo.Parse(root));
     }
 
     private static EngineState ParseEngine(JsonElement e)
@@ -87,7 +94,8 @@ internal static class StatusParser
         ActiveModel? model = null;
         if (e.TryGetProperty("model", out var m) && m.ValueKind == JsonValueKind.Object)
             model = new ActiveModel(Str(m, "name") ?? "Unknown model", Str(m, "alias") ?? "", Str(m, "id") ?? "",
-                Str(m, "provider") ?? "", Bool(m, "reasoning"), Str(m, "license"));
+                Str(m, "provider") ?? "", Bool(m, "reasoning"), Str(m, "license"),
+                Str(m, "lane"), Str(m, "device"), Str(m, "ep"), Str(m, "where"));
         var models = new List<ModelChoice>();
         if (e.TryGetProperty("models", out var list) && list.ValueKind == JsonValueKind.Array)
             foreach (var c in list.EnumerateArray())
@@ -95,7 +103,8 @@ internal static class StatusParser
                     models.Add(new ModelChoice(alias, Str(c, "id") ?? "", Str(c, "label") ?? alias, Bool(c, "reasoning"),
                         Bool(c, "cached"), Num(c, "size_mb"), Str(c, "provider"), Str(c, "runtime"), Str(c, "params"),
                         !c.TryGetProperty("available", out var av) || av.ValueKind != JsonValueKind.False, Str(c, "blocker"),
-                        Bool(c, "exclusive"), Str(c, "published"), Str(c, "published_source"), Num(c, "need_gib")));
+                        Bool(c, "exclusive"), Str(c, "published"), Str(c, "published_source"), Num(c, "need_gib"),
+                        Str(c, "where"), Str(c, "lane"), Str(c, "ep"), Str(c, "slot"), Str(c, "note")));
         return new EngineState(Str(e, "state") ?? "unknown", Str(e, "detail") ?? "", Str(e, "selected_model"), model, models, Str(e, "error"));
     }
 

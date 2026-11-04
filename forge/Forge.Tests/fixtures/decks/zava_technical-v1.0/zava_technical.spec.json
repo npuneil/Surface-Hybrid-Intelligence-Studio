@@ -1,0 +1,360 @@
+{
+ "title": "Local AI on Surface Laptop Ultra",
+ "client": "Zava",
+ "slides": [
+  {
+   "layout": "title",
+   "kicker": "Zava Engineering",
+   "title": "Local AI Architecture",
+   "subtitle": "Surface Laptop Ultra with NVIDIA RTX Spark",
+   "hero_icons": [
+    "laptop",
+    "gpu",
+    "chip",
+    "memory"
+   ]
+  },
+  {
+   "layout": "stack",
+   "title": "Hardware Layers",
+   "takeaway": "Local AI stack on ARM64",
+   "data": {
+    "side_label": "Closest to User",
+    "layers": [
+     {
+      "label": "Local Runtimes",
+      "detail": "llama.cpp, Foundry Local",
+      "icon": "code"
+     },
+     {
+      "label": "NVIDIA RTX Spark",
+      "detail": "Blackwell N1X GPU",
+      "icon": "gpu"
+     },
+     {
+      "label": "20 CPU Cores",
+      "detail": "ARM64 Architecture",
+      "icon": "cpu"
+     },
+     {
+      "label": "128 GB RAM",
+      "detail": "64 GB visible to OS",
+      "icon": "memory"
+     }
+    ]
+   },
+   "notes": "Surface Laptop Ultra features 20 CPU cores, 128 GB RAM (64 GB visible to OS), and an NVIDIA RTX Spark GPU. The GPU memory is 64,000 MiB as reported by nvidia-smi. This stack supports local AI workloads without cloud dependencies."
+  },
+  {
+   "layout": "analogy",
+   "title": "Memory Views",
+   "takeaway": "RAM and GPU memory are separate",
+   "data": {
+    "concept": {
+     "label": "System Memory",
+     "icon": "memory"
+    },
+    "analog": {
+     "label": "Office Space",
+     "icon": "home"
+    },
+    "pairs": [
+     {
+      "concept": "System RAM",
+      "analog": "Office desks"
+     },
+     {
+      "concept": "GPU Memory",
+      "analog": "Specialized workstations"
+     },
+     {
+      "concept": "Never add them",
+      "analog": "Don't count desks + workstations"
+     },
+     {
+      "concept": "Distinct views",
+      "analog": "Different rooms"
+     },
+     {
+      "concept": "Memory budget",
+      "analog": "Allocated space per task"
+     }
+    ]
+   },
+   "notes": "System RAM (64 GB visible) and GPU memory (64,000 MiB) are separate. Never combine them. Think of system RAM as office desks and GPU memory as specialized workstations. Each has its own allocation."
+  },
+  {
+   "layout": "flow",
+   "title": "Local AI Runtimes",
+   "takeaway": "llama.cpp and Foundry Local",
+   "data": {
+    "steps": [
+     {
+      "label": "llama.cpp",
+      "detail": "CUDA ARM64 build 11573",
+      "icon": "code"
+     },
+     {
+      "label": "Foundry Local",
+      "detail": "CUDA execution provider",
+      "icon": "server"
+     },
+     {
+      "label": "Model Serving",
+      "detail": "Native ARM64",
+      "icon": "layers"
+     }
+    ]
+   },
+   "notes": "The device runs local AI via llama.cpp (ARM64 CUDA build 11573) and Foundry Local with CUDA execution provider. These runtimes support native ARM64 execution for efficient model serving."
+  },
+  {
+   "layout": "bars",
+   "title": "Model Catalog",
+   "takeaway": "28 models, 315 GiB",
+   "data": {
+    "unit": "GiB",
+    "highlight": "Total Size",
+    "icon": "database",
+    "caption": "On disk",
+    "bars": [
+     {
+      "label": "Models",
+      "value": 28
+     },
+     {
+      "label": "Disk Size",
+      "value": 315
+     }
+    ]
+   },
+   "notes": "The device hosts 28 open models, totaling 315 GiB on disk. These models are used for code generation and internal RAG tasks."
+  },
+  {
+   "layout": "analogy",
+   "title": "Model Throughput",
+   "takeaway": "Streaming vs single-stream",
+   "data": {
+    "concept": {
+     "label": "Streaming",
+     "icon": "multitask"
+    },
+    "analog": {
+     "label": "Multiple Workers",
+     "icon": "team"
+    },
+    "pairs": [
+     {
+      "concept": "Single-stream",
+      "analog": "One worker at a time"
+     },
+     {
+      "concept": "Multi-stream",
+      "analog": "Multiple workers in parallel"
+     },
+     {
+      "concept": "Qwen3-Coder 30B",
+      "analog": "140 tokens/s across 4 workers"
+     },
+     {
+      "concept": "Gemma 4 26B",
+      "analog": "245 tokens/s across 8 workers"
+     },
+     {
+      "concept": "Dense vs MoE",
+      "analog": "Workers with or without experts"
+     }
+    ]
+   },
+   "notes": "Throughput varies by model and stream count. Qwen3-Coder 30B delivers 140 tokens/s across 4 streams, while Gemma 4 26B achieves 245 tokens/s across 8 streams. MoE models decode faster due to expert activation."
+  },
+  {
+   "layout": "compare",
+   "title": "MoE vs Dense Models",
+   "takeaway": "MoE decode faster",
+   "data": {
+    "left": {
+     "title": "Dense Models",
+     "icon": "chip",
+     "points": [
+      "All parameters active",
+      "Slower decode"
+     ]
+    },
+    "right": {
+     "title": "MoE Models",
+     "icon": "puzzle",
+     "points": [
+      "Few experts per token",
+      "Faster decode"
+     ]
+    },
+    "verdict": "MoE models are faster for decoding"
+   },
+   "notes": "MoE models activate only a few experts per token, decoding faster than dense models of similar size. Dense models use all parameters, making them slower for decoding."
+  },
+  {
+   "layout": "matrix",
+   "title": "Model Sizing Bands",
+   "takeaway": "Parameter estimates",
+   "data": {
+    "x_axis": "Size",
+    "y_axis": "Performance",
+    "highlight": 2,
+    "quadrants": [
+     {
+      "label": "S Band",
+      "detail": "1-4B params",
+      "icon": "chip"
+     },
+     {
+      "label": "M Band",
+      "detail": "7-8B params",
+      "icon": "cpu"
+     },
+     {
+      "label": "L Band",
+      "detail": "14-20B params",
+      "icon": "memory"
+     },
+     {
+      "label": "XL Band",
+      "detail": "24-32B params",
+      "icon": "gpu"
+     }
+    ]
+   },
+   "notes": "Model sizing bands help estimate performance. S (1-4B), M (7-8B), L (14-20B), XL (24-32B) are planning estimates, not accuracy tiers."
+  },
+  {
+   "layout": "statement",
+   "title": "Local AI Use Cases",
+   "takeaway": "Codegen and RAG",
+   "data": {
+    "icon": "code",
+    "text": "Code Generation",
+    "sub": "RAG over internal docs"
+   },
+   "notes": "Local AI supports code generation and retrieval-augmented generation (RAG) over internal engineering documents. Tasks are kept local for IP safety."
+  },
+  {
+   "layout": "hub",
+   "title": "Hybrid Routing",
+   "takeaway": "Local + Cloud",
+   "data": {
+    "center": {
+     "label": "Local Lane",
+     "icon": "layers"
+    },
+    "spokes": [
+     {
+      "label": "Code Assistants",
+      "icon": "chat"
+     },
+     {
+      "label": "Internal Docs RAG",
+      "icon": "document"
+     },
+     {
+      "label": "Frequent Tasks",
+      "icon": "clock"
+     },
+     {
+      "label": "Sensitive Data",
+      "icon": "shield"
+     }
+    ]
+   },
+   "notes": "Hybrid routing sends sensitive, frequent tasks (code, internal docs) to the local lane. Heaviest reasoning tasks route to cloud models. This balances performance and security."
+  },
+  {
+   "layout": "canvas",
+   "title": "Made on Device",
+   "takeaway": "This deck generated locally",
+   "data": {
+    "elements": [
+     {
+      "type": "box",
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 2,
+      "label": "Surface Laptop Ultra",
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 2,
+      "y": 2,
+      "w": 8,
+      "h": 2,
+      "label": "Qwen3-Coder 30B",
+      "tone": "accent1"
+     },
+     {
+      "type": "box",
+      "x": 4,
+      "y": 4,
+      "w": 4,
+      "h": 2,
+      "label": "llama.cpp",
+      "tone": "accent2"
+     },
+     {
+      "type": "icon",
+      "x": 10,
+      "y": 1,
+      "icon": "laptop",
+      "tone": "text"
+     },
+     {
+      "type": "icon",
+      "x": 10,
+      "y": 3,
+      "icon": "code",
+      "tone": "text"
+     },
+     {
+      "type": "icon",
+      "x": 10,
+      "y": 5,
+      "icon": "memory",
+      "tone": "text"
+     }
+    ]
+   },
+   "notes": "This deck was generated on the Surface Laptop Ultra by Qwen3-Coder 30B through llama.cpp, with no cloud calls. The device demonstrates its own local AI capabilities."
+  },
+  {
+   "layout": "cta",
+   "title": "Pilot Ask",
+   "takeaway": "10 devs, 2 weeks",
+   "data": {
+    "steps": [
+     {
+      "label": "Join Pilot",
+      "detail": "10 developers",
+      "icon": "people"
+     },
+     {
+      "label": "Test 2 Weeks",
+      "detail": "Local AI stack",
+      "icon": "timer"
+     },
+     {
+      "label": "Measure",
+      "detail": "Latency, UX",
+      "icon": "chart"
+     },
+     {
+      "label": "Share Results",
+      "detail": "Feedback loop",
+      "icon": "chat"
+     }
+    ],
+    "ask": "Ready to test local AI?"
+   },
+   "notes": "Zava invites 10 developers for a 2-week pilot testing the local AI stack. The goal is to measure acceptance rate, latency, and developer experience. Feedback will inform future adoption."
+  }
+ ]
+}

@@ -1,0 +1,274 @@
+{
+ "title": "Local AI for District Managers",
+ "client": "Northwind Traders",
+ "slides": [
+  {
+   "layout": "title",
+   "kicker": "Pilot Proposal",
+   "title": "Local AI in Stores",
+   "subtitle": "8 Managers, 3 Weeks, Surface Ultra",
+   "hero_icons": [
+    "laptop",
+    "wifi",
+    "shield",
+    "chart"
+   ]
+  },
+  {
+   "layout": "analogy",
+   "title": "Manager's Daily Work",
+   "takeaway": "Like a chef, they need tools",
+   "data": {
+    "concept": {
+     "label": "District Manager",
+     "icon": "person"
+    },
+    "analog": {
+     "label": "Chef in Kitchen",
+     "icon": "cook"
+    },
+    "pairs": [
+     {
+      "concept": "Writing reports",
+      "analog": "Preparing meals"
+     },
+     {
+      "concept": "Checking inventory",
+      "analog": "Gathering ingredients"
+     },
+     {
+      "concept": "Planning staff",
+      "analog": "Designing menus"
+     }
+    ]
+   },
+   "notes": "District managers work like chefs. They need tools to prepare reports efficiently. Local AI is a new tool that helps them work faster and smarter, just as a chef needs knives and appliances."
+  },
+  {
+   "layout": "stack",
+   "title": "Work in the Store",
+   "takeaway": "Reports take time, often offline",
+   "data": {
+    "side_label": "Store Work",
+    "layers": [
+     {
+      "label": "Report Writing",
+      "detail": "30 min/store",
+      "icon": "document"
+     },
+     {
+      "label": "Data Access",
+      "detail": "Confidential sheets",
+      "icon": "lock"
+     },
+     {
+      "label": "Offline Needs",
+      "detail": "1 in 4 stores weak Wi-Fi",
+      "icon": "wifi"
+     }
+    ]
+   },
+   "notes": "District managers spend 30 minutes per store writing reports. These reports reference confidential data and are often written offline. About 25% of stores have unreliable Wi-Fi, making cloud tools harder to use."
+  },
+  {
+   "layout": "canvas",
+   "title": "Local AI Architecture",
+   "takeaway": "AI runs on device, not in the cloud",
+   "data": {
+    "elements": [
+     {
+      "type": "box",
+      "x": 0,
+      "y": 2,
+      "w": 4,
+      "h": 2,
+      "label": "Surface Ultra",
+      "icon": "laptop",
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 5,
+      "y": 1,
+      "w": 3,
+      "h": 2,
+      "label": "NVIDIA RTX Spark",
+      "icon": "gpu",
+      "tone": "accent1"
+     },
+     {
+      "type": "box",
+      "x": 5,
+      "y": 4,
+      "w": 3,
+      "h": 2,
+      "label": "Gemma 4 26B",
+      "icon": "ai",
+      "tone": "accent2"
+     },
+     {
+      "type": "box",
+      "x": 9,
+      "y": 2,
+      "w": 3,
+      "h": 2,
+      "label": "Local Data",
+      "icon": "database",
+      "tone": "muted"
+     },
+     {
+      "type": "arrow",
+      "x": 4,
+      "y": 3,
+      "x2": 5,
+      "y2": 2,
+      "tone": "accent1"
+     },
+     {
+      "type": "arrow",
+      "x": 8,
+      "y": 3,
+      "x2": 9,
+      "y2": 3,
+      "tone": "muted"
+     }
+    ]
+   },
+   "notes": "Local AI runs directly on the Surface Ultra with NVIDIA RTX Spark. The device uses Gemma 4 26B for processing, and all data stays local to the device. This ensures privacy while enabling fast performance."
+  },
+  {
+   "layout": "compare",
+   "title": "Cloud vs Local AI",
+   "takeaway": "Local AI works offline, keeps data secure",
+   "data": {
+    "left": {
+     "title": "Cloud AI",
+     "icon": "cloud",
+     "points": [
+      "Needs internet",
+      "Data in cloud"
+     ]
+    },
+    "right": {
+     "title": "Local AI",
+     "icon": "server",
+     "points": [
+      "Works offline",
+      "Data stays local"
+     ]
+    },
+    "verdict": "Local AI is better for store work"
+   },
+   "notes": "Cloud AI needs internet and sends data to the cloud. Local AI runs on the device, works offline, and keeps sensitive data secure. For district managers in stores, local AI is a better fit."
+  },
+  {
+   "layout": "timeline",
+   "title": "Pilot Plan",
+   "takeaway": "3 weeks with 8 managers",
+   "data": {
+    "milestones": [
+     {
+      "when": "Week 1",
+      "label": "Setup & Training",
+      "icon": "calendar"
+     },
+     {
+      "when": "Week 2",
+      "label": "Data Collection",
+      "icon": "monitor"
+     },
+     {
+      "when": "Week 3",
+      "label": "Review & Report",
+      "icon": "document"
+     }
+    ]
+   },
+   "notes": "The pilot will run for 3 weeks with 8 district managers. It includes setup, data collection, and a final review. The goal is to measure report time, quality, and user experience."
+  },
+  {
+   "layout": "memory",
+   "title": "Device Capacity",
+   "takeaway": "Powerful hardware for local AI",
+   "data": {
+    "capacity": 128,
+    "unit": "GB",
+    "capacity_label": "Memory",
+    "caption": "Surface Ultra with RTX Spark",
+    "blocks": [
+     {
+      "label": "CPU Cores",
+      "size": 20
+     },
+     {
+      "label": "GPU",
+      "size": 16
+     },
+     {
+      "label": "Memory",
+      "size": 128
+     }
+    ]
+   },
+   "notes": "The Surface Ultra has 128 GB of memory, 20 CPU cores, and an NVIDIA RTX Spark GPU. This makes it powerful enough to run local AI models like Gemma 4 26B efficiently."
+  },
+  {
+   "layout": "statement",
+   "title": "Hybrid AI Approach",
+   "takeaway": "Local AI complements Copilot",
+   "data": {
+    "icon": "gears",
+    "text": "Local AI adds a second lane to Microsoft 365 Copilot",
+    "sub": "No replacement, just more tools"
+   },
+   "notes": "Local AI doesn't replace Microsoft 365 Copilot. Instead, it adds another lane for sensitive, repeated tasks like report writing. Both tools work together."
+  },
+  {
+   "layout": "bars",
+   "title": "Time Savings Estimate",
+   "takeaway": "Potential for 5,760 hours saved annually",
+   "data": {
+    "unit": "hours",
+    "highlight": "Total Time Saved",
+    "icon": "timer",
+    "caption": "Illustrative estimate only",
+    "bars": [
+     {
+      "label": "Managers",
+      "value": 60
+     },
+     {
+      "label": "Reports/Week",
+      "value": 12
+     },
+     {
+      "label": "Time Saved/Report",
+      "value": 10
+     }
+    ]
+   },
+   "notes": "If local AI saves 10 minutes per report, and there are 60 managers writing 12 reports a week for 48 weeks, that's an estimated 5,760 hours saved. This is illustrative and will be validated in the pilot."
+  },
+  {
+   "layout": "cta",
+   "title": "Next Steps",
+   "takeaway": "Approve 3-week pilot",
+   "data": {
+    "steps": [
+     {
+      "label": "Approval",
+      "detail": "Pilot launch",
+      "icon": "approve"
+     },
+     {
+      "label": "Support",
+      "detail": "Training & tools",
+      "icon": "education"
+     }
+    ],
+    "ask": "Approve the 3-week pilot with 8 district managers"
+   },
+   "notes": "We ask for approval to launch a 3-week pilot with 8 district managers. This will validate time savings, data security, and user experience before wider rollout."
+  }
+ ]
+}

@@ -17,8 +17,9 @@ import hybrid
 import workbench
 from content import DEFAULT_ASSUMPTIONS, SCENARIOS, calculate
 from demo_runner import DemoRunner, MediaStore
+from device_view import DeviceView, hybrid_wording
 from edition import APP_ID, DISPLAY_NAME, ENV_PREFIX
-from local_engine import DEFAULT_MODEL, LARGE_MODELS, MODELS, LocalEngine, model_spec
+from local_engine import DEFAULT_MODEL, LARGE_MODELS, LocalEngine
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 24000
@@ -83,13 +84,15 @@ class ShowcaseServer(ThreadingHTTPServer):
     # Windows SO_REUSEADDR lets a second instance bind a port that is already listening.
     allow_reuse_address = False
 
-    def __init__(self, address, *, engine=None, device=None, rehearsal_only=False, media_store=None):
+    def __init__(self, address, *, engine=None, device=None, rehearsal_only=False, media_store=None, device_service=None):
         # Inventory before binding so a listening socket can always answer status probes.
         self.device = read_device() if device is None else device
         super().__init__(address, Handler)
         self.engine = engine or LocalEngine(endpoint_port=endpoint_port(self.server_port))
+        # What the studio shows for this PC (or a simulated one). device_service replaces the shared detection service (tests).
+        self.view = DeviceView(self.engine, device_service)
         self.media = media_store or MediaStore()
-        self.demos = DemoRunner(self.engine, self.media, self.device)
+        self.demos = DemoRunner(self.engine, self.media, self.device, view=self.view.shown)
         self.token = secrets.token_urlsafe(32)
         self.run_lock = threading.Lock()
         if rehearsal_only:
@@ -139,6 +142,34 @@ class Handler(BaseHTTPRequestHandler):
             f"127.0.0.1:{self.server.server_port}", f"localhost:{self.server.server_port}",
         }
 
+    def target(self):
+        try:
+            return self.server.view.target()
+        except Exception as exc:
+            logging.exception("Device detection failed")
+            return {"error": f"Device detection unavailable: {exc}"}
+
+    def paused_by_simulation(self):
+        """The error body that stops live inference while a device is simulated, or None. Those runs would measure this PC's real hardware,
+        not the device on screen."""
+        view = self.server.view
+        if not view.simulated:
+            return None
+        return {"error": f"Simulation is on ({view.service.effective.profile.label}). Live runs use this PC's real hardware, so they are "
+                         "paused. Turn the simulation off to run live."}
+
+    def demo_listing(self):
+        """The demos with this PC's model names and lanes, how well each fits, and the order this PC is best at them."""
+        view = self.server.view
+        try:
+            engine = view.shown()
+            fits, order = view.fits(engine)
+            rows = {row["id"]: row for row in demos.public(demos.wording(engine))}
+            return [{**rows[demo_id], "fit": fits[demo_id]} for demo_id in order]
+        except Exception:
+            logging.exception("Device-aware demo list failed; serving the plain list")
+            return demos.public(self.server.demos.wording())
+
     def do_GET(self):
         if not self.valid_host():
             return self.json_out(403, {"error": "Only loopback hosts are accepted."})
@@ -146,17 +177,24 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/status":
             return self.json_out(200, {"app_id": APP_ID,
                                        "engine": dict(self.server.engine.state), "device": self.server.device,
+                                       "target": self.target(),
                                        "token": self.server.token, "assumptions": DEFAULT_ASSUMPTIONS})
+        if path == "/api/device":
+            try:
+                return self.json_out(200, self.server.view.payload())
+            except Exception as exc:
+                logging.exception("Device report failed")
+                return self.json_out(500, {"error": f"Device report unavailable: {exc}"})
         if path == "/api/scenarios":
             return self.json_out(200, {k: {n: v[n] for n in ("title", "label", "prompt", "source", "industry", "client", "deck_objective") if n in v}
                                       for k, v in SCENARIOS.items()})
         if path == "/api/demos":
             engine = self.server.engine.state
-            return self.json_out(200, {"demos": demos.public(), "media": dict(self.server.media.state),
+            return self.json_out(200, {"demos": self.demo_listing(), "media": dict(self.server.media.state),
                                        "engine": {"state": engine.get("state"), "model": engine.get("model"),
                                                   "media": engine.get("media")}})
         if path == "/api/hybrid":
-            return self.json_out(200, hybrid.public())
+            return self.json_out(200, hybrid.public(hybrid_wording(self.server.view.shown())))
         if path == "/api/builder":
             return self.json_out(200, self.builder_state())
         if path.startswith("/api/demo-media/"):
@@ -209,30 +247,54 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json_out(200, calculate(body))
             except ValueError as exc:
                 return self.json_out(400, {"error": str(exc)})
+        if self.path == "/api/device/simulate":
+            device_id = body.get("id")
+            if device_id is not None and not isinstance(device_id, str):
+                return self.json_out(400, {"error": "Choose one of the listed devices, or null for this PC."})
+            if not self.server.run_lock.acquire(blocking=False):
+                return self.json_out(409, {"error": "A run is active. Wait for it to finish."})
+            try:
+                return self.json_out(200, self.server.view.simulate(device_id))
+            except ValueError as exc:
+                return self.json_out(400, {"error": str(exc)})
+            except Exception as exc:
+                logging.exception("Device simulation failed")
+                return self.json_out(500, {"error": f"Could not show that device: {exc}"})
+            finally:
+                self.server.run_lock.release()
         if self.path == "/api/model":
             selected = body.get("model")
-            if not isinstance(selected, str) or (selected not in MODELS and selected not in LARGE_MODELS):
-                return self.json_out(400, {"error": "Select one of the listed GPU models."})
+            engine = self.server.engine
+            if not isinstance(selected, str):
+                return self.json_out(400, {"error": "Select one of the listed models."})
+            if selected not in LARGE_MODELS:
+                # A reference name (qwen2.5-coder-14b, gpt-oss-20b) means whatever this PC runs in that role.
+                alias = None if selected in engine.media_models else engine.alias_for(selected)
+                if alias is None:
+                    return self.json_out(400, {"error": engine.blocker_for(selected) or "Select one of the listed models."})
+                selected = alias
+            if paused := self.paused_by_simulation():
+                return self.json_out(409, paused)
             if selected in LARGE_MODELS:
-                row = next((m for m in self.server.engine.state.get("models") or [] if m.get("alias") == selected), {})
+                row = next((m for m in engine.state.get("models") or [] if m.get("alias") == selected), {})
                 if not row.get("available"):
                     return self.json_out(400, {"error": row.get("blocker") or
                                                f"{LARGE_MODELS[selected]['label']} is not available on this PC."})
-            if self.server.engine.state["state"] not in ("ready", "error"):
-                return self.json_out(503, {"error": self.server.engine.state["detail"]})
+            if engine.state["state"] not in ("ready", "error"):
+                return self.json_out(503, {"error": engine.state["detail"]})
             if selected in LARGE_MODELS:
                 try:
-                    self.server.engine.precheck_large(selected)
+                    engine.precheck_large(selected)
                 except RuntimeError as exc:
                     return self.json_out(409, {"error": str(exc)})
             if not self.server.run_lock.acquire(blocking=False):
                 return self.json_out(409, {"error": "A generation or model switch is active."})
-            self.server.engine.state.update(state="loading", selected_model=selected, error=None,
-                                            detail=f"Preparing {model_spec(selected)['label']}")
+            engine.state.update(state="loading", selected_model=selected, error=None,
+                                detail=f"Preparing {engine.label(selected)}")
 
             def switch():
                 try:
-                    self.server.engine.switch(selected)
+                    engine.switch(selected)
                 finally:
                     self.server.run_lock.release()
 
@@ -243,6 +305,8 @@ class Handler(BaseHTTPRequestHandler):
                 demo_id, mode, prompt, option, edited = self.server.demos.validate(body)
             except ValueError as exc:
                 return self.json_out(400, {"error": str(exc)})
+            if mode == "live" and (paused := self.paused_by_simulation()):
+                return self.json_out(409, paused)
             if mode == "live" and self.server.engine.state["state"] != "ready":
                 return self.json_out(503, {"error": self.server.engine.state["detail"]})
             if not self.server.run_lock.acquire(blocking=False):
@@ -261,6 +325,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.json_out(400, {"error": "Prompt must contain 1 to 4000 characters."})
         if mode == "rehearsal" and prompt != scenario["prompt"]:
             return self.json_out(400, {"error": "Rehearsal uses the fixed authored sample prompt."})
+        if mode == "live" and (paused := self.paused_by_simulation()):
+            return self.json_out(409, paused)
         if mode == "live" and self.server.engine.state["state"] != "ready":
             return self.json_out(503, {"error": self.server.engine.state["detail"]})
         if not self.server.run_lock.acquire(blocking=False):
@@ -293,17 +359,21 @@ class Handler(BaseHTTPRequestHandler):
         if self.path in ("/api/hybrid/route", "/api/hybrid/run"):
             network, scale = body.get("network", "online"), body.get("scale", "fits")
             try:
-                decision = hybrid.route(body.get("text"), network, scale)
+                decision = hybrid.route(body.get("text"), network, scale, where=self.server.view.shown().where())
             except ValueError as exc:
                 return self.json_out(400, {"error": str(exc)})
             if self.path == "/api/hybrid/route":
                 return self.json_out(200, decision)
+            if decision["lane"] != "cloud" and (paused := self.paused_by_simulation()):
+                return self.json_out(409, paused)
             if decision["lane"] != "cloud" and engine.state["state"] != "ready":
                 return self.json_out(503, {"error": engine.state["detail"]})
             if not self.server.run_lock.acquire(blocking=False):
                 return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
             return self.stream_events(lambda: workbench.hybrid_run(engine, body["text"], network, scale))
         if self.path == "/api/speedtest":
+            if paused := self.paused_by_simulation():
+                return self.json_out(409, paused)
             if engine.state["state"] != "ready":
                 return self.json_out(503, {"error": engine.state["detail"]})
             if not self.server.run_lock.acquire(blocking=False):
@@ -369,10 +439,14 @@ def main():
     parser.add_argument("--port", type=int, default=8790)
     parser.add_argument("--rehearsal-only", action="store_true")
     parser.add_argument("--prepare", action="store_true")
-    parser.add_argument("--model", choices=MODELS, default=DEFAULT_MODEL)
+    parser.add_argument("--model", default=DEFAULT_MODEL,
+                        help="Chat model to start with: an alias this PC lists, or qwen2.5-coder-14b / gpt-oss-20b for whatever this PC "
+                             "runs in the chat / reasoning role.")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     server = ShowcaseServer(("127.0.0.1", args.port), rehearsal_only=args.rehearsal_only)
+    # Name each slot's model for this PC now, so even rehearsals and the device page describe the right hardware before any model loads.
+    server.engine.preview()
     threading.Thread(target=server.media.ensure, name="demo-media", daemon=True).start()
     if not args.rehearsal_only:
         threading.Thread(target=server.engine.start,

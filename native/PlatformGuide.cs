@@ -8,7 +8,6 @@ internal sealed record PlatformProfile(
     string Id,
     string Name,
     string Tagline,
-    bool CurrentDevice,
     string Status,
     string AcceleratorAndRuntime,
     PlatformUseCase[] UseCases,
@@ -44,18 +43,23 @@ internal static class PlatformGuide
         "Qualcomm's target-specific QAIRT deployments (GenieX, or a validated legacy Genie bundle) are a separate, valid path; " +
         "Foundry Local is not the only way to run models on Windows. Qualcomm notes older Genie support is being deprecated in favour of GenieX.";
 
-    internal const string NoInferenceHere =
-        "Everything that runs live in this app runs on this laptop's RTX GPU through CUDA. Snapdragon and Intel examples are recommended pilots " +
-        "described from official documentation; they were not run on this laptop, and this app never switches providers automatically.";
+    /// <summary>Only this PC runs anything live, and a previewed Surface runs nothing. The words name where this PC runs its models.</summary>
+    internal static string NoInferenceHere(TargetWords words, bool preview) => preview
+        ? "You are previewing another Surface, and nothing runs on it: its lanes, models and demo order are estimates from the device kit, and live runs are paused. " +
+          "The platform guides below are recommended pilots described from official documentation. They were not run on this PC, and this app never switches providers automatically."
+        : "Everything that runs live in this app runs on this PC, " +
+          (words.Known ? $"on {words.Where}, through {words.Provider}" : "on the processor Foundry Local chooses") + ". " +
+          "The platform guides below are recommended pilots described from official documentation. Those for other processors were not run on this PC, and this app never switches providers automatically.";
 
     internal const string RuntimeNotInferred =
         "Runtime libraries and provider support are never inferred from the CPU or GPU vendor name; each pilot names its runtime explicitly.";
 
+    internal const string PilotStatus = "Recommended pilot (illustrative) - not run on this PC";
+
     internal static readonly PlatformProfile[] Platforms =
     [
-        new("rtx", "NVIDIA RTX - this Surface Laptop Ultra", "Heavier local models for builders and analysts",
-            true,
-            "Running live on this laptop: Qwen2.5-Coder 14B and GPT-OSS 20B CUDA variants via Foundry Local",
+        new("rtx", "NVIDIA RTX Surface PCs, such as Surface Laptop Ultra", "Heavier local models for builders and analysts",
+            PilotStatus,
             "RTX GPU / CUDA execution provider (Foundry Local). One model resident at a time.",
             [
                 new("Code drafting with a 14B coder", TShirtSize.L,
@@ -75,8 +79,7 @@ internal static class PlatformGuide
             ],
             [new("Foundry Local SDK reference", ApprovedLinks.FoundryLocalSdk)]),
         new("snapdragon", "Snapdragon X-series Windows PCs", "Mobile field teams with intermittent connectivity",
-            false,
-            "Recommended pilot (illustrative) - not run on this laptop",
+            PilotStatus,
             "An approved target-specific QAIRT deployment (GenieX, or a validated legacy Genie bundle), or a Foundry Local QNN variant where one exists for the exact model. Supported accelerator and runtime verified per SKU.",
             [
                 new("Field-service note drafting, offline after preparation", TShirtSize.S,
@@ -102,8 +105,7 @@ internal static class PlatformGuide
                 new("Foundry Local SDK reference", ApprovedLinks.FoundryLocalSdk),
             ]),
         new("intel", "Intel Core Ultra Windows PCs", "Knowledge workers, meetings and service desks",
-            false,
-            "Recommended pilot (illustrative) - not run on this laptop",
+            PilotStatus,
             "OpenVINO GenAI pipelines with an explicitly selected CPU or GPU device, or a Foundry Local OpenVINO variant where one exists. Supported accelerator and runtime verified per SKU.",
             [
                 new("Meeting transcription and action summary", TShirtSize.S,
@@ -134,7 +136,7 @@ internal static class PlatformGuide
             .Concat(p.UseCases.SelectMany(u => new[] { u.Title, u.Workflow, u.Caveat }))
             .Concat(p.VerifyBeforePilot)
             .Concat(p.Sources.Select(s => s.Label)))
-        .Concat([FoundryDistinction, GenieDistinction, NoInferenceHere, RuntimeNotInferred]);
+        .Concat([FoundryDistinction, GenieDistinction, RuntimeNotInferred]);
 
     internal static readonly string[] ForbiddenClaims =
         ["NPU", "battery", "faster", "slower", "outperform", "savings", "replace", "only Foundry", "guarantee"];

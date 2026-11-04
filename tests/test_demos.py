@@ -10,7 +10,8 @@ from pathlib import Path
 import demos
 import media
 from demo_runner import FAILED, DemoRunner, MediaStore
-from local_engine import DEFAULT_MODEL, MEDIA_MODELS, MODELS
+from fakes import report_for, service_for
+from local_engine import DEFAULT_MODEL, MEDIA_MODELS, MODELS, LocalEngine
 from server import ShowcaseServer
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -141,6 +142,46 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("fictional", demos.NOTICE.lower())
         self.assertIn("fictional", demos.EMAIL.lower())
 
+    @staticmethod
+    def wording_on(device_id):
+        return demos.wording(LocalEngine().preview(report_for(device_id), forced=False))
+
+    def test_an_engine_that_has_not_started_words_the_demos_for_the_reference_pc(self):
+        self.assertEqual(demos.wording(LocalEngine()), demos.REFERENCE)
+        self.assertEqual(demos.public(demos.wording(LocalEngine())), demos.public())
+        self.assertEqual(self.wording_on("nvidia-n1x-64"), demos.REFERENCE)
+
+    def test_the_text_names_the_models_and_lane_this_pc_runs(self):
+        text = json.dumps([demos.render(demo_id, self.wording_on("snapdragon-x2-elite-24")) for demo_id in demos.ORDER])
+        self.assertIn("Runs on the NPU.", text)
+        self.assertIn("Qwen2.5 7B drafts and explains code", text)
+        self.assertIn("DeepSeek-R1 Distill Qwen 7B works through a multi-constraint plan", text)
+        for stale in ("RTX", "GPU", "Qwen2.5-Coder", "GPT-OSS"):
+            self.assertNotIn(stale, text)
+
+    def test_the_face_off_title_names_the_two_models_this_pc_runs(self):
+        def title(device_id):
+            return demos.render("faceoff", self.wording_on(device_id))["title"]
+
+        self.assertEqual(title("nvidia-n1x-64"), "Model face-off: 14B versus 20B")
+        self.assertEqual(title("snapdragon-x2-elite-24"), "Model face-off: Qwen2.5 7B versus DeepSeek-R1 Distill Qwen 7B")
+        self.assertEqual(title("nvidia-dgpu-16"), "Model face-off: Phi-4 mini versus Phi-4 mini reasoning")
+        self.assertEqual(title("intel-pentium-8"), "Model face-off: chat model versus reasoning model")
+
+    def test_a_role_with_no_model_on_this_pc_is_named_generically(self):
+        context = self.wording_on("intel-pentium-8")
+        self.assertFalse(context["roles"]["gpt-oss-20b"]["available"])
+        self.assertEqual(demos.render("reasoning", context)["pitch"], "The reasoning model works through a multi-constraint plan, locally.")
+        self.assertEqual(demos.render("faceoff", context)["steps"], ["Qwen2.5 0.5B answers", "The reasoning model answers"])
+
+    def test_every_simulated_device_fills_every_placeholder(self):
+        for device in service_for().simulated_devices:
+            context = self.wording_on(device.id)
+            for demo_id in demos.ORDER:
+                text = demos.render(demo_id, context)
+                for string in (text["title"], text["pitch"], text["proof"], *text["steps"]):
+                    self.assertNotRegex(string, r"[{}]", (device.id, demo_id))
+
     def test_checks_pass_authored_ground_truth(self):
         self.assertTrue(demos.transcript_check(demos.MEMO_SEGMENTS, demos.script_text(demos.MEMO_SEGMENTS))["pass"])
         voice = demos.DEMOS["voice-memo"]
@@ -198,10 +239,12 @@ def make_store(folder):
     return MediaStore(folder)
 
 
-class FakeDemoEngine:
-    """Deterministic stand-in: replies come from queues so every pipeline can be exercised without a GPU."""
+class FakeDemoEngine(LocalEngine):
+    """Deterministic stand-in: replies come from queues so every pipeline can be exercised without a GPU. It is a LocalEngine that never
+    started, so the model names, lanes and blockers it reports are the engine's own reference ones."""
 
     def __init__(self):
+        super().__init__()
         self.state = {"state": "ready", "detail": "Test engine", "selected_model": DEFAULT_MODEL,
                       "model": {"name": MODELS[DEFAULT_MODEL]["label"], "alias": DEFAULT_MODEL, "reasoning": False}}
         self.loaded = {DEFAULT_MODEL}
@@ -212,7 +255,7 @@ class FakeDemoEngine:
     def is_resident(self, alias):
         return alias in self.loaded
 
-    def _load(self, alias):
+    def _fake_load(self, alias):
         if alias in self.fail:
             raise RuntimeError(f"Injected {alias} failure")
         if alias in self.loaded:
@@ -221,10 +264,10 @@ class FakeDemoEngine:
         return {"load_ms": 1200, "warm_ms": 300}
 
     def ensure_chat(self, alias):
-        return self._load(alias)
+        return self._fake_load(alias)
 
     def ensure_media(self, role, warm_audio=None, warm_images=()):
-        return self._load(role)
+        return self._fake_load(role)
 
     def chat_info(self, alias=None):
         alias = alias or DEFAULT_MODEL
@@ -261,16 +304,41 @@ class FakeDemoEngine:
         return sorted(ids[a] for a in self.loaded)
 
 
+class PreviewedDemoEngine(FakeDemoEngine):
+    """The fake engine on another PC's lineup: the models, lanes and blockers are the ones the Studio chooses for that device, and the
+    residency list follows them. Demos still ask for the reference names, which the engine maps to this PC's model for that role."""
+
+    def __init__(self, device_id):
+        super().__init__()
+        # A model the engine reports as loaded keeps the spec it was loaded with, so nothing is loaded while the lineup is chosen.
+        self.state["model"] = None
+        self.preview(report_for(device_id), forced=False)
+        self.state["model"] = {"name": self.label(DEFAULT_MODEL), "alias": self.alias_for(DEFAULT_MODEL),
+                               "reasoning": self.reasoning(DEFAULT_MODEL)}
+
+    def chat_info(self, alias=None):
+        alias = alias or DEFAULT_MODEL
+        return {"name": self.label(alias), "alias": self.alias_for(alias), "reasoning": self.reasoning(alias)}
+
+    def resident(self):
+        return sorted({self._spec(ref)["id"] for ref in self.loaded})
+
+
 def chat_replies(demo_id):
     outputs = demos.rehearsal_for(demo_id)
     return [outputs[-1]]
 
 
-class RunnerTests(unittest.TestCase):
+class RunnerCase(unittest.TestCase):
+    """The demo runner on a fake engine; a subclass chooses which PC's models that engine runs."""
+
+    def make_engine(self):
+        return FakeDemoEngine()
+
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.store = make_store(self.folder.name)
-        self.engine = FakeDemoEngine()
+        self.engine = self.make_engine()
         self.runner = DemoRunner(self.engine, self.store, {"gpu_memory": [{"reported_budget_mib": 64000}]})
 
     def tearDown(self):
@@ -292,18 +360,24 @@ class RunnerTests(unittest.TestCase):
         json.dumps(events, allow_nan=False)
         return checks
 
+    def feed(self, demo_id):
+        """Queue the ground-truth output the demo's live pipeline asks the fake engine for."""
+        if demo_id == "faceoff":
+            self.engine.replies = chat_replies("reasoning") * 2
+        elif demo_id == "team":
+            self.engine.replies = ["s[::-1]", "391"]
+            self.engine.views = ["TOTAL 93.53"]
+        elif demo_id == "vision":
+            self.engine.views = list(demos.rehearsal_for("vision"))
+        else:
+            self.engine.replies = chat_replies(demo_id)
+
+
+class RunnerTests(RunnerCase):
     def test_every_live_pipeline_passes_on_ground_truth_output(self):
         for demo_id in demos.ORDER:
             with self.subTest(demo=demo_id):
-                if demo_id == "faceoff":
-                    self.engine.replies = chat_replies("reasoning") * 2
-                elif demo_id == "team":
-                    self.engine.replies = ["s[::-1]", "391"]
-                    self.engine.views = ["TOTAL 93.53"]
-                elif demo_id == "vision":
-                    self.engine.views = list(demos.rehearsal_for("vision"))
-                else:
-                    self.engine.replies = chat_replies(demo_id)
+                self.feed(demo_id)
                 checks = self.assert_complete(self.run_demo(demo_id), demo_id)
                 self.assertTrue(checks, "every live demo reports at least one check")
                 failing = [c["label"] for c in checks if not c["pass"]]
@@ -433,6 +507,96 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(events[-1]["error"], "boom")
 
 
+class NpuRunnerTests(RunnerCase):
+    """The live pipelines on a Snapdragon X2 Elite lineup: every model runs on the NPU, so the demos say so and read no GPU counters."""
+
+    def make_engine(self):
+        return PreviewedDemoEngine("snapdragon-x2-elite-24")
+
+    def test_every_live_pipeline_passes_and_names_only_the_npu(self):
+        for demo_id in demos.ORDER:
+            with self.subTest(demo=demo_id):
+                self.feed(demo_id)
+                events = self.run_demo(demo_id)
+                checks = self.assert_complete(events, demo_id)
+                self.assertTrue(checks)
+                self.assertEqual([c["label"] for c in checks if not c["pass"]], [])
+                self.assertEqual((self.engine.replies, self.engine.views), ([], []))
+                text = json.dumps(events)
+                self.assertIn("the NPU", text)
+                self.assertNotIn("RTX", text)
+                if demo_id != "team":
+                    self.assertNotIn("GPU", text)
+
+    def test_the_plan_and_the_steps_name_the_models_this_pc_runs(self):
+        self.feed("faceoff")
+        events = self.run_demo("faceoff")
+        self.assertEqual([step["model"] for step in events[0]["steps"]], ["Qwen2.5 7B", "DeepSeek-R1 Distill Qwen 7B"])
+        details = [e["detail"] for e in events if e["type"] == "step" and e["state"] == "running" and "detail" in e]
+        self.assertIn("Generating with Qwen2.5 7B on the NPU", details)
+        self.assertIn("Generating with DeepSeek-R1 Distill Qwen 7B on the NPU", details)
+        labels = [e["label"] for e in events if e["type"] == "check"]
+        self.assertTrue(labels[0].startswith("Qwen2.5 7B: ") and labels[1].startswith("DeepSeek-R1 Distill Qwen 7B: "), labels)
+        self.feed("brief")
+        self.assertEqual(self.run_demo("brief")[0]["steps"][0]["model"], "Qwen2.5 7B")
+
+    def test_a_first_load_on_the_npu_warns_that_it_can_take_a_while(self):
+        warning = " (first use only). The first load on the NPU can take a while"
+        self.feed("reasoning")
+        loading = [e["detail"] for e in self.run_demo("reasoning") if e["type"] == "step" and e.get("detail", "").startswith("Loading")]
+        self.assertEqual(loading, ["Loading DeepSeek-R1 Distill Qwen 7B on the NPU" + warning])
+        self.feed("meeting")
+        loading = [e["detail"] for e in self.run_demo("meeting") if e["type"] == "step" and e.get("detail", "").startswith("Loading")]
+        self.assertEqual(loading, ["Loading Whisper medium on the NPU and warming it up" + warning])
+
+    def test_the_team_demo_reads_no_gpu_counters_when_no_model_runs_on_the_gpu(self):
+        self.feed("team")
+        events = self.run_demo("team")
+        self.assert_complete(events, "team")
+        measure = next(e for e in events if e["type"] == "step" and e["index"] == 5 and e["state"] == "done")
+        self.assertEqual([m["label"] for m in measure["metrics"]], ["Models resident at once", "Private memory, this service"])
+        residency = [e for e in events if e["type"] == "check"][-1]
+        self.assertEqual((residency["value"], residency["pass"]), ("5 of 5", True))
+        self.assertIn("No model here runs on the GPU", residency["detail"])
+        listing = next(e["text"] for e in events if e["type"] == "text" and e["index"] == 5).splitlines()
+        self.assertEqual(len([line for line in listing if line.startswith("Loaded: ") and line.endswith(", the NPU)")]), 5)
+
+
+class SmallPcRunnerTests(RunnerCase):
+    """A PC with no room for the reasoning model: what fits runs, and what does not says why."""
+
+    def make_engine(self):
+        return PreviewedDemoEngine("intel-pentium-8")
+
+    def test_a_demo_that_needs_the_missing_model_stops_with_the_reason_before_loading_anything(self):
+        events = self.run_demo("reasoning")
+        failed = [e for e in events if e["type"] == "step" and e["state"] == "failed"]
+        self.assertEqual([e["error"] for e in failed], [self.engine.blocker_for("gpt-oss-20b")])
+        self.assertIn("CPU", failed[0]["error"])
+        self.assertEqual((events[-1]["steps_failed"], events[-1]["checks_total"]), (1, 0))
+        self.assertEqual((self.engine.prompts, "gpt-oss-20b" in self.engine.loaded), ([], False))
+
+    def test_the_face_off_runs_the_model_that_fits_and_reports_the_one_that_does_not(self):
+        self.feed("reasoning")
+        events = self.run_demo("faceoff")
+        terminal = {e["index"]: e["state"] for e in events if e["type"] == "step" and e["state"] != "running"}
+        self.assertEqual(terminal, {0: "done", 1: "failed"})
+        self.assertEqual([(c["label"].split(":")[0], c["pass"]) for c in events if c["type"] == "check"], [("Qwen2.5 0.5B", True)])
+
+    def test_the_team_demo_counts_the_model_that_does_not_fit(self):
+        self.engine.replies = ["s[::-1]"]
+        self.engine.views = ["TOTAL 93.53"]
+        events = self.run_demo("team")
+        terminal = {e["index"]: e["state"] for e in events if e["type"] == "step" and e["state"] != "running"}
+        self.assertEqual(terminal, {0: "done", 1: "failed", 2: "done", 3: "done", 4: "done", 5: "done"})
+        residency = [e for e in events if e["type"] == "check"][-1]
+        self.assertEqual((residency["value"], residency["pass"]), ("4 of 5", False))
+        self.assertIn("No model here runs on the GPU", residency["detail"])
+        listing = next(e["text"] for e in events if e["type"] == "text" and e["index"] == 5)
+        self.assertIn("Not available on this PC: Reasoning model (", listing)
+        self.assertEqual((self.engine.replies, self.engine.views), ([], []))
+
+
 class MediaStoreTests(unittest.TestCase):
     def test_store_is_ready_only_for_matching_spec(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -452,7 +616,7 @@ class DemoApiTests(unittest.TestCase):
         cls.folder = tempfile.TemporaryDirectory()
         cls.engine = FakeDemoEngine()
         cls.server = ShowcaseServer(("127.0.0.1", 0), engine=cls.engine, device={"model": "fixture"},
-                                    media_store=make_store(cls.folder.name))
+                                    media_store=make_store(cls.folder.name), device_service=service_for())
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
 

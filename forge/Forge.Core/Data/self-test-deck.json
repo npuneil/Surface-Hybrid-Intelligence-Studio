@@ -1,0 +1,57 @@
+{
+  "title": "Renderer check",
+  "client": "Self-test",
+  "slides": [
+    {"layout": "title", "kicker": "Renderer check", "title": "Every layout, one slide", "subtitle": "Placeholder words only; no device or model is named", "hero_icons": ["cloud", "laptop", "shield", "ai"]},
+    {"layout": "stack", "title": "Stack layout", "takeaway": "Four layers, top to bottom.", "data": {"side_label": "Layers", "layers": [
+      {"label": "Layer one", "detail": "Placeholder detail", "icon": "apps"},
+      {"label": "Layer two", "detail": "Placeholder detail", "icon": "ai"},
+      {"label": "Layer three", "detail": "Placeholder detail", "icon": "gears"},
+      {"label": "Layer four", "detail": "Placeholder detail", "icon": "chip"}]}},
+    {"layout": "flow", "title": "Flow layout", "takeaway": "Five steps, left to right.", "data": {"steps": [
+      {"label": "Step one", "detail": "Placeholder detail", "icon": "document"},
+      {"label": "Step two", "detail": "Placeholder detail", "icon": "ai"},
+      {"label": "Step three", "detail": "Placeholder detail", "icon": "sliders"},
+      {"label": "Step four", "detail": "Placeholder detail", "icon": "tools"},
+      {"label": "Step five", "detail": "Placeholder detail", "icon": "approve"}]}},
+    {"layout": "hub", "title": "Hub layout", "takeaway": "One center, six spokes.", "data": {"center": {"label": "Center", "icon": "ai"}, "spokes": [
+      {"label": "Spoke one", "icon": "code"}, {"label": "Spoke two", "icon": "mic"}, {"label": "Spoke three", "icon": "search"},
+      {"label": "Spoke four", "icon": "document"}, {"label": "Spoke five", "icon": "globe"}, {"label": "Spoke six", "icon": "barchart"}]}},
+    {"layout": "compare", "title": "Compare layout", "takeaway": "Two options side by side.", "data": {
+      "left": {"title": "Option A", "icon": "cloud", "points": ["Placeholder point", "Placeholder point", "Placeholder point"]},
+      "right": {"title": "Option B", "icon": "laptop", "points": ["Placeholder point", "Placeholder point", "Placeholder point"]},
+      "verdict": "Placeholder verdict."}},
+    {"layout": "kpis", "title": "Numbers layout", "takeaway": "Three big numbers.", "data": {"items": [
+      {"value": "10", "label": "first number", "icon": "speed", "source": "Placeholder"},
+      {"value": "20", "label": "second number", "icon": "library", "source": "Placeholder"},
+      {"value": "30", "label": "third number", "icon": "memory", "source": "Placeholder"}]}},
+    {"layout": "analogy", "title": "Analogy layout", "takeaway": "One thing mapped onto another.", "data": {
+      "concept": {"label": "Concept", "icon": "laptop"}, "analog": {"label": "Analog", "icon": "home"}, "pairs": [
+        {"concept": "Part one", "analog": "Match one"}, {"concept": "Part two", "analog": "Match two"},
+        {"concept": "Part three", "analog": "Match three"}, {"concept": "Part four", "analog": "Match four"}]}},
+    {"layout": "bars", "title": "Bars layout", "takeaway": "Three bars, one highlighted.", "data": {"unit": "units", "highlight": "Bar two", "icon": "speed",
+      "caption": "Placeholder values.", "bars": [
+        {"label": "Bar one", "value": 30}, {"label": "Bar two", "value": 60}, {"label": "Bar three", "value": 45}]}},
+    {"layout": "timeline", "title": "Timeline layout", "takeaway": "Four milestones.", "data": {"milestones": [
+      {"when": "First", "label": "Milestone one"}, {"when": "Second", "label": "Milestone two"},
+      {"when": "Third", "label": "Milestone three"}, {"when": "Fourth", "label": "Milestone four"}]}},
+    {"layout": "matrix", "title": "Matrix layout", "takeaway": "Four quadrants.", "data": {"x_axis": "Horizontal", "y_axis": "Vertical", "highlight": 1, "quadrants": [
+      {"label": "Top left", "detail": "Placeholder", "icon": "lock"}, {"label": "Top right", "detail": "Placeholder", "icon": "star"},
+      {"label": "Bottom left", "detail": "Placeholder", "icon": "cloud"}, {"label": "Bottom right", "detail": "Placeholder", "icon": "swap"}]}},
+    {"layout": "memory", "title": "Capacity layout", "takeaway": "Blocks inside a budget.", "data": {"capacity": 16, "unit": "GB", "capacity_label": "Placeholder capacity",
+      "caption": "Placeholder sizes.", "blocks": [
+        {"label": "Block one", "size": 6}, {"label": "Block two", "size": 3}, {"label": "Block three", "size": 2}]}},
+    {"layout": "canvas", "title": "Canvas layout", "takeaway": "Free-form shapes on a grid.", "data": {"elements": [
+      {"type": "box", "x": 0.2, "y": 2.3, "w": 2.4, "h": 1.4, "label": "Input", "icon": "chat", "tone": "card"},
+      {"type": "circle", "x": 4.6, "y": 1.9, "w": 2.2, "h": 2.2, "label": "Middle", "tone": "primary"},
+      {"type": "box", "x": 9.0, "y": 0.4, "w": 2.8, "h": 1.4, "label": "Output one", "icon": "laptop", "tone": "accent1"},
+      {"type": "box", "x": 9.0, "y": 4.2, "w": 2.8, "h": 1.4, "label": "Output two", "icon": "cloud", "tone": "accent2"},
+      {"type": "arrow", "x": 2.6, "y": 3.0, "x2": 4.6, "y2": 3.0},
+      {"type": "arrow", "x": 6.8, "y": 2.6, "x2": 9.0, "y2": 1.1, "label": "path one"},
+      {"type": "arrow", "x": 6.8, "y": 3.4, "x2": 9.0, "y2": 4.9, "label": "path two"}]}},
+    {"layout": "statement", "title": "Statement layout", "data": {"icon": "idea", "text": "One big idea fits on one slide.", "sub": "Placeholder supporting line."}},
+    {"layout": "cta", "title": "Closing layout", "takeaway": "Three steps and an ask.", "data": {"steps": [
+      {"label": "First step", "detail": "Placeholder", "icon": "target"}, {"label": "Second step", "detail": "Placeholder", "icon": "people"},
+      {"label": "Third step", "detail": "Placeholder", "icon": "approve"}], "ask": "Placeholder ask."}}
+  ]
+}

@@ -1,0 +1,420 @@
+{
+ "title": "Local AI Proven for Sensitive Work",
+ "client": "Litware",
+ "slides": [
+  {
+   "layout": "title",
+   "kicker": "TECHNICAL BRIEFING FOR LITWARE",
+   "title": "Secure Local AI Pilot",
+   "subtitle": "For 8 developers over 3 weeks",
+   "hero_icons": [
+    "shield",
+    "laptop",
+    "ai",
+    "chart"
+   ]
+  },
+  {
+   "layout": "compare",
+   "title": "Why Local Lane for Sensitive Work",
+   "takeaway": "Cloud-only is not secure for proprietary code",
+   "data": {
+    "left": {
+     "title": "Cloud-Only Today",
+     "icon": "cloud",
+     "points": [
+      "Codebase cannot be sent to public AI",
+      "Shared CI farm for builds"
+     ]
+    },
+    "right": {
+     "title": "Local Lane + Cloud",
+     "icon": "devices",
+     "points": [
+      "Disconnected use validated in pilot",
+      "Cloud assistant for heaviest work"
+     ]
+    },
+    "verdict": "Hybrid approach: local for sensitive, cloud for heavy reasoning"
+   },
+   "notes": "The team's proprietary codebase requires a secure lane. Local AI ensures no data leaves the device during development."
+  },
+  {
+   "layout": "stack",
+   "title": "Stack of Trust and Speed",
+   "takeaway": "From silicon to workflows, all layers support local AI",
+   "data": {
+    "side_label": "Silicon to Workflows",
+    "layers": [
+     {
+      "label": "Silicon",
+      "detail": "Surface Laptop Ultra with RTX Spark",
+      "icon": "chip"
+     },
+     {
+      "label": "Runtimes",
+      "detail": "Gemma 4 26B at 72 tokens/s, Qwen3-Coder 30B at 86 tokens/s",
+      "icon": "speed"
+     },
+     {
+      "label": "Models",
+      "detail": "Local decoding on device",
+      "icon": "ai"
+     },
+     {
+      "label": "Workflows",
+      "detail": "Code completion, test gen, Q&A over docs",
+      "icon": "code"
+     }
+    ]
+   },
+   "notes": "Each layer from hardware to workflows supports secure local AI. The device is the foundation for sensitive work."
+  },
+  {
+   "layout": "kpis",
+   "title": "Key Memory Metrics",
+   "takeaway": "Device and workload memory aligned with pilot scope",
+   "data": {
+    "items": [
+     {
+      "value": "128 GB",
+      "label": "Device RAM",
+      "icon": "memory",
+      "source": "Spec sheet"
+     },
+     {
+      "value": "40 developers",
+      "label": "Team size",
+      "icon": "people",
+      "source": "Fact sheet"
+     },
+     {
+      "value": "8 developers",
+      "label": "Pilot size",
+      "icon": "person",
+      "source": "Fact sheet"
+     }
+    ]
+   },
+   "notes": "The device's 128 GB RAM supports the workload. The pilot uses a subset of the team to validate performance."
+  },
+  {
+   "layout": "bars",
+   "title": "Decode Speed for Developer Work",
+   "takeaway": "Single-stream decoding speeds match developer needs",
+   "data": {
+    "unit": "tokens/s",
+    "highlight": "Qwen3-Coder 30B, 1 stream",
+    "icon": "speed",
+    "caption": "Local-AI-Bench, October 2026",
+    "bars": [
+     {
+      "label": "Gemma 4 26B, 1 stream",
+      "value": 72
+     },
+     {
+      "label": "Qwen3-Coder 30B, 1 stream",
+      "value": 86
+     }
+    ]
+   },
+   "notes": "Speeds show how fast models decode on this device. The pilot will measure task time, not just speed."
+  },
+  {
+   "layout": "analogy",
+   "title": "Mixture of Experts Explained",
+   "takeaway": "Model efficiency like a specialist team",
+   "data": {
+    "concept": {
+     "label": "Mixture of Experts",
+     "icon": "team"
+    },
+    "analog": {
+     "label": "Specialist Team",
+     "icon": "people"
+    },
+    "pairs": [
+     {
+      "concept": "30B total parameters",
+      "analog": "Whole team on the roster"
+     },
+     {
+      "concept": "About 3B active per token",
+      "analog": "Few specialists per task"
+     },
+     {
+      "concept": "Gate picks experts",
+      "analog": "Lead assigns specialists"
+     },
+     {
+      "concept": "Dense: every weight fires",
+      "analog": "Everyone in every meeting"
+     }
+    ]
+   },
+   "notes": "The model uses a subset of its parameters for each token, like a team assigning specialists to tasks."
+  },
+  {
+   "layout": "flow",
+   "title": "Developer Workflow with Local AI",
+   "takeaway": "Local model supports drafting and review in code development",
+   "data": {
+    "steps": [
+     {
+      "label": "Design docs",
+      "detail": "Internal files",
+      "icon": "document"
+     },
+     {
+      "label": "Local draft",
+      "detail": "Code completion, test gen",
+      "icon": "ai"
+     },
+     {
+      "label": "Developer review",
+      "detail": "Edit, refine, submit",
+      "icon": "check"
+     },
+     {
+      "label": "CI build",
+      "detail": "Shared farm",
+      "icon": "server"
+     },
+     {
+      "label": "PR ready",
+      "detail": "First PR time",
+      "icon": "upload"
+     }
+    ]
+   },
+   "notes": "Local AI supports the developer's drafting and review steps. The final PR is submitted after CI build."
+  },
+  {
+   "layout": "analogy",
+   "title": "Model Sizing Bands",
+   "takeaway": "Model size matches job complexity like shop machines",
+   "data": {
+    "concept": {
+     "label": "Model sizing bands",
+     "icon": "tools"
+    },
+    "analog": {
+     "label": "Shop machine sizes",
+     "icon": "wrench"
+    },
+    "pairs": [
+     {
+      "concept": "Small models",
+      "analog": "Benchtop mill"
+     },
+     {
+      "concept": "Mid-size models",
+      "analog": "Standard CNC mill"
+     },
+     {
+      "concept": "Large models",
+      "analog": "Machining center"
+     },
+     {
+      "concept": "Largest local models",
+      "analog": "Gantry mill"
+     }
+    ]
+   },
+   "notes": "Model size is about job complexity, not accuracy. The largest models are suited to the most complex tasks."
+  },
+  {
+   "layout": "canvas",
+   "title": "Hybrid Routing for Sensitive Work",
+   "takeaway": "Local lane keeps sensitive work on device; cloud handles heavy reasoning",
+   "data": {
+    "elements": [
+     {
+      "type": "pill",
+      "x": 0.2,
+      "y": 0.0,
+      "w": 7.8,
+      "h": 0.55,
+      "label": "Surface Laptop Ultra",
+      "icon": "laptop",
+      "tone": "primary"
+     },
+     {
+      "type": "line",
+      "x": 0.2,
+      "y": 0.8,
+      "x2": 8.0,
+      "y2": 0.8,
+      "dashed": true,
+      "tone": "accent2"
+     },
+     {
+      "type": "line",
+      "x": 0.2,
+      "y": 5.6,
+      "x2": 8.0,
+      "y2": 5.6,
+      "dashed": true,
+      "tone": "accent2"
+     },
+     {
+      "type": "line",
+      "x": 0.2,
+      "y": 0.8,
+      "x2": 0.2,
+      "y2": 5.6,
+      "dashed": true,
+      "tone": "accent2"
+     },
+     {
+      "type": "line",
+      "x": 8.0,
+      "y": 0.8,
+      "x2": 8.0,
+      "y2": 5.6,
+      "dashed": true,
+      "tone": "accent2"
+     },
+     {
+      "type": "box",
+      "x": 0.5,
+      "y": 1.3,
+      "w": 2.2,
+      "h": 1.0,
+      "label": "Design docs",
+      "icon": "document",
+      "tone": "accent2"
+     },
+     {
+      "type": "arrow",
+      "x": 2.7,
+      "y": 1.8,
+      "x2": 3.0,
+      "y2": 1.8,
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 3.0,
+      "y": 1.3,
+      "w": 2.2,
+      "h": 1.0,
+      "label": "Local model",
+      "icon": "ai",
+      "tone": "primary"
+     },
+     {
+      "type": "arrow",
+      "x": 5.2,
+      "y": 1.8,
+      "x2": 5.5,
+      "y2": 1.8,
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 5.5,
+      "y": 1.3,
+      "w": 2.2,
+      "h": 1.0,
+      "label": "Drafted code",
+      "icon": "code",
+      "tone": "accent1"
+     },
+     {
+      "type": "line",
+      "x": 4.1,
+      "y": 2.3,
+      "x2": 4.1,
+      "y2": 3.3,
+      "tone": "muted"
+     },
+     {
+      "type": "box",
+      "x": 3.0,
+      "y": 3.3,
+      "w": 2.2,
+      "h": 0.9,
+      "label": "RTX Spark GPU",
+      "icon": "gpu",
+      "tone": "accent4"
+     },
+     {
+      "type": "text",
+      "x": 0.5,
+      "y": 4.7,
+      "w": 7.2,
+      "h": 0.6,
+      "label": "Inside the boundary: files, prompts, drafts",
+      "size": "s",
+      "tone": "muted"
+     },
+     {
+      "type": "text",
+      "x": 8.6,
+      "y": 0.0,
+      "w": 3.3,
+      "h": 0.55,
+      "label": "Cloud lane",
+      "size": "m"
+     },
+     {
+      "type": "box",
+      "x": 8.6,
+      "y": 1.3,
+      "w": 3.2,
+      "h": 1.0,
+      "label": "Cloud assistant",
+      "icon": "cloud",
+      "tone": "accent3"
+     },
+     {
+      "type": "box",
+      "x": 8.6,
+      "y": 3.3,
+      "w": 3.2,
+      "h": 0.9,
+      "label": "Heavy reasoning",
+      "icon": "chat",
+      "tone": "card"
+     },
+     {
+      "type": "arrow",
+      "x": 10.2,
+      "y": 2.3,
+      "x2": 10.2,
+      "y2": 3.3,
+      "tone": "accent3"
+     }
+    ]
+   },
+   "notes": "The device boundary keeps sensitive work local. Cloud handles heavy reasoning outside the device."
+  },
+  {
+   "layout": "cta",
+   "title": "Approve a Measured Start",
+   "takeaway": "Small pilot decides next step for secure AI use",
+   "data": {
+    "steps": [
+     {
+      "label": "Nominate 8 users",
+      "detail": "Developers with sensitive work",
+      "icon": "people"
+     },
+     {
+      "label": "Run 3 weeks",
+      "detail": "Alongside current tools",
+      "icon": "calendar"
+     },
+     {
+      "label": "Measure task time",
+      "detail": "Time to first PR, review rework",
+      "icon": "chart"
+     }
+    ],
+    "ask": "Approve the 8-user, 3-week pilot."
+   },
+   "notes": "The pilot will measure developer task time and code quality. It's a small, time-boxed test to decide next steps."
+  }
+ ]
+}

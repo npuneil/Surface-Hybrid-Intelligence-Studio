@@ -1,0 +1,294 @@
+{
+ "title": "Local AI for Traveling Consultants",
+ "client": "Contoso",
+ "slides": [
+  {
+   "layout": "title",
+   "kicker": "Pilot Proposal",
+   "title": "Surface Laptop Ultra with Local AI",
+   "subtitle": "Hybrid AI for consultants on the go",
+   "hero_icons": [
+    "laptop",
+    "wifi",
+    "chat",
+    "shield"
+   ]
+  },
+  {
+   "layout": "analogy",
+   "title": "Consultant Workflows",
+   "takeaway": "Like a chef with two kitchens",
+   "data": {
+    "concept": {
+     "label": "Consultant Drafting",
+     "icon": "document"
+    },
+    "analog": {
+     "label": "Chef's Kitchen",
+     "icon": "chef"
+    },
+    "pairs": [
+     {
+      "concept": "Client summaries",
+      "analog": "Recipes"
+     },
+     {
+      "concept": "Microsoft 365 Copilot",
+      "analog": "Main kitchen"
+     },
+     {
+      "concept": "Local AI",
+      "analog": "Side kitchen"
+     }
+    ]
+   },
+   "notes": "Consultants draft client summaries using two AI lanes. One for sensitive work, one for general use. This analogy helps executives visualize the hybrid approach."
+  },
+  {
+   "layout": "stack",
+   "title": "Device Stack",
+   "takeaway": "Powerful local hardware",
+   "data": {
+    "side_label": "Local AI",
+    "layers": [
+     {
+      "label": "NVIDIA RTX Spark",
+      "detail": "Blackwell GPU",
+      "icon": "gpu"
+     },
+     {
+      "label": "20 CPU Cores",
+      "detail": "High performance",
+      "icon": "chip"
+     },
+     {
+      "label": "128 GB Memory",
+      "detail": "Fast processing",
+      "icon": "memory"
+     }
+    ]
+   },
+   "notes": "The Surface Laptop Ultra is equipped with powerful local hardware to run AI models directly. This ensures speed and privacy for consultants."
+  },
+  {
+   "layout": "flow",
+   "title": "Work Process",
+   "takeaway": "Two lanes, one workflow",
+   "data": {
+    "steps": [
+     {
+      "label": "Draft Summary",
+      "detail": "Local AI lane",
+      "icon": "document"
+     },
+     {
+      "label": "Review & Edit",
+      "detail": "Microsoft 365 Copilot",
+      "icon": "edit"
+     },
+     {
+      "label": "Send to Client",
+      "detail": "Secure sharing",
+      "icon": "send"
+     }
+    ]
+   },
+   "notes": "Consultants use local AI for sensitive drafting, then switch to Microsoft 365 Copilot for review. This hybrid approach ensures both privacy and flexibility."
+  },
+  {
+   "layout": "compare",
+   "title": "Cloud vs Local AI",
+   "takeaway": "Local AI for sensitive work",
+   "data": {
+    "left": {
+     "title": "Cloud AI",
+     "icon": "cloud",
+     "points": [
+      "Requires internet",
+      "Data in cloud"
+     ]
+    },
+    "right": {
+     "title": "Local AI",
+     "icon": "server",
+     "points": [
+      "Works offline",
+      "Data stays local"
+     ]
+    },
+    "verdict": "Local AI for secure, repeated drafting tasks"
+   },
+   "notes": "Cloud AI requires internet and sends data to the cloud. Local AI works offline and keeps sensitive data on device. This is key for consultants with restricted Wi-Fi."
+  },
+  {
+   "layout": "memory",
+   "title": "Model Capacity",
+   "takeaway": "28 models available locally",
+   "data": {
+    "capacity": 128,
+    "unit": "GB",
+    "capacity_label": "Memory",
+    "caption": "Models installed in catalog",
+    "blocks": [
+     {
+      "label": "Gemma 4 26B",
+      "size": 30
+     },
+     {
+      "label": "Qwen3-Coder 30B",
+      "size": 35
+     },
+     {
+      "label": "Other models",
+      "size": 63
+     }
+    ]
+   },
+   "notes": "The device supports 28 open models locally. This includes powerful models like Gemma and Qwen3-Coder for efficient drafting."
+  },
+  {
+   "layout": "matrix",
+   "title": "Consultant Use Cases",
+   "takeaway": "High-value, sensitive tasks",
+   "data": {
+    "x_axis": "Privacy Needs",
+    "y_axis": "Task Frequency",
+    "highlight": 1,
+    "quadrants": [
+     {
+      "label": "Low Privacy",
+      "detail": "General drafting",
+      "icon": "cloud"
+     },
+     {
+      "label": "High Privacy",
+      "detail": "Sensitive summaries",
+      "icon": "shield"
+     },
+     {
+      "label": "Low Frequency",
+      "detail": "Rare tasks",
+      "icon": "calendar"
+     },
+     {
+      "label": "High Frequency",
+      "detail": "Repeated drafting",
+      "icon": "document"
+     }
+    ]
+   },
+   "notes": "This matrix shows where local AI fits best: high-frequency, high-privacy tasks like client summaries. These are ideal for local processing."
+  },
+  {
+   "layout": "canvas",
+   "title": "Pilot Setup",
+   "takeaway": "10 users, 2 weeks",
+   "data": {
+    "elements": [
+     {
+      "type": "box",
+      "x": 0,
+      "y": 0,
+      "w": 4,
+      "h": 2,
+      "label": "Device",
+      "icon": "laptop",
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 4,
+      "y": 0,
+      "w": 4,
+      "h": 2,
+      "label": "Users",
+      "icon": "people",
+      "tone": "accent1"
+     },
+     {
+      "type": "box",
+      "x": 8,
+      "y": 0,
+      "w": 4,
+      "h": 2,
+      "label": "Duration",
+      "icon": "timer",
+      "tone": "accent2"
+     },
+     {
+      "type": "line",
+      "x": 0,
+      "y": 3,
+      "x2": 12,
+      "y2": 3,
+      "label": "Local AI Lane",
+      "tone": "muted"
+     },
+     {
+      "type": "box",
+      "x": 1,
+      "y": 4,
+      "w": 3,
+      "h": 1,
+      "label": "Task Time",
+      "icon": "clock",
+      "tone": "primary"
+     },
+     {
+      "type": "box",
+      "x": 5,
+      "y": 4,
+      "w": 3,
+      "h": 1,
+      "label": "Draft Quality",
+      "icon": "check",
+      "tone": "accent1"
+     },
+     {
+      "type": "box",
+      "x": 9,
+      "y": 4,
+      "w": 2,
+      "h": 1,
+      "label": "UX",
+      "icon": "thumbsup",
+      "tone": "accent2"
+     }
+    ]
+   },
+   "notes": "The pilot will test the Surface Laptop Ultra with 10 users for two weeks. Metrics include task time, draft quality, and user experience."
+  },
+  {
+   "layout": "statement",
+   "title": "Key Value",
+   "takeaway": "Time saved per consultant",
+   "data": {
+    "icon": "clock",
+    "text": "If 5 minutes saved per summary...",
+    "sub": "1,200 consultants x 6 summaries x 46 weeks = 27,600 hours/year (estimate)"
+   },
+   "notes": "This is an illustrative estimate. Real savings will be measured in the pilot. The goal is to reduce time spent on drafting sensitive client summaries."
+  },
+  {
+   "layout": "cta",
+   "title": "Next Steps",
+   "takeaway": "Pilot approval needed",
+   "data": {
+    "steps": [
+     {
+      "label": "Approve Pilot",
+      "detail": "10 users, 2 weeks",
+      "icon": "approve"
+     },
+     {
+      "label": "Deploy Devices",
+      "detail": "Surface Laptop Ultra",
+      "icon": "laptop"
+     }
+    ],
+    "ask": "Let's enable consultants to work securely and efficiently on the go."
+   },
+   "notes": "We propose a 2-week pilot with 10 users. This will validate local AI’s value for consultants working in restricted environments."
+  }
+ ]
+}

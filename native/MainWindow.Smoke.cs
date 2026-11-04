@@ -56,10 +56,12 @@ internal sealed partial class MainWindow
             Navigate("overview");
             await Settle();
             Check("overview-hero-stats",
-                FindText(_root, "OverviewInstalledMemory") == "128 GB" && FindText(_root, "OverviewGpuCores") == "6,144-core"
-                && FindText(_root, "OverviewCpuCores") == "20-core" && FindText(_root, "OverviewDisplay") == "15-inch"
+                new[] { "OverviewInstalledMemory", "OverviewCpuCores", "OverviewLanes", "OverviewRunsOn" }.All(id => FindText(_root, id) is { Length: > 0 } text && text != "...")
+                && FindText(_root, "OverviewInstalledMemory") == Gb(_status?.Device.InstalledGiB)
+                && (_status?.Target?.Lanes.Where(l => l.Available).All(l => FindText(_root, "OverviewLanes")?.Contains(LaneName(l.Id)) == true) ?? false)
+                && FindById(_root, "OverviewGpuCores") is null && FindById(_root, "OverviewDisplay") is null
                 && FindById(_root, "OverviewVisibleMemory") is null && FindById(_root, "OverviewGpuBudget") is null && FindById(_root, "OverviewLiveModel") is null,
-                $"{FindText(_root, "OverviewInstalledMemory")} / {FindText(_root, "OverviewGpuCores")} / {FindText(_root, "OverviewCpuCores")} / {FindText(_root, "OverviewDisplay")}");
+                $"{FindText(_root, "OverviewInstalledMemory")} / {FindText(_root, "OverviewCpuCores")} / {FindText(_root, "OverviewLanes")} / {FindText(_root, "OverviewRunsOn")}");
 
             Navigate("live");
             await Settle();
@@ -247,17 +249,24 @@ internal sealed partial class MainWindow
                 SetSalesSelection([]);
                 _salesWorkloads[id].Box.IsChecked = true;
                 await Settle();
+                var salesTarget = SizingNow;
+                var expectedFit = SalesSizing.Recommend([id], salesTarget.Facts, salesTarget.Preview, salesTarget.GpuKind)?.ThisPc.Fit ?? SalesFit.Unknown;
+                string expectedVerdict = expectedFit switch { SalesFit.Comfortable => "COMFORTABLE", SalesFit.Tight => "TIGHT FIT", _ => "WON'T FIT" };
                 Check($"sales-{id}-{expected}", _lastSales?.Profile.Size == expected && _salesRecommendation.Text.Contains($"({expected})")
-                    && _lastSales.ThisLaptop.Fit == SalesFit.Comfortable && _salesVerdictText.Text.StartsWith("COMFORTABLE"), _salesRecommendation.Text + " / " + _salesVerdictText.Text);
+                    && expectedFit != SalesFit.Unknown && _lastSales.ThisPc.Fit == expectedFit && _salesVerdictText.Text.StartsWith(expectedVerdict)
+                    && FindText(_root, "SalesDeviceFit_this") == SalesSizing.FitLabel(expectedFit),
+                    $"{_salesRecommendation.Text} / {_salesVerdictText.Text} / expected {expectedFit}");
             }
             SetSalesSelection(["transcription", "translation", "coding"]);
             await Settle();
             Check("sales-multi-select-largest-wins", _lastSales?.Profile.Size == TShirtSize.L && _salesRows.Children.Count == 3 && _salesSelectionCount.Text == "3 selected", $"{_lastSales?.Profile.Size} rows={_salesRows.Children.Count}");
-            Check("sales-device-compare", FindText(_root, "SalesDeviceFit_this") == "Comfortable" && FindText(_root, "SalesDeviceFit_laptop16") == "Won't fit"
+            var hereFit = _lastSales?.ThisPc.Fit ?? SalesFit.Unknown;
+            Check("sales-device-compare", hereFit != SalesFit.Unknown && FindText(_root, "SalesDeviceFit_this") == SalesSizing.FitLabel(hereFit) && FindText(_root, "SalesDeviceFit_laptop16") == "Won't fit"
                 && FindText(_root, "SalesDeviceFit_laptop32") == "Comfortable", $"{FindText(_root, "SalesDeviceFit_this")} / {FindText(_root, "SalesDeviceFit_laptop32")} / {FindText(_root, "SalesDeviceFit_laptop16")}");
-            Check("sales-talk-track-shown", _salesTalkTrack.Text == _lastSales?.TalkTrack && _salesTalkTrack.Text.Contains("Surface Laptop Ultra stands out"), _salesTalkTrack.Text);
+            Check("sales-talk-track-shown", _salesTalkTrack.Text == _lastSales?.TalkTrack && _salesTalkTrack.Text.Contains(hereFit is SalesFit.Comfortable or SalesFit.Tight
+                ? $"That is where {SizingNow.Noun} stands out" : "Check the technical view"), _salesTalkTrack.Text);
             Check("sales-live-buttons", FindById(_root, "SalesLive_coding") is Button { IsEnabled: true } && FindById(_root, "SalesLive_translation") is Button { IsEnabled: true });
-            foreach (var workload in SalesSizing.Workloads.Where(w => w.LiveOnThisLaptop))
+            foreach (var workload in SalesSizing.Workloads.Where(w => w.HasLiveDemo))
             {
                 var launch = FindById(_root, "SalesDemo_" + workload.Id) as Button;
                 Check("sales-obvious-launch-button-" + workload.Id, launch is
@@ -274,11 +283,13 @@ internal sealed partial class MainWindow
                 salesResults.StartBringIntoView(new BringIntoViewOptions { VerticalAlignmentRatio = 0, AnimationDesired = false });
                 await Shot("sizing-sales-results");
             }
-            double salesRequired = _lastSales?.ThisLaptop.Result?.RequiredGiB ?? double.NaN;
+            double salesRequired = _lastSales?.ThisPc.Result?.RequiredGiB ?? double.NaN;
+            var salesInput = _lastSales?.ThisPc.Input;
             OpenTechnicalFromSales();
             await Settle();
-            Check("sales-hands-off-to-technical", SizingTechnicalVisible && _sizePicker.SelectedIndex == 2 && Math.Abs((_lastSizing?.RequiredGiB ?? 0) - salesRequired) < 1e-9,
-                $"visible={SizingTechnicalVisible} size={_sizePicker.SelectedIndex} {_lastSizing?.RequiredGiB} vs {salesRequired}");
+            Check("sales-hands-off-to-technical", SizingTechnicalVisible && _sizePicker.SelectedIndex == 2 && Math.Abs((_lastSizing?.RequiredGiB ?? 0) - salesRequired) < 1e-9
+                && salesInput is not null && _lastSizingInput is { } handedInput && Math.Abs(handedInput.BudgetGiB - salesInput.BudgetGiB) < 1e-9 && handedInput.ReserveGiB == salesInput.ReserveGiB,
+                $"visible={SizingTechnicalVisible} size={_sizePicker.SelectedIndex} {_lastSizing?.RequiredGiB} vs {salesRequired}; budget {_lastSizingInput?.BudgetGiB} vs {salesInput?.BudgetGiB}; reserve {_lastSizingInput?.ReserveGiB} vs {salesInput?.ReserveGiB}");
             SetSalesSelection(SalesSizing.DefaultSelection);
 
             // Surface Laptop Ultra configuration planner through the real controls.
@@ -295,15 +306,18 @@ internal sealed partial class MainWindow
                 $"{_ultraRecommendation.Text} / {FindText(_root, "UltraFit_32")} / {FindText(_root, "UltraFit_48")}");
             Check("ultra-cards-show-split", FindText(_root, "UltraDetail_128")?.StartsWith("GPU about 79.9 GB, Windows about 48.1 GB.") == true
                 && _ultraBasisNote.Text.Contains("79.9 GB") && FindById(_root, "UltraSpecLink") is HyperlinkButton, FindText(_root, "UltraDetail_128") ?? "");
-            int? thisPc = UltraSizing.ThisPcConfig(_status?.Device);
-            Check("ultra-this-pc-marker", thisPc is null || (FindById(_root, $"UltraHere_{thisPc}") is TextBlock { Visibility: Visibility.Visible }
-                && UltraSizing.Configurations.Where(c => c.MemoryGB != thisPc).All(c => FindById(_root, $"UltraHere_{c.MemoryGB}") is TextBlock { Visibility: Visibility.Collapsed })),
-                $"{thisPc}");
+            var ultraDevice = UltraDevice;
+            int? thisPc = UltraSizing.ThisPcConfig(ultraDevice);
+            Check("ultra-this-pc-marker", UltraSizing.Configurations.All(c => FindById(_root, $"UltraHere_{c.MemoryGB}") is TextBlock { Visibility: var marker }
+                && marker == (c.MemoryGB == thisPc ? Visibility.Visible : Visibility.Collapsed)), $"{thisPc}");
             _ultraBasis.SelectedIndex = 1;
             await Settle();
-            bool measurable = UltraSizing.MeasuredShare(_status?.Device) is not null;
-            Check("ultra-measured-basis", !measurable || (_lastUltra?.Basis == SplitBasis.MeasuredThisPc && _ultraBasisNote.Text.StartsWith("GPU share: this PC's driver reports")
-                && _lastUltra.Configs.Any(c => c.MeasuredHere) == (thisPc is not null)), _ultraBasisNote.Text);
+            bool measurable = UltraSizing.MeasuredShare(ultraDevice) is not null;
+            Check("ultra-measured-basis", measurable
+                ? _lastUltra?.Basis == SplitBasis.MeasuredThisPc && _ultraBasisNote.Text.StartsWith("GPU share: this PC's driver reports")
+                    && _lastUltra.Configs.Any(c => c.MeasuredHere) == (thisPc is not null)
+                : _lastUltra?.Basis == SplitBasis.MicrosoftLaunch && _ultraBasis.Items[1] is RadioButton { IsEnabled: false },
+                $"measurable={measurable} basis={_lastUltra?.Basis} {_ultraBasisNote.Text}");
             _ultraBasis.SelectedIndex = 2;
             await Settle();
             Check("ultra-custom-basis", _ultraCustom.Visibility == Visibility.Visible && _lastUltra?.Basis == SplitBasis.Custom
@@ -344,17 +358,33 @@ internal sealed partial class MainWindow
             ShowSizingTab(technical: true);
             await Settle();
             ResetSizing();
-            _budgetSource.SelectedIndex = 0;
+            await Settle();
+            var sizingNow = SizingNow;
+            double? gpuBudget = Sizing.ResolveBudget(BudgetSource.GpuDriverBudget, sizingNow.Facts, double.NaN);
+            var firstView = gpuBudget is not null ? BudgetSource.GpuDriverBudget : BudgetSource.WindowsVisibleMemory;
+            Check("sizing-budget-follows-the-device", sizingNow.Facts is not null && SelectedBudgetSource == firstView && _reserve.Value == sizingNow.ReserveFor(firstView)
+                && FindById(_root, "SizingBudget_Gpu") is RadioButton { IsEnabled: var gpuViewOpen } && gpuViewOpen == (gpuBudget is not null),
+                $"{SelectedBudgetSource} reserve={_reserve.Value} gpu={gpuBudget?.ToString() ?? "none"}");
             _sizePicker.SelectedIndex = 2;
             _bits.SelectedIndex = 0;
             _params.Value = 14;
             await Settle();
+            double firstBudget = gpuBudget ?? sizingNow.Facts?.OsVisibleGiB ?? double.NaN;
+            var expected14 = Sizing.Estimate(new SizingInput(14, 4, 8192, 0.19, 2, firstBudget, sizingNow.ReserveFor(firstView), 2));
+            string expected14Verdict = expected14.Verdict switch { SizingVerdict.Fits => "FITS", SizingVerdict.Tight => "TIGHT FIT", _ => "DOES NOT FIT" };
             Check("sizing-14b-4bit-weights", _breakdown["weights"].Text == "6.52 GiB", _breakdown["weights"].Text);
-            Check("sizing-14b-fits-gpu-budget", _lastSizing?.FitsEstimate == true && _verdictText.Text.StartsWith("FITS"), _verdictText.Text);
-            Check("sizing-gpu-budget-not-summed", Math.Abs((_lastSizingInput?.BudgetGiB ?? 0) - 62.5) < 0.01, $"{_lastSizingInput?.BudgetGiB}");
+            Check("sizing-14b-verdict-follows-the-device", expected14.IsValid && _lastSizing is { } sized14 && sized14.Verdict == expected14.Verdict
+                && Math.Abs(sized14.UsableGiB - expected14.UsableGiB) < 0.01 && _verdictText.Text.StartsWith(expected14Verdict),
+                $"{_verdictText.Text} usable={_lastSizing?.UsableGiB} expected {expected14.Verdict} usable={expected14.UsableGiB}");
+            Check("sizing-gpu-budget-not-summed", gpuBudget is double gpuView
+                ? Math.Abs((_lastSizingInput?.BudgetGiB ?? 0) - gpuView) < 0.01
+                : SelectedBudgetSource == BudgetSource.WindowsVisibleMemory && FindById(_root, "SizingBudget_Gpu") is RadioButton { IsEnabled: false },
+                $"{SelectedBudgetSource} {_lastSizingInput?.BudgetGiB}");
             _budgetSource.SelectedIndex = 1;
             await Settle();
-            Check("sizing-windows-view-not-summed", Math.Abs((_lastSizingInput?.BudgetGiB ?? 0) - (_status?.Device.OsVisibleGiB ?? -1)) < 0.01, $"{_lastSizingInput?.BudgetGiB}");
+            Check("sizing-windows-view-not-summed", SelectedBudgetSource == BudgetSource.WindowsVisibleMemory && sizingNow.Facts?.OsVisibleGiB is double windowsView
+                && Math.Abs((_lastSizingInput?.BudgetGiB ?? 0) - windowsView) < 0.01 && _reserve.Value == Sizing.DefaultReserveGiB,
+                $"{_lastSizingInput?.BudgetGiB} reserve={_reserve.Value}");
             _sizePicker.SelectedIndex = 3;
             _bits.SelectedIndex = 2;
             _budgetSource.SelectedIndex = 2;
@@ -504,13 +534,15 @@ internal sealed partial class MainWindow
                 await RefreshDemoCatalogAsync();
             }
             await Settle();
-            Check("demos-catalog-matches-app", _demoCatalog.Demos.Select(d => d.Id).SequenceEqual(DemoCatalog.KnownIds), string.Join(",", _demoCatalog.Demos.Select(d => d.Id)));
+            Check("demos-catalog-matches-app", _demoCatalog.Demos.Select(d => d.Id).Order(StringComparer.Ordinal).SequenceEqual(DemoCatalog.KnownIds.Order(StringComparer.Ordinal)),
+                string.Join(",", _demoCatalog.Demos.Select(d => d.Id)));
             Check("demos-media-ready", _demoCatalog.MediaState == "ready", $"{_demoCatalog.MediaState} {_demoCatalog.MediaDetail}");
             foreach (string id in new[] { "DemoReadinessCard", "DemoReadyChat", "DemoReadyModels", "DemoReadyRuntime", "DemoReadyMedia", "DemoReadinessDetail", "DemoRunAll", "DemoGallery" })
                 Check("automation-id-" + id, FindById(_root, id) is not null);
             foreach (var demo in _demoCatalog.Demos)
                 Check($"demo-card-{demo.Id}", FindById(_root, "DemoCard_" + demo.Id) is not null && FindById(_root, "DemoLaunch_" + demo.Id) is Button { IsEnabled: true }
-                    && FindText(_root, "DemoCardStatus_" + demo.Id) is { Length: > 0 } && FindText(_root, "DemoCardModels_" + demo.Id)?.StartsWith("Runs: ") == true);
+                    && FindText(_root, "DemoCardStatus_" + demo.Id) is { Length: > 0 } && FindText(_root, "DemoCardModels_" + demo.Id) is { } cardModels
+                    && (cardModels.StartsWith("Runs: ") || cardModels.StartsWith("Runs on ")), FindText(_root, "DemoCardModels_" + demo.Id) ?? "");
             await Shot("demos-gallery");
 
             if (FindById(_root, "DemoLaunch_meeting") is Button launchMeeting) InvokeButton(launchMeeting);
@@ -563,7 +595,7 @@ internal sealed partial class MainWindow
             if (_demoOption.Items.OfType<ComboBoxItem>().FirstOrDefault(i => i.Tag as string == "receipt") is { } receipt) _demoOption.SelectedItem = receipt;
             await WaitFor(() => _demoPreviewKey == "receipt.png" && FindById(_root, "DemoInputImage") is Image { Source: not null }, 20);
             Check("demo-vision-receipt-preview", _demoPreviewKey == "receipt.png" && FindById(_root, "DemoInputImage") is Image { Source: not null }
-                && FindText(_root, "DemoInputStatus")?.StartsWith("Rendered on this laptop") == true, FindText(_root, "DemoInputStatus") ?? "");
+                && FindText(_root, "DemoInputStatus")?.StartsWith("Rendered on this PC") == true, FindText(_root, "DemoInputStatus") ?? "");
             await RunOpenDemoAsync("rehearsal");
             await Settle();
             Check("demo-vision-receipt-rehearsal", _demoResults.GetValueOrDefault("vision") is { Mode: "rehearsal", Option: "receipt", Error: null }
@@ -585,7 +617,7 @@ internal sealed partial class MainWindow
             _running = true;
             UpdateLiveButtons();
             Check("demo-interlock-live-workspace-busy", !_demoRunLive.IsEnabled && !_demoRunRehearsal.IsEnabled && !_demoRunAll.IsEnabled
-                && _demoBlocker.Text.Contains("Live GPU workspace"), _demoBlocker.Text);
+                && _demoBlocker.Text.Contains("Live workspace"), _demoBlocker.Text);
             _running = false;
             _demoRunning = true;
             UpdateLiveButtons();
@@ -601,8 +633,8 @@ internal sealed partial class MainWindow
             if (FindById(_root, "SalesLive_translation") is Button salesTranslate) InvokeButton(salesTranslate);
             await Settle();
             Check("sales-hands-off-to-demo", _currentSection == "demos" && DemoRunnerVisible && _openDemo?.Id == "translate"
-                && _demoError.IsOpen && _demoError.Message?.Contains("Live GPU workspace") == true, $"{_currentSection} {_openDemo?.Id}");
-            foreach (var workload in SalesSizing.Workloads.Where(w => w.LiveOnThisLaptop))
+                && _demoError.IsOpen && _demoError.Message?.Contains("Live workspace") == true, $"{_currentSection} {_openDemo?.Id}");
+            foreach (var workload in SalesSizing.Workloads.Where(w => w.HasLiveDemo))
             {
                 Navigate("sizing");
                 ShowSizingTab(technical: false);
@@ -614,7 +646,7 @@ internal sealed partial class MainWindow
                 Check("sales-badge-launch-" + workload.Id, launch is { IsEnabled: true }
                     && DemoRunnerVisible && _openDemo?.Id == workload.DemoId
                     && _salesSelected.SetEquals(selection) && _demoError.IsOpen
-                    && _demoError.Message?.Contains("Live GPU workspace") == true, $"{_currentSection} {_openDemo?.Id}");
+                    && _demoError.Message?.Contains("Live workspace") == true, $"{_currentSection} {_openDemo?.Id}");
             }
             Navigate("sizing");
             Check("sales-guidance-not-launchable", FindById(_root, "SalesDemo_prototyping") is null);
@@ -640,7 +672,7 @@ internal sealed partial class MainWindow
                     await RunScenarioAsync("live");
                     var m = _lastRun?.Metrics;
                     bool ok = _lastRun is { Mode: "live", Error: null } && m is not null && m.Mode == "live"
-                        && m.Provider == "CUDAExecutionProvider" && _lastTokenEvents >= 2 && _output.Text.Length > 40
+                        && m.Provider is { Length: > 0 } && m.Provider == _status?.Engine.Model?.Provider && _lastTokenEvents >= 2 && _output.Text.Length > 40
                         && m.TtftMs > 0 && _modeText.Text.StartsWith("LIVE") && _mTtft.Text != "-";
                     Check($"live-{key}", ok, _lastRun?.Error ?? $"events={_lastTokenEvents} chars={_output.Text.Length} provider={m?.Provider}");
                     liveRuns.Add(new JsonObject
@@ -654,8 +686,9 @@ internal sealed partial class MainWindow
                     if (key == _scenarioKeys[0])
                     {
                         string? liveExport = ExportRun();
-                        bool exported = liveExport is not null && JsonNode.Parse(File.ReadAllText(liveExport))?["metrics"]?["execution_provider"]?.GetValue<string>() == "CUDAExecutionProvider";
-                        Check("live-export-provenance", exported && !LeaksToken(liveExport!), liveExport ?? "");
+                        string? exportedProvider = liveExport is null ? null : JsonNode.Parse(File.ReadAllText(liveExport))?["metrics"]?["execution_provider"]?.GetValue<string>();
+                        bool exported = exportedProvider is { Length: > 0 } && exportedProvider == _status?.Engine.Model?.Provider;
+                        Check("live-export-provenance", exported && !LeaksToken(liveExport!), $"{liveExport} provider={exportedProvider}");
                     }
                 }
 
@@ -665,12 +698,19 @@ internal sealed partial class MainWindow
                     Navigate("demos");
                     CloseDemo();
                     await RefreshDemoCatalogAsync();
-                    var blocked = _demoCatalog.Demos.Select(d => _demoCatalog.LiveBlocker(d, _status?.Engine)).OfType<string>().Distinct().ToList();
+                    var blocked = _demoCatalog.Demos.Where(d => d.Fit is not { Unavailable: true })
+                        .Select(d => _demoCatalog.LiveBlocker(d, _status?.Engine, _status?.Target)).OfType<string>().Distinct().ToList();
                     Check("demos-live-ready", blocked.Count == 0 && _demoRunAll.IsEnabled, string.Join(" ", blocked));
                     await RunAllDemosAsync();
                     await Settle();
                     foreach (var demo in _demoCatalog.Demos)
                     {
+                        if (demo.Fit is { Unavailable: true })
+                        {
+                            string? skippedRow = FindText(_root, "DemoPreflight_" + demo.Id);
+                            Check($"demo-live-{demo.Id}-skipped", skippedRow?.StartsWith("Skipped: ") == true, skippedRow ?? "no pre-flight row");
+                            continue;
+                        }
                         var r = _demoResults.GetValueOrDefault(demo.Id);
                         bool ok = r is { Live: true, Completed: true } && r.Summary!.StepsFailed == 0 && r.Steps.All(s => s.State == "done")
                             && r.Steps.Any(s => s.Text.Length > 0 || s.Metrics.Count > 0);
@@ -688,7 +728,7 @@ internal sealed partial class MainWindow
                             }).ToArray()),
                         });
                     }
-                    Check("demos-preflight-summary", _demoPreflightSummary.Text.Contains("live demos ran end to end on the GPU") && _demoPreflightSummary.Text.Contains("passed every check")
+                    Check("demos-preflight-summary", _demoPreflightSummary.Text.Contains("live demos ran end to end on this PC") && _demoPreflightSummary.Text.Contains("passed every check")
                         && _demoPreflightList.Children.Count == _demoCatalog.Demos.Count,
                         _demoPreflightSummary.Text);
                     await Shot("demos-preflight");

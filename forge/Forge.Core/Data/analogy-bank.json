@@ -1,0 +1,134 @@
+[
+  {
+    "id": "A8",
+    "use": "hybrid: local lane for sensitive work, cloud assistant for everything else",
+    "concept": "Hybrid AI lanes",
+    "analog": "Hotel safe + concierge",
+    "pairs": [
+      ["Local lane on laptop", "Room safe"],
+      ["Sensitive client files", "Passport and valuables"],
+      ["Microsoft 365 Copilot", "Concierge for everything else"],
+      ["Consultant decides", "Guest chooses what goes where"]
+    ]
+  },
+  {
+    "id": "A9",
+    "use": "working where client Wi-Fi is restricted (validated in pilot, never a guarantee)",
+    "concept": "Local AI lane",
+    "analog": "Offline maps",
+    "pairs": [
+      ["Local model on laptop", "Maps downloaded to phone"],
+      ["Restricted client Wi-Fi", "No signal in the tunnel"],
+      ["Copilot when connected", "Live traffic when online"],
+      ["2-week pilot", "Test drive before the trip"]
+    ]
+  },
+  {
+    "id": "A10",
+    "use": "memory views of one shared pool that must never be added (one-line takeaway, not a slide)",
+    "concept": "Memory views",
+    "analog": "Zoom levels on one map",
+    "pairs": [
+      ["Installed memory", "Whole region"],
+      ["Memory visible to Windows", "City view"],
+      ["Memory the AI can use", "District view"],
+      ["Never add views", "Don't count streets twice"]
+    ]
+  },
+  {
+    "id": "A10p",
+    "use": "system memory and GPU memory are separate pools; a model must fit in one (one-line takeaway, not a slide)",
+    "concept": "Memory pools",
+    "analog": "Warehouse and workbench",
+    "pairs": [
+      ["System memory", "Main warehouse"],
+      ["GPU memory", "Workbench beside the machine"],
+      ["Model must fit the pool it runs in", "Part must fit on the bench"],
+      ["Never add the pools", "Warehouse is not bench space"]
+    ]
+  },
+  {
+    "id": "A11",
+    "use": "one PC with several AI engines (NPU, GPU, CPU), each best at a different job",
+    "concept": "Three engines, one PC",
+    "analog": "Kitchen stations",
+    "pairs": [
+      ["NPU: steady, low power", "Slow cooker"],
+      ["GPU: highest burst speed", "Wok burner"],
+      ["CPU: flexible fallback", "Chef's own hands"],
+      ["Runtime picks the engine", "Head chef assigns the station"]
+    ]
+  },
+  {
+    "id": "A2",
+    "use": "local drafting with human review",
+    "concept": "Local drafting",
+    "analog": "Junior writer + editor",
+    "pairs": [
+      ["Local model", "Junior writer"],
+      ["Client documents", "Source packet"],
+      ["Generated draft", "Working copy"],
+      ["Consultant review", "Editor sign-off"]
+    ]
+  },
+  {
+    "id": "A3",
+    "use": "hybrid routing local vs cloud (manufacturing audience)",
+    "concept": "Hybrid routing",
+    "analog": "Make-or-buy decision",
+    "pairs": [
+      ["Local lane", "Make in-house"],
+      ["Code and internal docs", "Proprietary parts"],
+      ["Cloud reasoning", "Buy from outside foundry"],
+      ["Routing policy", "Make-or-buy rule"]
+    ]
+  },
+  {
+    "id": "A4",
+    "use": "mixture of experts vs dense",
+    "concept": "Mixture of Experts",
+    "analog": "Specialist team",
+    "pairs": [
+      ["All experts together", "Whole team on the roster"],
+      ["Few experts active per token", "Few specialists per task"],
+      ["Gate picks experts", "Lead assigns specialists"],
+      ["Dense: every weight fires", "Everyone in every meeting"]
+    ]
+  },
+  {
+    "id": "A5",
+    "use": "model sizing bands (size = job size, never accuracy)",
+    "concept": "Model sizing bands",
+    "analog": "Shop machine sizes",
+    "pairs": [
+      ["S: 1-4B", "Benchtop mill"],
+      ["M: 7-8B", "Standard CNC mill"],
+      ["L: 14-20B", "Machining center"],
+      ["XL: 24-32B", "Gantry mill"]
+    ]
+  },
+  {
+    "id": "A6",
+    "use": "retrieval over internal docs (RAG)",
+    "concept": "Retrieval (RAG)",
+    "analog": "Open-book exam",
+    "pairs": [
+      ["Internal docs index", "Your own textbook"],
+      ["Retrieve passages", "Flip to the right page"],
+      ["Grounded prompt", "Answer with the book open"],
+      ["Cited sources", "Show your references"]
+    ]
+  },
+  {
+    "id": "A7",
+    "use": "single vs concurrent streams",
+    "concept": "Concurrent streams",
+    "analog": "Checkout lanes",
+    "pairs": [
+      ["Single stream", "One open lane"],
+      ["Several concurrent streams", "Several lanes open"],
+      ["Aggregate tokens/s", "Shoppers served per minute"],
+      ["Per-stream speed", "Each cashier's pace"]
+    ]
+  }
+]

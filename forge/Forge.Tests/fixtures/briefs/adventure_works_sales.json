@@ -1,0 +1,69 @@
+{
+  "id": "adventure_works_sales",
+  "client": "Adventure Works",
+  "pitch_type": "sales",
+  "audience": "Adventure Works' COO and CIO who need to evaluate whether Surface Laptop Ultra with NVIDIA RTX Spark can improve field sales rep productivity and security for confidential customer data.",
+  "objective": "Secure approval for a 2-week pilot program with 10 field sales reps to test the Surface Laptop Ultra's capabilities in real-world conditions.",
+  "template_hint": "surface_ultra",
+  "slide_range": [
+    8,
+    12
+  ],
+  "context": "Adventure Works has 120 field sales reps who write approximately 15 customer visit summaries per week, with each summary taking about 20 minutes to complete. The reps work from customer sites using guest Wi-Fi networks and handle confidential pricing sheets that require secure handling. They already utilize Microsoft 365 Copilot in their daily workflow. The company is considering a pilot program to evaluate the Surface Laptop Ultra with NVIDIA RTX Spark for field sales productivity.",
+  "facts": [
+    "Adventure Works has 120 field sales reps",
+    "Each rep writes about 15 customer visit summaries per week",
+    "Each summary takes approximately 20 minutes to complete",
+    "Customer pricing sheets are confidential",
+    "Reps often work from customer sites with guest Wi-Fi",
+    "They already use Microsoft 365 Copilot",
+    "The pilot scope is 2 weeks with 10 reps",
+    "Device: Surface Laptop Ultra with NVIDIA RTX Spark (Blackwell RTX GPU, 20 CPU cores, 128 GB installed memory).",
+    "On this device, Gemma 4 26B decodes at about 72 tokens per second and Qwen3-Coder 30B at about 86 tokens per second (single stream, Local-AI-Bench, October 2026)."
+  ],
+  "required_topics": {
+    "field_productivity": [
+      "customer visit summaries",
+      "time efficiency",
+      "workload management"
+    ],
+    "security_features": [
+      "confidential data handling",
+      "guest wifi security",
+      "data protection"
+    ],
+    "compatibility": [
+      "microsoft 365 copilot",
+      "existing tools",
+      "workflow integration"
+    ],
+    "pilot_scope": [
+      "2 week duration",
+      "10 rep sample",
+      "field testing"
+    ],
+    "performance_benefits": [
+      "nvidia rtx spark",
+      "processing power",
+      "real-time capabilities"
+    ],
+    "device": [
+      "surface laptop ultra",
+      "rtx spark",
+      "surface"
+    ]
+  },
+  "guardrails": [
+    "Do not claim specific productivity improvements or time savings",
+    "Do not mention any pricing information",
+    "Do not reference any other Microsoft products or services beyond Copilot",
+    "Do not make claims about the pilot's success without actual results",
+    "Use only numbers from the fact sheet; label any estimate as an estimate to validate.",
+    "Do not claim local AI replaces Microsoft 365 Copilot or any cloud subscription.",
+    "Do not claim air-gapped, certified offline or security certification; say disconnected use is validated in the pilot.",
+    "Do not cite TOPS or Copilot+ PC certification."
+  ],
+  "source": "prompt",
+  "prompt": "Pitch Adventure Works' COO and CIO on Surface Laptop Ultra for 120 field sales reps who write about 15 customer visit summaries a week, each taking about 20 minutes. Customer pricing sheets are confidential and reps often work from customer sites with guest Wi-Fi. They already use Microsoft 365 Copilot. Ask: a 2-week pilot with 10 reps.",
+  "dropped": []
+}

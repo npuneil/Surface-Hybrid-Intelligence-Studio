@@ -1,0 +1,44 @@
+{
+  "id": "zava_technical",
+  "client": "Zava",
+  "pitch_type": "technical",
+  "audience": "Zava engineering leadership, platform architects and senior developers (about 150 developers and architects). Technical, skeptical, want architecture and measured numbers.",
+  "objective": "Show how Surface Laptop Ultra with NVIDIA RTX Spark runs a local AI developer stack (code generation, RAG over internal docs, hybrid routing) and win a 10-developer, 2-week technical pilot.",
+  "template_hint": "surface_ultra",
+  "slide_range": [8, 12],
+  "context": "Zava is a fictional design and manufacturing company with about 150 developers and architects. Its CAD/PLM data and source code are sensitive IP. Teams want code assistants and retrieval over internal engineering docs without sending IP to shared services, while keeping cloud models for the heaviest tasks. This deck itself was generated on a Surface Laptop Ultra by a local model, so the device is teaching others about itself.",
+  "facts": [
+    "Device: Surface Laptop Ultra with NVIDIA RTX Spark N1X (Blackwell RTX GPU) and 20 CPU cores.",
+    "Memory: 128 GB installed; about 64 GB visible to Windows; nvidia-smi reports a 64,000 MiB GPU memory budget. These are distinct views of memory, never add them together.",
+    "Runtimes on this device: llama.cpp build 11573 native ARM64 with CUDA, and Foundry Local with the CUDA execution provider.",
+    "Local catalog: 28 open models installed, 315 GiB on disk.",
+    "Qwen3-Coder 30B (MoE, about 3B active parameters, Q4_K_M, 17.3 GiB file): about 86 tokens/s single-stream decode, 0.13 s time to first token.",
+    "Qwen3-Coder 30B serves about 140 tokens/s aggregate across 4 concurrent streams.",
+    "Gemma 4 26B: about 72 tokens/s single stream and about 245 tokens/s aggregate across 8 streams.",
+    "Dense Qwen3.6 27B: about 13 tokens/s single stream. MoE models activate only a few experts per token, so they decode several times faster than dense models of similar size.",
+    "Model sizing bands: S 1-4B, M 7-8B, L 14-20B, XL 24-32B parameters. Bands are planning estimates, not accuracy tiers.",
+    "Hybrid routing: sensitive, frequent tasks (code, internal docs) go to the local lane; heaviest reasoning can route to cloud models.",
+    "Pilot: 10 developers for 2 weeks (14 days), measuring acceptance rate, latency and developer experience.",
+    "All throughput numbers come from Local-AI-Bench on this device, October 2026, on a shared machine.",
+    "This deck was generated on this Surface Laptop Ultra by Qwen3-Coder 30B through llama.cpp, with no cloud calls."
+  ],
+  "required_topics": {
+    "hardware": ["rtx spark", "blackwell", "gpu", "20 cpu"],
+    "memory_views": ["128 gb", "64 gb", "64,000", "memory"],
+    "runtimes": ["llama.cpp", "foundry", "cuda"],
+    "throughput": ["tok/s", "tokens/s", "86", "140", "245"],
+    "moe_vs_dense": ["moe", "dense", "experts", "active"],
+    "sizing_bands": ["sizing", "1-4b", "7-8b", "14-20b", "24-32b", "band"],
+    "codegen_rag": ["code", "rag", "retrieval", "internal docs", "docs"],
+    "hybrid_routing": ["hybrid", "router", "routing", "cloud lane", "local lane"],
+    "made_on_device": ["this deck", "generated on", "made on", "this device"],
+    "pilot_ask": ["pilot", "10 developers", "2 weeks", "two weeks"]
+  },
+  "guardrails": [
+    "Never add the memory views together and never call system RAM dedicated VRAM.",
+    "Throughput is from a shared machine; do not present it as a guaranteed spec or a comparison against other devices.",
+    "Do not claim air-gapped or certified offline operation.",
+    "Do not cite TOPS, Copilot+ certification, dollar savings or subscription replacement.",
+    "A larger parameter count is not an accuracy claim."
+  ]
+}

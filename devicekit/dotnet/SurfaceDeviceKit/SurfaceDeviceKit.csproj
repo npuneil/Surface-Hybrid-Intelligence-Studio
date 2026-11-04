@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>SurfaceDeviceKit</RootNamespace>
+    <AssemblyName>SurfaceDeviceKit</AssemblyName>
+    <PackageId>SurfaceDeviceKit</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Reusable device detection for Surface AI demos: hardware probe, capability matrix and per-workload model plans for NPU, GPU and CPU.</Description>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\catalog\device-catalog.json" LogicalName="SurfaceDeviceKit.device-catalog.json" />
+    <EmbeddedResource Include="..\..\vectors\simulated-profiles.json" LogicalName="SurfaceDeviceKit.simulated-profiles.json" />
+  </ItemGroup>
+
+</Project>

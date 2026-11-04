@@ -185,7 +185,7 @@ internal sealed partial class BackendClient : IDisposable
         }
     }
 
-    private async Task<HttpResponseMessage> PostAsync(string path, Dictionary<string, object> body,
+    private async Task<HttpResponseMessage> PostAsync(string path, IReadOnlyDictionary<string, object> body,
         HttpCompletionOption completion, CancellationToken cancellationToken, TimeSpan? timeout)
     {
         if (_token is null) await GetStatusAsync(cancellationToken);
