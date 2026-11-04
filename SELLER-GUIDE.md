@@ -177,6 +177,16 @@ devices or cloud services. **Export results (JSON)** saves timings, not text.
 Local AI Headroom, Local AI Bench and HydraFusion autorouting when they are installed
 beside the studio. Each tool's own claims and guardrails apply.
 
+## Show what this Surface runs
+
+Open **This PC** to show what the studio detected, where each model runs (NPU, GPU or CPU)
+and which demos fit this PC best. When the customer asks about a different Surface, pick it
+under **Preview another Surface** and choose **Preview this Surface**: the page shows the
+processor that would do the work, the models that fit and the demos that lead, and the
+T-shirt sizing estimates follow. Say that a preview is an estimate from published
+specifications, not a measurement. Live runs pause until you choose **Back to this PC**,
+because only this PC's hardware runs models.
+
 ## Questions that scope a pilot for the firm
 
 1. Which repeated banker task (meeting prep, call notes, KYC refresh, settlement breaks, model documentation reviews) consumes meaningful time today?

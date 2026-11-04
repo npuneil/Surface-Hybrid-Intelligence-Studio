@@ -4,7 +4,7 @@ param(
     [switch]$Rebuild,
     [switch]$Windowed,
     [switch]$NoBackendStart,
-    [ValidateSet('overview', 'live', 'demos', 'hybrid', 'industries', 'showoff', 'build', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
+    [ValidateSet('overview', 'device', 'live', 'demos', 'hybrid', 'industries', 'showoff', 'build', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
     [switch]$Wait
 )
 # Launches the native WinUI 3 Surface Hybrid Intelligence x Zava Financial (never a browser).

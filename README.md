@@ -116,7 +116,7 @@ The app reuses an identified showcase service already running on
 If none exists, it starts the local Python service itself and stops that
 owned service on exit; a Windows job object also prevents an orphan if the
 app crashes. Startup logs are in `.runtime\native\backend-*.log`.
-`-Port`, `-Windowed`, `-Section <page>` (overview, live, demos, hybrid, industries,
+`-Port`, `-Windowed`, `-Section <page>` (overview, device, live, demos, hybrid, industries,
 showoff, build, sizing, platforms, business, playbook, learn), and `-Rebuild` are supported by
 `Start-NativeShowcase.ps1`; no browser or extra terminal must remain open.
 The launcher builds the native executable if it is missing. A .NET 10 SDK
@@ -140,6 +140,27 @@ RTX device, not execution on a Snapdragon or Intel accelerator. They consume
 supplied text fixtures; they do not record, transcribe, inspect images or
 connect to business systems. Speech, images and document search are on the
 **Live demos** tab.
+
+### This PC: device detection and Surface previews
+
+The **This PC** page shows what the Surface device kit (`devicekit\`, see
+[devicekit/README.md](devicekit/README.md)) detected here: processor, memory, GPU and NPU, and
+which lanes (NPU, GPU, CPU) run models, with each lane's runtimes. The studio has five model
+slots (chat, reasoning, speech, vision and embeddings), each tied to the model the demos were
+tuned on. Where that model fits its lane it runs unchanged; otherwise the slot gets the
+strongest model in Foundry Local's catalog that fits, on this PC's best lane (on a PC whose NPU
+runs models, the NPU first, then the GPU, then the CPU). Models that are not downloaded yet are
+marked. **Demos on this PC** orders the demos by how well they fit; a demo whose models do not
+fit is listed last, with the reason. Each capability line says whether it was detected,
+estimated from the model catalog or rated by the vendor.
+
+**Preview another Surface** shows what the studio would run on one of the device kit's sample
+Surfaces (Snapdragon, Intel, NVIDIA, and AMD and other): its lanes, models and demo order, and
+the T-shirt sizing estimates follow it. A preview is an estimate from the catalog and published
+specifications, not a measurement, and live runs pause until **Back to this PC**. Live runs
+have been verified with the NVIDIA reference models and with every slot forced onto the CPU;
+the NPU lanes are covered by simulation and tests, not by a live run. `-Section device` opens
+the page.
 
 ### Live demos
 
