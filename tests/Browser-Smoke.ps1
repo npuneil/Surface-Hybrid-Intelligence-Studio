@@ -92,15 +92,25 @@ try {
   };
   check(document.documentElement.scrollWidth<=innerWidth,"Desktop has no horizontal overflow");
   const inventory=await (await fetch("/api/status")).json();
-  check(inventory.device.installed_ram_gb===128 && $("ram-proof").textContent==="128 GB","Physical DIMM capacity is correctly shown as 128 GB");
-  check($("ram-detail").textContent.includes("64 GB Windows-visible"),"Windows-visible 64 GB is labeled separately from installed memory");
-  check(!/\bNPU\b/i.test(document.body.innerText),"Showcase hardware cards and footer focus on GPU, not NPU");
+  const number=new Intl.NumberFormat("en-US",{maximumFractionDigits:1});
+  check(inventory.device.installed_ram_gb>0 && $("ram-proof").textContent===`${number.format(inventory.device.installed_ram_gb)} GB`,"Installed memory follows the actual device");
+  check($("ram-detail").textContent.includes(`${number.format(inventory.device.os_visible_ram_gb)} GB Windows-visible`),"Windows-visible memory is labeled separately from installed memory");
+  check(document.body.innerText.includes("prototype, not a product"),"Prototype disclosure is visible");
   $("guide-button").click(); check($("info-dialog").open,"Seller playbook opens");
   check($("dialog-content").textContent.includes("00:45"),"Playbook contains timed executive flow");
   $("close-dialog").click();
-  $("device-button").click(); check($("dialog-content").textContent.includes("RTX GPU through CUDA") && !/\bNPU\b/i.test($("dialog-content").textContent),"Device evidence is GPU-focused");
+  $("device-button").click(); check($("dialog-content").textContent.includes("Selected inference lane:") && $("dialog-content").textContent.includes("Detected device:"),"Device evidence names the actual model lane and detected device");
   $("close-dialog").click();
-  $("source-button").click(); check($("dialog-content").textContent.includes("FICTIONAL INSTITUTION: Zava Financial"),"Original synthetic source is inspectable");
+  const observed=status;
+  status={...observed,engine:{...observed.engine,state:"ready",selected_model:"fits",
+    model:{name:"Synthetic UI fixture",provider:"QNNExecutionProvider",where:"the NPU"},
+    models:[{alias:"fits",label:"Fitting model",cached:true,available:true},
+      {alias:"oversize",label:"Oversized model",available:false,blocker:"Exceeds this PC's memory budget"}]}};
+  renderStatus();
+  check($("engine-badge").textContent.includes("NPU") && $("model-line").textContent.includes("QNNExecutionProvider"),"Model lane labels follow NPU runtime evidence, not hardcoded CUDA");
+  check($("model").options[1].disabled && $("model").options[1].title.includes("memory budget"),"Models that cannot fit are disabled with the reason");
+  status=observed; renderStatus();
+  $("source-button").click(); check($("dialog-content").textContent.includes("FICTIONAL INSTITUTION: Example bank"),"Original synthetic source is inspectable");
   $("close-dialog").click();
   $("mode").value="rehearsal"; $("mode").dispatchEvent(new Event("change"));
   check($("prompt").readOnly,"Authored rehearsal locks its prompt");

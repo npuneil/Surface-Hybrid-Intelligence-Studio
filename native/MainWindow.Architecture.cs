@@ -46,7 +46,7 @@ internal sealed partial class MainWindow
             + "De-identification removes structured identifiers only; it is not certified and makes no regulatory or compliance determination."), "ArchMapping");
 
         return Id(Stack(14,
-            Eyebrow("Reference architecture  |  Hybrid AI for global banking"),
+            Eyebrow("Industry example  |  Banking reference architecture"),
             H2("Three tiers. Client data stay in the firm. The cloud only when needed."),
             new AdaptiveGrid(250, 4).With(tier1, tier2, escalate, tier3),
             flow,

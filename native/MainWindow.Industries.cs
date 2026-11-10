@@ -16,7 +16,7 @@ internal sealed partial class MainWindow
         var forge = Id(Primary("Open PPTX Offline Generator"), "IndustryOpenForge");
         forge.Click += (_, _) => OpenPptxForge();
         return Page(Stack(22,
-            Stack(10, Eyebrow("Banking scenarios"), H1("Make local AI relevant across the firm."),
+            Stack(10, Eyebrow("Industry Examples"), H1("Make local AI relevant across the firm."),
                 Body("Six fictional banking workflows across consumer, commercial, markets, wealth and model risk teams, from card disputes to settlement breaks, turn supplied notes into reviewable drafts on this laptop's RTX GPU. "
                     + "Run a workflow, then prepare a source-grounded presentation brief for your offline PowerPoint generator.")),
             CardBorder(Stack(12,

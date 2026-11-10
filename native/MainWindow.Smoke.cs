@@ -44,8 +44,12 @@ internal sealed partial class MainWindow
             Check("brand-assets-present", File.Exists(AppIdentity.Asset(AppIdentity.IconFile)) && File.Exists(AppIdentity.Asset(AppIdentity.LogoFile)), AppIdentity.Asset(""));
             Check("titlebar-logo", FindById(_root, "TitleBarLogo") is Image { Source: not null });
             Check("brand-mark", FindById(_root, "NavMark") is TextBlock { Text: Brand.Mark } && Title == Brand.WindowTitle, Title);
+            Check("learn-tab-hidden-by-default", !LearnTabVisible && !_learnToggle.IsOn && !_learning.ShowTab
+                && _navItems.TryGetValue("learn", out var learnNav) && learnNav.Visibility == Visibility.Collapsed);
+            SetLearnTabVisible(true);
+            await Settle();
 
-            foreach (string tag in new[] { "overview", "live", "demos", "hybrid", "industries", "showoff", "build", "sizing", "platforms", "business", "playbook", "learn" })
+            foreach (string tag in new[] { "overview", "live", "demos", "hybrid", "industries", "showoff", "build", "sizing", "platforms", "roi", "playbook", "learn" })
             {
                 Navigate(tag);
                 await Settle();
@@ -423,27 +427,20 @@ internal sealed partial class MainWindow
             foreach (string key in new[] { "field", "meeting" })
                 if (_scenarios.ContainsKey(key)) Check($"platform-try-{key}-enabled", _platformTry.TryGetValue(key, out var b) && b.IsEnabled);
 
-            Navigate("business");
+            Navigate("roi");
             await Settle();
-            foreach (var (key, box) in _businessInputs) box.Value = BusinessCase.Defaults[key];
-            bool calculated = await CalculateBusinessAsync();
-            await Settle();
-            Check("business-calculated-by-service", calculated && _bHours.Text == "2,640" && _bCapacity.Text == "$158,400" && _bInvestment.Text == "$60,000",
-                $"{_bHours.Text} / {_bCapacity.Text} / {_bInvestment.Text}");
-            Check("business-disclaimer-shown", _bDisclaimer.Text.Contains("not cash savings"), _bDisclaimer.Text);
-            string? businessPath = ExportBusiness();
-            Check("business-export", businessPath is not null && File.Exists(businessPath) && !LeaksToken(businessPath), businessPath ?? "");
-            await Shot("business-calculated");
-            _businessInputs["users"].Value = double.NaN;
-            bool rejected = !await CalculateBusinessAsync();
-            Check("business-invalid-rejected", rejected && _businessError.IsOpen, _businessError.Message);
-            _businessInputs["users"].Value = BusinessCase.Defaults["users"];
-            _businessError.IsOpen = false;
+            Check("roi-preview-link", FindById(_root, "RoiPreviewLink") is HyperlinkButton { Content: "PREVIEW" } roiLink
+                && ToolTipService.GetToolTip(roiLink) as string == ApprovedLinks.RoiCalculatorPreview && ApprovedLinks.IsApproved(ApprovedLinks.RoiCalculatorPreview),
+                ApprovedLinks.RoiCalculatorPreview);
+            Check("roi-coming-soon", FindById(_root, "RoiComingSoon") is Border { Child: TextBlock { Text: "COMING SOON" } }
+                && FindText(_root, "RoiCalculatorName") == RoiCalculatorName);
+            Check("business-case-removed", !_pages.ContainsKey("business") && !_navItems.ContainsKey("business"));
+            await Shot("roi-calculator");
 
             // Coding as a second language: optional onboarding tab, quiz, persistence, tutor hand-off, hide/show.
             Navigate("learn");
             await Settle();
-            Check("learn-tab-visible-by-default", LearnTabVisible && _learnToggle.IsOn);
+            Check("learn-tab-shown", LearnTabVisible && _learnToggle.IsOn);
             Check("learn-lessons-listed", CodingTrack.Lessons.All(l => FindById(_root, "LessonNav_" + l.Id) is Button), $"{_lessonButtons.Count}");
             Check("learn-progress-starts-empty", _learning.CompletedCount == 0 && _learnProgress.Value == 0 && _learnProgressText.Text.StartsWith("0 of 8"), _learnProgressText.Text);
             var functions = CodingTrack.Find("functions")!;

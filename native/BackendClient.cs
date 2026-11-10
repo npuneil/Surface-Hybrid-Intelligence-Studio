@@ -114,13 +114,6 @@ internal sealed partial class BackendClient : IDisposable
         using var _ = await ReadJsonAsync(response, cancellationToken);
     }
 
-    internal async Task<JsonDocument> CalculateAsync(IReadOnlyDictionary<string, double> values, CancellationToken cancellationToken)
-    {
-        using var response = await PostAsync("/api/calculate", values.ToDictionary(k => k.Key, k => (object)k.Value),
-            HttpCompletionOption.ResponseContentRead, cancellationToken, TimeSpan.FromSeconds(15));
-        return await ReadJsonAsync(response, cancellationToken);
-    }
-
     internal async IAsyncEnumerable<RunEvent> RunAsync(string scenario, string mode, string prompt,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {

@@ -102,6 +102,29 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(demos.parse_order("**ORDER:** birch, atlas, delta, cedar, harbor"),
                          ["Birch", "Atlas", "Delta", "Cedar", "Harbor"])
 
+    def test_order_parser_reads_observed_format_drift_and_still_grades(self):
+        answer = ["Birch", "Atlas", "Delta", "Cedar", "Harbor"]
+        # These four shapes came from live GPT-OSS 20B face-off runs that solved the puzzle.
+        self.assertEqual(demos.parse_order("5. So Cedar is week 4.\n\n**ORDER:**\n\nBirch, Atlas, Delta, Cedar, Harbor"),
+                         answer)
+        self.assertEqual(demos.parse_order("* Birch is week 1.\n\nResulting order: **Birch, Atlas, Delta, Cedar, Harbor**."),
+                         answer)
+        self.assertEqual(demos.parse_order("- Hence D is week 3.\n\n**ORDER** Week 1\u2011Week 5: "
+                                           "Birch, Atlas, Delta, Cedar, Harbor."), answer)
+        self.assertEqual(demos.parse_order("- Atlas must be week 2 and Birch week 1.\n\n**Order:**\n\n"
+                                           "1. Birch  \n2. Atlas  \n3. Delta  \n4. Cedar  \n5. Harbor"), answer)
+        self.assertEqual(demos.parse_order("ORDER:\n| Week | Site |\n|---|---|\n| 1 | Birch |\n| 2 | Atlas |\n"
+                                           "| 3 | Delta |\n| 4 | Cedar |\n| 5 | Harbor |\n\nEvery rule holds."), answer)
+        self.assertEqual(demos.parse_order("**ORDER** Birch, Atlas, Delta, Cedar, Harbor\nThis order meets every rule."),
+                         answer)
+        self.assertEqual(demos.parse_order("`ORDER: Birch, Atlas, Delta, Cedar, Harbor`"), answer)
+        self.assertEqual(demos.parse_order("ORDER: Birch, Atlas, Delta, Cedar, Harbor\nThis order: beats Atlas, Birch"),
+                         answer)
+        self.assertIsNone(demos.parse_order("- Keep the order: Cedar then Harbor"))
+        self.assertIsNone(demos.parse_order("Deductions done.\n\nORDER:"))
+        self.assertFalse(demos.schedule_check("**ORDER:**\nAtlas, Birch, Delta, Cedar, Harbor")["pass"])
+        self.assertFalse(demos.schedule_check("**Order:**\n1. Atlas\n2. Birch\n3. Delta\n4. Cedar\n5. Harbor")["pass"])
+
     def test_receipt_fixture_is_arithmetically_true(self):
         subtotal = sum(float(amount) for _, amount in demos.RECEIPT_ITEMS)
         self.assertAlmostEqual(subtotal, float(demos.RECEIPT["subtotal"]))
@@ -142,6 +165,16 @@ class RegistryTests(unittest.TestCase):
         self.assertIn("fictional", demos.NOTICE.lower())
         self.assertIn("fictional", demos.EMAIL.lower())
 
+    def test_training_sources_and_rehearsals_have_no_company_branding(self):
+        from content import SCENARIOS
+        import hybrid
+
+        text = json.dumps([SCENARIOS, demos.DEMOS, demos.MEDIA_SPEC, hybrid.PRESETS]).lower()
+        for name in ("zava", "woodgrove", "contoso", "bluebird", "cdw", "wonka",
+                     "ingram", "brighthouse", "levi", "pnc"):
+            with self.subTest(name=name):
+                self.assertIsNone(re.search(rf"\b{name}\b", text), name)
+
     @staticmethod
     def wording_on(device_id):
         return demos.wording(LocalEngine().preview(report_for(device_id), forced=False))
@@ -149,13 +182,13 @@ class RegistryTests(unittest.TestCase):
     def test_an_engine_that_has_not_started_words_the_demos_for_the_reference_pc(self):
         self.assertEqual(demos.wording(LocalEngine()), demos.REFERENCE)
         self.assertEqual(demos.public(demos.wording(LocalEngine())), demos.public())
-        self.assertEqual(self.wording_on("nvidia-n1x-64"), demos.REFERENCE)
+        self.assertEqual(self.wording_on("nvidia-n1x-128"), demos.REFERENCE)
 
     def test_the_text_names_the_models_and_lane_this_pc_runs(self):
         text = json.dumps([demos.render(demo_id, self.wording_on("snapdragon-x2-elite-24")) for demo_id in demos.ORDER])
         self.assertIn("Runs on the NPU.", text)
         self.assertIn("Qwen2.5 7B drafts and explains code", text)
-        self.assertIn("DeepSeek-R1 Distill Qwen 7B works through a multi-constraint plan", text)
+        self.assertIn("Phi-4 mini reasoning works through a multi-constraint plan", text)
         for stale in ("RTX", "GPU", "Qwen2.5-Coder", "GPT-OSS"):
             self.assertNotIn(stale, text)
 
@@ -164,7 +197,7 @@ class RegistryTests(unittest.TestCase):
             return demos.render("faceoff", self.wording_on(device_id))["title"]
 
         self.assertEqual(title("nvidia-n1x-64"), "Model face-off: 14B versus 20B")
-        self.assertEqual(title("snapdragon-x2-elite-24"), "Model face-off: Qwen2.5 7B versus DeepSeek-R1 Distill Qwen 7B")
+        self.assertEqual(title("snapdragon-x2-elite-24"), "Model face-off: Qwen2.5 7B versus Phi-4 mini reasoning")
         self.assertEqual(title("nvidia-dgpu-16"), "Model face-off: Phi-4 mini versus Phi-4 mini reasoning")
         self.assertEqual(title("intel-pentium-8"), "Model face-off: chat model versus reasoning model")
 
@@ -511,7 +544,7 @@ class NpuRunnerTests(RunnerCase):
     """The live pipelines on a Snapdragon X2 Elite lineup: every model runs on the NPU, so the demos say so and read no GPU counters."""
 
     def make_engine(self):
-        return PreviewedDemoEngine("snapdragon-x2-elite-24")
+        return PreviewedDemoEngine("snapdragon-x2-elite-64")
 
     def test_every_live_pipeline_passes_and_names_only_the_npu(self):
         for demo_id in demos.ORDER:
@@ -585,12 +618,12 @@ class SmallPcRunnerTests(RunnerCase):
 
     def test_the_team_demo_counts_the_model_that_does_not_fit(self):
         self.engine.replies = ["s[::-1]"]
-        self.engine.views = ["TOTAL 93.53"]
+        self.engine.views = []
         events = self.run_demo("team")
         terminal = {e["index"]: e["state"] for e in events if e["type"] == "step" and e["state"] != "running"}
-        self.assertEqual(terminal, {0: "done", 1: "failed", 2: "done", 3: "done", 4: "done", 5: "done"})
+        self.assertEqual(terminal, {0: "done", 1: "failed", 2: "failed", 3: "failed", 4: "failed", 5: "done"})
         residency = [e for e in events if e["type"] == "check"][-1]
-        self.assertEqual((residency["value"], residency["pass"]), ("4 of 5", False))
+        self.assertEqual((residency["value"], residency["pass"]), ("1 of 5", False))
         self.assertIn("No model here runs on the GPU", residency["detail"])
         listing = next(e["text"] for e in events if e["type"] == "text" and e["index"] == 5)
         self.assertIn("Not available on this PC: Reasoning model (", listing)

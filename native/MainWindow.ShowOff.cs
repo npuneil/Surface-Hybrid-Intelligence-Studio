@@ -83,7 +83,7 @@ internal sealed partial class MainWindow
             ShowStep(1, "Show the decision", "Route a request with personal data and a cloud need.", "Open the router", () => OpenRouterMoment()),
             ShowStep(2, "Put a number on it", "Run the speedometer on the loaded model.", "Run speed test", () => { _ = RunSpeedTestAsync(); }),
             ShowStep(3, "Prove it is an endpoint", "Start the loopback API and send a real call.", "Open Build on Surface", () => Navigate("build")),
-            ShowStep(4, "Make it theirs", "Run the banking workflow closest to their role.", "Banking scenarios", () => Navigate("industries")),
+            ShowStep(4, "Make it theirs", "Run the banking workflow closest to their role.", "Industry Examples", () => Navigate("industries")),
             ShowStep(5, "Leave with a deck", "Prepare a brief for the offline PPTX generator.", "Open PPTX Forge", () => OpenTool("forge", "open")));
 
         return Page(Stack(22,
@@ -432,7 +432,7 @@ internal sealed partial class MainWindow
             }
             if (toolId == "forge" && actionId == "open" && PptxForge.IsRunning())
             {
-                ShowInfo(_toolInfo, "Offline PPTX Forge is already open", "Switch to its window. Use Banking scenarios to prepare a brief for it.", InfoBarSeverity.Informational);
+                ShowInfo(_toolInfo, "Offline PPTX Forge is already open", "Switch to its window. Use Industry Examples to prepare a brief for it.", InfoBarSeverity.Informational);
                 return;
             }
             if (toolId == "hydrafusion" && actionId == "start" && (_running || _demoRunning || _labRunning))

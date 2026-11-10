@@ -20,7 +20,7 @@ MEETING_SEGMENTS = (
     ("female", "Understood. That decision stays open. I will send these notes to you this afternoon. Thank you."),
 )
 MEMO_SEGMENTS = (
-    ("male", "Field note for the Contoso Bank operations team. Location is teller desk three at the Riverside "
+    ("male", "Field note for the Example bank operations team. Location is teller desk three at the Riverside "
              "branch. Teller tablet H seventeen will "
              "not sync since the network dropped this morning. Battery is at forty percent and I restarted it twice. "
              "Please open a priority two ticket and send a replacement charging cradle. "
@@ -43,9 +43,9 @@ WORK_ORDER_CHECK = {"work_order": "WO-48217", "date_reported": "16 Oct 2026", "d
                     "site": "Room 114", "asset": "P-17", "priority": "P2", "reported_by": "Okafor",
                     "technician": "Alvarez", "description": "network outage", "status": "Open"}
 RECEIPT_ITEMS = (("Client lunch (6)", "72.00"), ("Coffee service", "9.00"), ("Fruit platter", "5.40"))
-RECEIPT = {"merchant": "Bluebird Cafe & Catering", "date": "14 Oct 2026", "order_number": "2291",
+RECEIPT = {"merchant": "Example merchant", "date": "14 Oct 2026", "order_number": "2291",
            "subtotal": "86.40", "tax": "7.13", "total": "93.53", "card_last4": "4417"}
-RECEIPT_CHECK = {"merchant": "Bluebird", "date": "14 Oct 2026", "order_number": "2291", "subtotal": "86.40",
+RECEIPT_CHECK = {"merchant": "Example merchant", "date": "14 Oct 2026", "order_number": "2291", "subtotal": "86.40",
                  "tax": "7.13", "total": "93.53", "card_last4": "4417"}
 
 MEDIA_SPEC = {
@@ -56,7 +56,7 @@ MEDIA_SPEC = {
          "segments": [{"voice": v, "text": t, "pause_ms": 300} for v, t in MEMO_SEGMENTS]},
         {"name": "work-order.png", "kind": "form", "width": 1100, "height": 900, "rotate": -1.2,
          "title": "BANK FACILITIES WORK ORDER",
-         "subtitle": "Woodgrove Bank  |  Corporate facilities  |  Fictional form",
+         "subtitle": "Example bank  |  Corporate facilities  |  Fictional form",
          "rows": [
              {"label": "Work order no.", "value": WORK_ORDER["work_order"]},
              {"label": "Date reported", "value": WORK_ORDER["date_reported"]},
@@ -71,7 +71,7 @@ MEDIA_SPEC = {
          ],
          "footer": "FICTIONAL WORK ORDER  |  Synthetic data for a local AI demonstration  |  No real institution"},
         {"name": "receipt.png", "kind": "receipt", "width": 620, "height": 640, "rotate": 1.5,
-         "merchant": "BLUEBIRD CAFE & CATERING",
+         "merchant": "EXAMPLE MERCHANT",
          "header": ["418 Harbor Row, Port Ellis", "Tel 555-0142", "14 Oct 2026   12:47", "Order #2291"],
          "lines": [{"left": d, "right": a} for d, a in RECEIPT_ITEMS] + [
              {"left": "---"}, {"left": "Subtotal", "right": "86.40"}, {"left": "Tax 8.25%", "right": "7.13"},
@@ -84,13 +84,13 @@ MEDIA_NAMES = tuple(item["name"] for item in MEDIA_SPEC["files"])
 
 # ---------------------------------------------------------------- text fixtures
 NOTICE = (
-    "FICTIONAL NOTICE | Woodgrove Bank\n"
+    "FICTIONAL NOTICE | Example bank\n"
     "Planned maintenance on online banking will take place on Saturday 24 October 2026, "
     "from 14:00 to 16:00. During this window, new branch appointments cannot be booked online, but existing "
     "appointments are not affected. If you have an urgent request, call customer service and quote reference "
     "HD-204. We apologise for the inconvenience and thank you for your patience."
 )
-PROTECTED_TERMS = ("Woodgrove Bank", "HD-204", "14:00", "16:00")
+PROTECTED_TERMS = ("Example bank", "HD-204", "14:00", "16:00")
 LANGUAGES = (("es", "Spanish"), ("fr", "French"), ("de", "German"), ("pt-BR", "Brazilian Portuguese"),
              ("ja", "Japanese"))
 
@@ -102,7 +102,7 @@ POLICIES = (
      "up to 60 dollars per day while travelling. Alcohol is not reimbursable."),
     ("POL-03", "Lost or stolen devices", "Report a lost or stolen laptop, tablet or phone used for bank work "
      "to the IT Security Operations desk within one hour of noticing, on extension 4400 or "
-     "security@woodgrove.example. Do not delay the report to keep searching. IT will remotely lock and wipe the "
+     "security@organization.example. Do not delay the report to keep searching. IT will remotely lock and wipe the "
      "device."),
     ("POL-04", "Data retention", "Customer account records are kept for seven years after an account closes. "
      "Meeting recordings and transcripts are deleted after 90 days unless the Legal department places them "
@@ -130,7 +130,7 @@ DOCS_QUESTION = "I think I left my work laptop on the commuter train. What shoul
 DOCS_EXPECTED = "POL-03"
 QUERY_INSTRUCTION = "Instruct: Given a staff question, retrieve the bank policy that answers it\nQuery: "
 
-EMAIL_OFFICE = "Woodgrove Bank customer care team"
+EMAIL_OFFICE = "Example bank customer care team"
 EMAIL = (
     "FICTIONAL EMAIL\n"
     "From: Dana Whitfield <dana.whitfield@example.com>\n"
@@ -205,13 +205,55 @@ def valid_schedules():
     return [order for order in itertools.permutations(SITES) if not schedule_violations(order)]
 
 
+ORDER_LABEL = re.compile(r"^[\s>*_`#-]*ORDER\b[\s*_`]*:", re.IGNORECASE)
+ORDER_MENTION = re.compile(r"\bORDER\b", re.IGNORECASE)
+
+
+def _site_names(text):
+    return [name.capitalize() for name in re.findall(r"[A-Za-z]+", text) if name.capitalize() in SITES]
+
+
+def _sites_after(lines, index, match):
+    """Site names after an ORDER match: on the same line, else on the next line, else down a list with one site
+    per line (numbered, bulleted or table rows). Up to two leading rows without a site, such as a table's header
+    and divider, are skipped."""
+    found = _site_names(lines[index][match.end():])
+    if found:
+        return found
+    rows = [_site_names(line) for line in lines[index + 1:] if line.strip()]
+    start = next((i for i, names in enumerate(rows[:3]) if names), None)
+    if start is None:
+        return []
+    if len(rows[start]) > 1:
+        return rows[start]
+    for names in rows[start:]:
+        if not names or len(found) == len(SITES):
+            break
+        found.append(names[0])
+    return found
+
+
 def parse_order(text):
-    lines = [line for line in text.splitlines() if re.match(r"\s*\**\s*ORDER\s*:", line, re.IGNORECASE)]
-    if not lines:
-        return None
-    names = re.findall(r"[A-Za-z]+", lines[-1].split(":", 1)[1])
-    found = [name.capitalize() for name in names if name.capitalize() in SITES]
-    return found or None
+    """The proposed schedule from the last ORDER line. GPT-OSS samples at temperature 1.0 and sometimes drifts
+    from the exact format: a bare **ORDER:** label with the sites on the next line or as a numbered list,
+    'Resulting order: Birch, ...' or '**ORDER** Week 1-Week 5: Birch, ...'. Without a readable ORDER: label, the
+    last line that mentions ORDER and then names all five sites is read instead. Either way the schedule itself
+    is still graded."""
+    lines = text.splitlines()
+    for index in range(len(lines) - 1, -1, -1):
+        match = ORDER_LABEL.search(lines[index])
+        if match:
+            found = _sites_after(lines, index, match)
+            if found:
+                return found
+            break
+    for index in range(len(lines) - 1, -1, -1):
+        match = ORDER_MENTION.search(lines[index])
+        if match:
+            found = _sites_after(lines, index, match)
+            if len(found) == len(SITES):
+                return found
+    return None
 
 
 # ---------------------------------------------------------------- registry
@@ -262,7 +304,7 @@ DEMOS = {
         "max_tokens": 400,
         "steps": [_step("Transcribe the voice memo", "asr"), _step("Structure the work order", "chat")],
         "rehearsal": [script_text(MEMO_SEGMENTS), (
-            '{\n  "department": "Contoso Bank operations team",\n  "location": "Teller desk 3, Riverside branch",\n  "asset": "Teller tablet H-17",\n'
+            '{\n  "department": "Example bank operations team",\n  "location": "Teller desk 3, Riverside branch",\n  "asset": "Teller tablet H-17",\n'
             '  "issue": "Will not sync since the network dropped this morning",\n'
             '  "actions_taken": "Restarted twice",\n  "battery_percent": 40,\n  "priority": "P2",\n'
             '  "parts_requested": "Replacement charging cradle",\n'
@@ -277,7 +319,7 @@ DEMOS = {
         "proof": "Runs on the selected local model; protected terms are checked automatically, meaning needs a fluent reviewer.",
         "input": {"kind": "text", "label": "Synthetic customer notice"},
         "source": NOTICE,
-        "prompt": ("Translate the notice into {language}. Keep the brand name Woodgrove Bank in English, the "
+        "prompt": ("Translate the notice into {language}. Keep the name Example bank in English, the "
                    "reference HD-204 and the times 14:00 and 16:00 exactly as written. Return only the translation."),
         "system": ("You are a professional translator running locally. Translate faithfully and naturally. "
                    "Do not add or remove information. Never translate brand names. Keep names, references, numbers "
@@ -287,7 +329,7 @@ DEMOS = {
         "option_label": "Target language",
         "steps": [_step("Translate", "chat")],
         "rehearsal": [(
-            "AVISO | Woodgrove Bank\n"
+            "AVISO | Example bank\n"
             "El mantenimiento programado de la banca en línea se realizará el sábado 24 de octubre de 2026, de "
             "14:00 a 16:00. Durante este periodo no se podrán reservar en línea nuevas citas en sucursal, pero las "
             "citas existentes no se verán afectadas. Si tiene una solicitud urgente, llame al servicio de atención "
@@ -319,7 +361,7 @@ DEMOS = {
         "max_tokens": 450,
         "steps": [_step("Redact personal data", "chat")],
         "rehearsal": [(
-            "FICTIONAL EMAIL\nFrom: [NAME] <[EMAIL]>\nTo: Woodgrove Bank customer care team\n"
+            "FICTIONAL EMAIL\nFrom: [NAME] <[EMAIL]>\nTo: Example bank customer care team\n"
             "Subject: Mailing address change\n\n"
             "Hello, please update my mailing address to [ADDRESS], Port Ellis, [POSTCODE]. My account number is "
             "[ACCOUNT] and my date of birth is [DATE_OF_BIRTH] if you need to verify me. You can reach me on [PHONE] "
@@ -362,7 +404,7 @@ DEMOS = {
         "rehearsal": [
             "1. POL-03 Lost or stolen devices\n2. POL-08 Software requests\n3. POL-07 Remote work",
             ("Report the lost laptop to the IT Security Operations desk within one hour of noticing, on extension "
-             "4400 or security@woodgrove.example [POL-03]. Do not delay the report to keep searching; IT will "
+             "4400 or security@organization.example [POL-03]. Do not delay the report to keep searching; IT will "
              "remotely lock and wipe the device [POL-03].")],
     },
     "vision": {
@@ -389,7 +431,7 @@ DEMOS = {
         "steps": [_step("Read the document", "vision")],
         "rehearsal_options": {
             "work-order": ['{\n' + ",\n".join(f'  "{k}": "{v}"' for k, v in WORK_ORDER.items()) + "\n}"],
-            "receipt": ['{\n  "merchant": "Bluebird Cafe & Catering",\n  "date": "14 Oct 2026",\n'
+            "receipt": ['{\n  "merchant": "Example merchant",\n  "date": "14 Oct 2026",\n'
                         '  "order_number": "2291",\n  "line_items": [\n'
                         + ",\n".join(f'    {{"description": "{d}", "amount": "{a}"}}' for d, a in RECEIPT_ITEMS)
                         + '\n  ],\n  "subtotal": "86.40",\n  "tax": "7.13",\n  "total": "93.53",\n'

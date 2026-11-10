@@ -22,13 +22,15 @@ internal static class ApprovedLinks
     internal const string FoundryLocalSdk = "https://learn.microsoft.com/en-us/azure/foundry-local/reference/reference-sdk-current";
     internal const string QualcommWhisperBase = "https://github.com/qualcomm/ai-hub-models/tree/main/src/qai_hub_models/models/whisper_base";
     internal const string SurfaceLaptopUltraSpecs = "https://learn.microsoft.com/en-us/surface/tech-specs/surface-laptop-ultra-1stedition";
+    /// <summary>Microsoft Store listing for the standalone Hybrid Intelligence ROI Calculator (preview). Replace it here when the final Store link is ready.</summary>
+    internal const string RoiCalculatorPreview = "https://apps.microsoft.com/detail/9PL5S4VMHXQK";
 
     internal static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
-        QualcommGenie, OpenVinoGenAi, OpenVinoRequirements, FoundryLocalSdk, QualcommWhisperBase, SurfaceLaptopUltraSpecs
+        QualcommGenie, OpenVinoGenAi, OpenVinoRequirements, FoundryLocalSdk, QualcommWhisperBase, SurfaceLaptopUltraSpecs, RoiCalculatorPreview
     };
 
-    /// <summary>Only exact, allow-listed HTTPS documentation URLs may be opened.</summary>
+    /// <summary>Only exact, allow-listed HTTPS documentation and Store URLs may be opened.</summary>
     internal static bool IsApproved(string? url) =>
         url is not null && All.Contains(url) && Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
 }

@@ -30,21 +30,27 @@ def npu_share(row):
 
 class FitTests(unittest.TestCase):
     def test_the_reference_pc_runs_every_demo_as_authored(self):
-        rows, order = view_for("nvidia-n1x-64").fits()
+        rows, order = view_for("nvidia-n1x-128").fits()
         self.assertEqual(order, list(demos.ORDER))
         for demo_id, row in rows.items():
             with self.subTest(demo=demo_id):
                 self.assertEqual((row["state"], row["lanes"], row["where"], row["note"]), ("ready", ["gpu"], RTX, None))
                 self.assertEqual(row["summary"], f"Runs on {RTX}.")
 
-    def test_an_npu_first_pc_runs_every_demo_on_the_npu_and_names_the_stand_in_models(self):
+    def test_an_npu_first_pc_only_opens_demos_whose_lineup_fits(self):
         rows, _ = view_for("snapdragon-x2-elite-24").fits()
         for demo_id, row in rows.items():
             with self.subTest(demo=demo_id):
-                self.assertEqual((row["state"], row["lanes"], row["summary"]), ("ready", ["npu"], "Runs on the NPU."))
+                if demo_id in ("meeting", "voice-memo", "vision", "ask-docs"):
+                    self.assertEqual(row["state"], "unavailable")
+                    self.assertIn("resident lineup", row["summary"])
+                elif demo_id == "team":
+                    self.assertEqual(row["state"], "limited")
+                else:
+                    self.assertEqual((row["state"], row["lanes"], row["summary"]), ("ready", ["npu"], "Runs on the NPU."))
         self.assertEqual(rows["brief"]["note"], "Uses Qwen2.5 7B in place of Qwen2.5-Coder 14B, the model this demo was tuned on; "
                                                  "checks are scored the same way.")
-        self.assertIsNone(rows["vision"]["note"], "Qwen3-VL 4B is the model the vision demo was tuned on")
+        self.assertIsNone(rows["vision"]["where"], "a model that cannot fit is not positioned as runnable")
 
     def test_demos_that_run_mostly_on_the_npu_come_first_and_unavailable_ones_last(self):
         view = view_for("snapdragon-x2-plus-8")
@@ -54,14 +60,16 @@ class FitTests(unittest.TestCase):
         usable = [demo_id for demo_id in order if rows[demo_id]["state"] != "unavailable"]
         shares = [npu_share(rows[demo_id]) for demo_id in usable]
         self.assertEqual(shares, sorted(shares, reverse=True))
-        self.assertGreater(shares[0], shares[-1], "this PC runs some demos on the CPU, so the order has to tell them apart")
+        self.assertTrue(all(step["lane"] != "cpu" for row in rows.values() for step in row["steps"]),
+                        "the CPU shares the same memory; it is not a second budget")
         self.assertEqual([rows[demo_id]["rank"] for demo_id in order], list(range(len(order))))
 
     def test_a_pc_with_no_room_for_a_reasoning_model_limits_the_demos_that_can_run_without_one(self):
         rows, order = view_for("intel-pentium-8").fits()
         for demo_id in INDEPENDENT:
             self.assertEqual(rows[demo_id]["state"], "limited", demo_id)
-            self.assertEqual(rows[demo_id]["summary"], "Runs on the CPU; the reasoning model does not fit this PC.")
+            self.assertIn("the reasoning model", rows[demo_id]["summary"])
+            self.assertIn("not fit this PC", rows[demo_id]["summary"])
         self.assertEqual(rows["reasoning"]["state"], "unavailable")
         self.assertTrue(rows["reasoning"]["summary"].startswith("Not available on this PC: "))
         self.assertIn("CPU", rows["reasoning"]["summary"])
@@ -83,11 +91,12 @@ class LineupTests(unittest.TestCase):
         view = view_for("snapdragon-x2-elite-24")
         rows = models(view.shown())
         self.assertEqual([row["slot"] for row in rows], ["chat", "reasoner", "asr", "vision", "embed"])
-        self.assertEqual({(row["lane"], row["where"], row["available"]) for row in rows}, {("npu", "the NPU", True)})
+        self.assertEqual({(row["lane"], row["where"], row["available"]) for row in rows},
+                         {("npu", "the NPU", True), (None, None, False)})
         self.assertEqual(rows[0]["label"], "Qwen2.5 7B")
         self.assertEqual(rows[0]["reference"], "qwen2.5-coder-14b")
         self.assertTrue(all(row["estimated"] for row in rows), "a preview is sized from estimates")
-        self.assertEqual(placement(rows), "5 of 5 models run here: 5 on the NPU.")
+        self.assertEqual(placement(rows), "2 of 5 models run here: 2 on the NPU.")
 
     def test_a_slot_with_no_model_has_a_reason_and_is_left_out_of_the_placement(self):
         rows = models(view_for("intel-pentium-8").shown())
@@ -95,12 +104,12 @@ class LineupTests(unittest.TestCase):
         self.assertFalse(reasoner["available"])
         self.assertIsNone(reasoner["label"])
         self.assertIn("CPU", reasoner["blocker"])
-        self.assertEqual(placement(rows), "4 of 5 models run here: 4 on the CPU.")
+        self.assertEqual(placement(rows), "1 of 5 models run here: 1 on the CPU.")
 
     def test_a_lineup_split_across_lanes_is_counted_per_lane(self):
-        rows = models(view_for("snapdragon-x2-plus-8").shown())
+        rows = models(view_for("nvidia-dgpu-32").shown())
         text = placement(rows)
-        self.assertRegex(text, r"^\d of 5 models run here: \d on the NPU, \d on the CPU\.$")
+        self.assertEqual(text, "5 of 5 models run here: 2 on the RTX GPU, 3 on the CPU.")
 
     def test_nothing_runs_is_said_plainly(self):
         self.assertEqual(placement([{"available": False, "where": None}]), "No model in the Studio's lineup fits this PC.")
@@ -132,7 +141,7 @@ class HybridWordingTests(unittest.TestCase):
         wording = hybrid_wording(view_for("intel-pentium-8").shown())
         self.assertEqual(wording, {"where": "the CPU", "routine": "0.5B for routine work", "depth": NO_DEPTH})
         npu = hybrid_wording(view_for("snapdragon-x2-elite-24").shown())
-        self.assertEqual((npu["where"], npu["routine"]), ("the NPU", "7B for routine work"))
+        self.assertEqual((npu["where"], npu["routine"]), ("the NPU", "3.8B-7B for routine work"))
 
 
 class ViewTests(unittest.TestCase):
@@ -262,6 +271,21 @@ class DeviceApiTests(unittest.TestCase):
         self.assertEqual(len(payload["models"]), 5)
         self.assertGreaterEqual(len(payload["simulation"]["devices"]), 20)
         self.assertEqual(self.request("GET", "/api/device", headers={"Host": "evil.example"})[0], 403)
+
+    def test_a_failed_fit_check_does_not_offer_an_unchecked_demo_catalog(self):
+        with patch.object(self.server.view, "fits", side_effect=RuntimeError("memory inventory unavailable")):
+            code, data = self.get("/api/demos")
+        self.assertEqual(code, 503)
+        self.assertIn("memory inventory unavailable", data["error"])
+        self.assertNotIn("demos", data)
+
+    def test_an_unavailable_demo_cannot_bypass_device_fit_via_the_api(self):
+        with patch.object(self.server.view, "fits", return_value=(
+                {"vision": {"state": "unavailable", "summary": "Vision does not fit this PC."}}, ["vision"])):
+            code, data = self.post("/api/demo/run", {"demo": "vision", "mode": "live"})
+        self.assertEqual(code, 409)
+        self.assertIn("does not fit", json.loads(data)["error"])
+        self.assertFalse(self.server.run_lock.locked())
 
     def test_simulating_is_protected_validated_and_serialized(self):
         self.assertEqual(self.post("/api/device/simulate", {"id": "intel-pentium-8"}, {"X-Showcase-Token": "bad"})[0], 403)

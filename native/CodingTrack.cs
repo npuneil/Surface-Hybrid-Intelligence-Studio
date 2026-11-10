@@ -41,9 +41,9 @@ internal static class CodingTrack
         new("variables", "Vocabulary", "Variables: naming things",
             "Every script starts by naming the facts it works with. Spot the names and you know what a program cares about.",
             "A variable is a labelled box: the label is the name, and what is inside is the value.",
-            "bank = \"Woodgrove Bank\"\nadvisors = 240\nsummaries_per_day = 5",
+            "bank = \"Example bank\"\nadvisors = 240\nsummaries_per_day = 5",
             [
-                new("bank = \"Woodgrove Bank\"", "Stores some text under the name bank. Quotes mark text, which programmers call a string."),
+                new("bank = \"Example bank\"", "Stores some text under the name bank. Quotes mark text, which programmers call a string."),
                 new("advisors = 240", "Stores the number 240 under the name advisors. A single = means 'store this', not 'is equal to'."),
                 new("summaries_per_day = 5", "Names use underscores instead of spaces so the computer reads them as one word."),
             ],
@@ -180,7 +180,7 @@ internal static class CodingTrack
 internal sealed class LearningState
 {
     internal HashSet<string> Completed { get; } = new(StringComparer.Ordinal);
-    internal bool ShowTab { get; set; } = true;
+    internal bool ShowTab { get; set; }
     internal string? LastLesson { get; set; }
 
     internal int CompletedCount => CodingTrack.Lessons.Count(l => Completed.Contains(l.Id));

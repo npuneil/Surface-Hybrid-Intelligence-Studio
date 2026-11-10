@@ -298,7 +298,7 @@ class LocalEngine:
             choices = self._resolve()
             if cuda:
                 try:
-                    choices += self.large.catalog()
+                    choices += self.large.catalog(memory_budget_gib=self.report.profile.lane("gpu").budget_gb)
                 except Exception:
                     logging.exception("Larger-model discovery failed; Foundry Local models remain available")
             self.state.update(models=choices)
@@ -379,10 +379,12 @@ class LocalEngine:
 
     def _resolve(self):
         """Choose each slot's model for this PC's real hardware from Foundry Local's catalog. Returns the chat-model rows."""
+        fixed = {key: choice.model for key, choice in self.slots.items()
+                 if choice.model and self.is_resident(choice.slot.reference if choice.slot.kind == "chat" else key)}
         return self._apply(target_plan.choose(self.report, device_context.service().catalog, self.source,
                                               usable=self.registration.usable, failed=self.failed,
                                               lane_problems=self.registration.lane_problems,
-                                              allow_download=self.allow_download, lanes=self.lanes))
+                                              allow_download=self.allow_download, lanes=self.lanes, fixed=fixed))
 
     def preview(self, report=None, *, forced=True):
         """Name each slot's model from a device report and the kit's size estimates alone, before Foundry Local has answered. The demos'

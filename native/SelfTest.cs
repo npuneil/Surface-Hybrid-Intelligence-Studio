@@ -176,6 +176,8 @@ internal static class SelfTest
             Check("links-reject-lookalike", !ApprovedLinks.IsApproved("https://github.com.evil.example/openvinotoolkit/openvino.genai"));
             Check("links-reject-suffix", !ApprovedLinks.IsApproved(ApprovedLinks.OpenVinoGenAi + "/../../evil"));
             Check("links-reject-null", !ApprovedLinks.IsApproved(null) && !ApprovedLinks.IsApproved("javascript:alert(1)"));
+            Check("roi-calculator-link-approved", ApprovedLinks.IsApproved(ApprovedLinks.RoiCalculatorPreview)
+                && new Uri(ApprovedLinks.RoiCalculatorPreview).Host == "apps.microsoft.com", ApprovedLinks.RoiCalculatorPreview);
         });
 
         Guard("target", () =>
@@ -502,24 +504,24 @@ internal static class SelfTest
             string path = Path.Combine(dir, "learning.json");
             File.Delete(path);
             var fresh = LearningState.Load(path);
-            Check("learn-store-missing-defaults", fresh.ShowTab && fresh.CompletedCount == 0 && fresh.LastLesson is null);
-            var saved = new LearningState { ShowTab = false, LastLesson = "apis" };
+            Check("learn-store-missing-defaults", !fresh.ShowTab && fresh.CompletedCount == 0 && fresh.LastLesson is null);
+            var saved = new LearningState { ShowTab = true, LastLesson = "apis" };
             saved.Completed.Add("variables");
             saved.Completed.Add("apis");
             saved.Save(path);
             var loaded = LearningState.Load(path);
-            Check("learn-store-round-trip", !loaded.ShowTab && loaded.LastLesson == "apis" && loaded.CompletedCount == 2 && loaded.Completed.SetEquals(["variables", "apis"]));
+            Check("learn-store-round-trip", loaded.ShowTab && loaded.LastLesson == "apis" && loaded.CompletedCount == 2 && loaded.Completed.SetEquals(["variables", "apis"]));
             File.WriteAllText(path, """{"show_tab":true,"last_lesson":"bogus","completed":["loops","bogus",7,null]}""");
             var filtered = LearningState.Load(path);
             Check("learn-store-drops-unknown", filtered.ShowTab && filtered.LastLesson is null && filtered.Completed.SetEquals(["loops"]));
             File.WriteAllText(path, "{not json");
             var corrupt = LearningState.Load(path);
-            Check("learn-store-corrupt-defaults", corrupt.ShowTab && corrupt.CompletedCount == 0);
+            Check("learn-store-corrupt-defaults", !corrupt.ShowTab && corrupt.CompletedCount == 0);
             File.WriteAllText(path, """{"show_tab":"no","completed":"loops"}""");
             var wrongTypes = LearningState.Load(path);
-            Check("learn-store-wrong-types-defaults", wrongTypes.ShowTab && wrongTypes.CompletedCount == 0);
+            Check("learn-store-wrong-types-defaults", !wrongTypes.ShowTab && wrongTypes.CompletedCount == 0);
             File.WriteAllText(path, new string(' ', 70 * 1024) + "{}");
-            Check("learn-store-oversize-defaults", LearningState.Load(path).ShowTab);
+            Check("learn-store-oversize-defaults", !LearningState.Load(path).ShowTab);
             Directory.Delete(dir, recursive: true);
         });
 
@@ -542,25 +544,6 @@ internal static class SelfTest
             var snapshot = StatusParser.Parse(status.RootElement);
             Check("parse-status", snapshot.Engine.IsReady && snapshot.Device.PrimaryGpuBudgetMiB == 64000 && Near(snapshot.Device.InstalledGiB ?? 0, 128)
                 && snapshot.Engine.Models[0].SizeMb == 9000);
-        });
-
-        Guard("business", () =>
-        {
-            Check("business-defaults-valid", BusinessCase.Validate(BusinessCase.Defaults) is null);
-            Check("business-default-hours", Near(BusinessCase.ExpectedHours(BusinessCase.Defaults), 2640));
-            var values = new Dictionary<string, double>(BusinessCase.Defaults);
-            foreach (var (key, _, min, max, _) in BusinessCase.Fields)
-            {
-                Check($"business-{key}-min-valid", BusinessCase.Validate(new Dictionary<string, double>(values) { [key] = min }) is null);
-                Check($"business-{key}-max-valid", BusinessCase.Validate(new Dictionary<string, double>(values) { [key] = max }) is null);
-                Check($"business-{key}-below-invalid", BusinessCase.Validate(new Dictionary<string, double>(values) { [key] = min - 0.01 }) is not null);
-                Check($"business-{key}-above-invalid", BusinessCase.Validate(new Dictionary<string, double>(values) { [key] = max + 0.01 }) is not null);
-                Check($"business-{key}-nan-invalid", BusinessCase.Validate(new Dictionary<string, double>(values) { [key] = double.NaN }) is not null);
-            }
-            var missing = new Dictionary<string, double>(values);
-            missing.Remove("premium");
-            Check("business-missing-invalid", BusinessCase.Validate(missing) is not null);
-            Check("business-extra-invalid", BusinessCase.Validate(new Dictionary<string, double>(values) { ["extra"] = 1 }) is not null);
         });
 
         Guard("evidence", () =>

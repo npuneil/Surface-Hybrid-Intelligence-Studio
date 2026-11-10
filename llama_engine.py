@@ -230,24 +230,28 @@ class LargeModelHost:
         atexit.register(self.stop)
 
     # ------------------------------------------------------------ discovery
-    def catalog(self):
+    def catalog(self, memory_budget_gib=None):
         manifest = _manifest()
         exe_ok = server_exe().is_file()
         rows = []
         for alias, spec in LARGE_MODELS.items():
             found = locate(alias, manifest)
+            need = found[1] / GIB + spec["overhead_gib"] if found else None
             blocker = None
             if found is None:
                 blocker = spec.get("unavailable") or (f"Weights not found in {home() / 'models' / alias}. "
                                                       "Install them with Local-AI-Bench (bench.ps1 models install).")
             elif not exe_ok:
                 blocker = f"llama.cpp server not found at {server_exe()}. Run Local-AI-Bench scripts\\setup.ps1."
+            elif memory_budget_gib is not None and need > memory_budget_gib:
+                blocker = (f"Needs about {need:.1f} GiB on the GPU; this PC's detected model budget is "
+                           f"{memory_budget_gib:.1f} GiB.")
             rows.append({"alias": alias, "id": found[0].name if found else alias, "label": spec["label"],
                          "reasoning": spec["reasoning"], "cached": found is not None,
                          "size_mb": round(found[1] / 1e6) if found else None, "provider": PROVIDER,
                          "runtime": "llama.cpp", "params": spec["params"], "available": blocker is None,
                          "exclusive": spec["exclusive"],
-                         "need_gib": round(found[1] / GIB + spec["overhead_gib"], 1) if found else None,
+                         "need_gib": round(need, 1) if need is not None else None,
                          "blocker": blocker, "license": found[2] if found else None,
                          "verified": bool(found and found[3]), "published": spec.get("published"),
                          "published_source": spec.get("published_source")})

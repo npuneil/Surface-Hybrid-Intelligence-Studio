@@ -1,5 +1,5 @@
 @echo off
-rem Double-click setup: Python environment, desktop shortcut and a check of every model (Setup.ps1 -Prepare).
+rem Prototype setup: native Python, shortcut and first-use downloads for demos that fit this PC.
 rem Pass Setup.ps1 options to override, for example: Setup.cmd -NoShortcut
 setlocal
 set "SETUP_ARGS=%*"

@@ -295,7 +295,7 @@ PRESETS = (
              "Summarise them in three bullets."},
     {"id": "secret", "title": "Payments sandbox config with a credential", "expect": "local", "network": "online", "scale": "fits",
      "text": "Why does this payments sandbox connection fail? Explain and suggest a fix, and search the web for the latest SDK version.\n\n"
-             "endpoint = https://payments-sandbox.contoso.example/api/v1\napi_key = \"sk-FAKE-EXAMPLE-0000000000000000\"\ntimeout = 5"},
+             "endpoint = https://payments-sandbox.organization.example/api/v1\napi_key = \"sk-FAKE-EXAMPLE-0000000000000000\"\ntimeout = 5"},
     {"id": "field", "title": "Branch ATM note while offline", "expect": "local", "network": "offline", "scale": "fits",
      "text": "FICTIONAL. Turn this branch note into a service request, and check the latest manufacturer "
              "guidance for the ATM.\n\nSite: Cedar Creek branch. ATM A-7 reporting a cash-dispenser fault "

@@ -61,22 +61,64 @@ def choose(
     allow_download: bool = False,
     lanes=None,
     estimated: bool = False,
+    fixed=None,
 ) -> dict[str, SlotChoice]:
-    """With downloads allowed the strongest option wins (it is fetched when needed); without, the strongest one already on this PC wins
-    and a stronger one that needs a download is reported as 'better'."""
+    """Choose a resident lineup, not five independent models that might overfill the same memory.
+
+    Slots reserve memory in registry order. Shared variants count once; CPU, NPU and integrated/unified GPU allocations share system
+    memory, while a discrete GPU has its own pool. Each lane still respects its own, possibly smaller, device-kit budget."""
     chosen: dict[str, SlotChoice] = {}
+    fixed = fixed or {}
+    lane_usage: dict[str, float] = {}
+    pool_usage: dict[str, float] = {}
+    resident: set[str] = set()
+    pool_limits: dict[str, float] = {}
+
+    def pool(lane):
+        return "discrete-gpu" if lane.kind == "gpu-discrete" else "system"
+
+    for lane in report.profile.usable_lanes:
+        key = pool(lane)
+        pool_limits[key] = max(pool_limits.get(key, 0), lane.budget_gb)
+
+    def fits(model):
+        if model.variant_id in resident:
+            return True
+        lane = report.profile.lane(model.lane)
+        return (lane_usage.get(lane.id, 0) + model.required_gb <= lane.budget_gb + 1e-9
+                and pool_usage.get(pool(lane), 0) + model.required_gb <= pool_limits[pool(lane)] + 1e-9)
+
+    def reserve(model):
+        if model.variant_id not in resident:
+            lane = report.profile.lane(model.lane)
+            lane_usage[lane.id] = lane_usage.get(lane.id, 0) + model.required_gb
+            key = pool(lane)
+            pool_usage[key] = pool_usage.get(key, 0) + model.required_gb
+            resident.add(model.variant_id)
+
+    for model in fixed.values():
+        reserve(model)
     for slot in SLOTS:
+        if slot.key in fixed:
+            chosen[slot.key] = SlotChoice(slot, fixed[slot.key], None, (), None, estimated)
+            continue
         plan = foundry.resolve(report, catalog, slot.workload, source, usable=usable, failed=failed, lane_problems=lane_problems,
                                prefer=(slot.reference,), lanes=lanes)
         if slot.task:
             plan = _only_task(plan, slot.task)
-        strongest = plan.primary
-        model = strongest if allow_download or estimated else (plan.primary_on_this_pc or strongest)
+        options = [option for option in plan.options if fits(option)]
+        strongest = next(iter(options), None)
+        model = strongest if allow_download or estimated else next((option for option in options if option.cached), strongest)
         better = strongest if strongest is not None and model is not strongest else None
         blocker = None
+        notes = plan.notes
+        if plan.options and len(options) < len(plan.options):
+            notes += ("The resident lineup shares this PC's memory; models must fit beside the slots already selected.",)
         if model is None:
-            blocker = " ".join(plan.notes) or f"No {slot.title.lower()} in this PC's catalog fits it."
-        chosen[slot.key] = SlotChoice(slot, model, better, plan.notes, blocker, estimated)
+            blocker = " ".join(notes) or f"No {slot.title.lower()} in this PC's catalog fits it."
+        else:
+            reserve(model)
+        chosen[slot.key] = SlotChoice(slot, model, better, notes, blocker, estimated)
     return chosen
 
 

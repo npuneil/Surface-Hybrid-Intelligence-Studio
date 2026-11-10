@@ -3,42 +3,6 @@ using System.Text.Json.Nodes;
 
 namespace HybridIntelligenceStudio;
 
-internal static class BusinessCase
-{
-    internal static readonly (string Key, string Label, double Min, double Max, string Help)[] Fields =
-    [
-        ("users", "Users in scope", 1, 100000, "People who would use local AI"),
-        ("tasks", "Tasks per user per day", 0, 100, "Repeatable drafting or summarising tasks"),
-        ("minutes", "Minutes saved per task", 0, 120, "Hypothesis to validate in a pilot"),
-        ("days", "Working days per year", 1, 366, ""),
-        ("adoption", "Adoption (%)", 0, 100, "Share of eligible tasks actually using it"),
-        ("hourly", "Loaded hourly cost (USD)", 0, 1000, "For illustrative capacity value only"),
-        ("premium", "Device premium per user (USD)", 0, 20000, "Incremental investment assumption"),
-    ];
-
-    internal static readonly IReadOnlyDictionary<string, double> Defaults = new Dictionary<string, double>
-    {
-        ["users"] = 100, ["tasks"] = 4, ["minutes"] = 3, ["days"] = 220, ["adoption"] = 60, ["hourly"] = 60, ["premium"] = 600
-    };
-
-    internal static string? Validate(IReadOnlyDictionary<string, double> values)
-    {
-        if (values.Count != Fields.Length || Fields.Any(f => !values.ContainsKey(f.Key)))
-            return "Provide exactly the seven calculator assumptions.";
-        foreach (var (key, label, min, max, _) in Fields)
-        {
-            double value = values[key];
-            if (!double.IsFinite(value)) return $"{label} must be a number.";
-            if (value < min || value > max) return $"{label} must be between {min:N0} and {max:N0}.";
-        }
-        return null;
-    }
-
-    /// <summary>Used only to cross-check the authoritative service response in tests.</summary>
-    internal static double ExpectedHours(IReadOnlyDictionary<string, double> v) =>
-        Math.Round(v["users"] * v["tasks"] * v["minutes"] / 60 * v["days"] * v["adoption"] / 100, 2);
-}
-
 internal sealed record RunRecord(
     string ScenarioKey, string ScenarioTitle, string ScenarioLabel, string Prompt, string Source, string Mode,
     string Output, RunMetrics? Metrics, long ReasoningCharactersWithheld, DateTimeOffset StartedAt, string? Error,
@@ -119,16 +83,6 @@ internal static class Evidence
     {
         ["label"] = target.Label, ["device_class"] = target.DeviceClassLabel, ["pc_class"] = target.PcClassLabel,
         ["models_run_on"] = live ? where : null, ["preview"] = target.Simulated,
-    };
-
-    internal static JsonObject BusinessCaseExport(JsonElement response) => new()
-    {
-        ["schema"] = Brand.SchemaPrefix + ".business-case/1",
-        ["exported_at"] = DateTimeOffset.Now.ToString("O"),
-        ["calculated_by"] = "Local showcase service /api/calculate (deterministic arithmetic)",
-        ["result"] = JsonNode.Parse(response.GetRawText()),
-        ["formula"] = "hours = users x tasks x minutes / 60 x days x adoption / 100; capacity value = hours x hourly cost; investment = users x device premium",
-        ["note"] = "Illustrative capacity value, not cash savings, an ROI forecast or a software-subscription replacement.",
     };
 
     /// <summary>The estimate and the memory it was budgeted against. When a Surface was being previewed the budget is that Surface's profile,

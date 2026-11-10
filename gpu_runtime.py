@@ -165,6 +165,10 @@ def ensure(app_data, allow_download):
     base = {"version": TAG, "path": None}
     if os.name != "nt":
         return base | {"state": "unsupported", "detail": "The GPU media supplement is Windows-only."}
+    if architecture() != "ARM64":
+        return base | {"state": "not_needed",
+                       "detail": "The ARM64 cuDNN supplement is not used on this architecture. "
+                                 "Model loading checks the CUDA provider's own runtime libraries."}
     if _preloaded is not None:
         return base | {"state": "active", "path": _preloaded,
                        "detail": "NVIDIA cuDNN 9.26 and NVRTC 13.4 supplement loaded for speech, vision and embeddings."}

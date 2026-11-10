@@ -3,11 +3,12 @@ const $ = id => document.getElementById(id);
 const fields = ["users", "tasks", "minutes", "days", "adoption", "hourly", "premium"];
 const copy = {
   brief: {eyebrow: "01 / EXECUTIVE BRIEFING", description: "Turn a fictional account's discovery notes into a source-aware meeting agenda, using a model running on this laptop.", cue: '"What if the first draft didn\'t depend on a round trip to a cloud model?"', boundary: "A drafting demonstration, not a security certification. Human review remains essential."},
-  code: {eyebrow: "02 / DEVELOPER ACCELERATION", description: "Turn a small service-desk requirement into a code draft. Watch a dedicated coding model generate Python on the RTX GPU.", cue: '"Which repetitive development tasks could your team prototype directly on their laptops?"', boundary: "Generated code is displayed, never executed. Assert examples are model output, not proof they pass."}
+  code: {eyebrow: "02 / DEVELOPER ACCELERATION", description: "Turn a small service-desk requirement into a code draft using the local model selected for this PC.", cue: '"Which repetitive development tasks could your team prototype directly on their laptops?"', boundary: "Generated code is displayed, never executed. Assert examples are model output, not proof they pass."}
 };
 let status, scenarios, story = "brief", busy = false, switching = false, lastRun = null, lastCase = null, timer = null, caseRevision = 0;
 const num = new Intl.NumberFormat("en-US", {maximumFractionDigits: 1});
 const usd = new Intl.NumberFormat("en-US", {style: "currency", currency: "USD", maximumFractionDigits: 0});
+const inferencePlace = () => (status?.engine.model?.where || "this PC").replace(/^the /, "");
 
 async function getJson(url) {
   const response = await fetch(url, {cache: "no-store"});
@@ -53,7 +54,7 @@ function clearOutput() {
 }
 function controls() {
   const rehearsal = $("mode").value === "rehearsal";
-  $("run-button").disabled = busy || switching || (!rehearsal && status?.engine.state !== "ready");
+  $("run-button").disabled = busy || switching || (!rehearsal && (status?.engine.state !== "ready" || status?.target?.simulated));
   $("run-button").textContent = busy ? "Generating locally…" : rehearsal ? "Show authored example ↗" : status?.engine.state === "ready" ? "Run on this device ↗" : "Local AI not ready";
   $("mode").disabled = busy;
   $("model").disabled = busy || switching || rehearsal || !["ready", "error"].includes(status?.engine.state) || !status?.engine.models?.length;
@@ -87,18 +88,23 @@ function renderStatus() {
   const engine = status.engine, device = status.device;
   $("engine-badge").className = "badge " + (engine.state === "ready" ? "ready" : engine.state === "error" ? "failed" : "");
   $("engine-badge").replaceChildren();
-  $("engine-badge").append(document.createElement("i"), document.createTextNode(engine.state === "ready" ? "Local AI ready · RTX GPU" : engine.state === "error" ? "Local AI unavailable" : engine.detail));
+  $("engine-badge").append(document.createElement("i"), document.createTextNode(engine.state === "ready" ? `Local AI ready · ${inferencePlace()}` : engine.state === "error" ? "Local AI unavailable" : engine.detail));
   $("ram-proof").textContent = device.installed_ram_gb ? `${num.format(device.installed_ram_gb)} GB` : "Not verified";
   $("ram-detail").textContent = device.os_visible_ram_gb ? `Installed · ${num.format(device.os_visible_ram_gb)} GB Windows-visible` : "Installed physical memory · OS visibility not verified";
   $("cpu-proof").textContent = device.cores ? `${device.cores} cores` : "Not verified";
   const gpu = (device.accelerators || []).find(name => /GPU|RTX/i.test(name));
-  $("gpu-proof").textContent = gpu ? /Blackwell/i.test(gpu) ? "Blackwell RTX GPU" : gpu : "GPU not verified";
-  $("model-line").textContent = engine.model ? `${engine.model.name} · ${engine.model.provider} · RTX GPU inference` : engine.error || engine.detail;
+  $("gpu-proof").textContent = engine.model ? inferencePlace() : gpu || "Model lane not chosen yet";
+  $("model-line").textContent = engine.model ? `${engine.model.name} · ${engine.model.provider} · ${inferencePlace()} inference` : engine.error || engine.detail;
   if (engine.error) $("model-line").textContent = engine.error;
   const choices = engine.models || [];
   const signature = JSON.stringify(choices);
-  if (choices.length && $("model").dataset.choices !== signature) {
-    $("model").replaceChildren(...choices.map(choice => new Option(`${choice.label}${choice.reasoning ? " · reasoning" : " · coding"}${choice.cached ? "" : " · not cached"}`, choice.alias)));
+  if ($("model").dataset.choices !== signature) {
+    $("model").replaceChildren(...choices.map(choice => {
+      const option = new Option(`${choice.label}${choice.reasoning ? " · reasoning" : " · chat"}${choice.cached ? "" : " · not cached"}${choice.available === false ? " · unavailable" : ""}`, choice.alias);
+      option.disabled = choice.available === false;
+      option.title = choice.blocker || choice.note || "";
+      return option;
+    }));
     $("model").dataset.choices = signature;
   }
   if (choices.length) $("model").value = engine.selected_model;
@@ -130,7 +136,7 @@ async function run() {
   $("empty-state").hidden = true;
   $("output").hidden = false;
   $("run-state").textContent = mode === "live" ? "Sending request to the local model…" : "Displaying authored sample";
-  $("route").textContent = mode === "live" ? "Local · RTX GPU" : "No inference";
+  $("route").textContent = mode === "live" ? `Local · ${inferencePlace()}` : "No inference";
   const started = performance.now();
   if (mode === "live") timer = setInterval(() => {
     $("elapsed").textContent = `${((performance.now() - started) / 1000).toFixed(1)} s`;
@@ -237,10 +243,10 @@ const playbook = `THE 5-MINUTE EXECUTIVE WALKTHROUGH
 
 00:00 — OPEN WITH THE WORK, NOT THE SILICON
 "The question isn't whether a laptop can run AI. It's which useful tasks we can put closer to the person doing the work."
-Point to the observed device evidence. This unit has 128 GB installed, with about 64 GB visible to Windows. The GPU budget is a separate driver-reported view, not an additive memory pool. Memory partition settings are unchanged.
+Point to the observed device evidence. Installed memory, Windows-visible memory and a GPU budget are distinct views, not additive pools. The Studio detects the device and selects models that fit its available lanes. This is an independent prototype, not a product.
 
 00:45 — WORK WHERE YOU ARE
-Select Executive briefing and Run on this device. Qwen2.5-Coder 14B is the default; select GPT-OSS 20B to demonstrate a larger reasoning model. Wait for its ready status before running. Watch actual output activity; private reasoning text stays hidden. Inspect the synthetic source and compare the draft. Model size is not a quality guarantee.
+Select Executive briefing and Run on this device. Choose only an enabled model offered for this PC and wait for ready status. Watch actual output activity; private reasoning text stays hidden. Inspect the synthetic source and compare the draft. Model size is not a quality guarantee.
 "For selected workflows, the draft can be generated here rather than by a cloud model."
 Do not say the whole application is air-gapped or security-approved. Validate disconnected operation separately after setup.
 
@@ -258,7 +264,7 @@ Confirm shipping availability, exact specifications, approved positioning, price
 
 OBJECTION HANDLING
 "Why not just use cloud AI?" — Keep cloud for the workloads and services that belong there. This demonstrates an additional local option, not a cloud replacement.
-"How is AI accelerated?" — These models execute on the NVIDIA RTX GPU through CUDA. Inspect each run's model and execution-provider evidence.
+"How is AI accelerated?" — Inspect each run's model, lane and execution-provider evidence. The detected PC and live runtime catalog determine what can run; a simulation does not run models on another device.
 "Is it faster or longer-lasting than another laptop?" — No comparison or battery test is included. Scope a controlled benchmark.
 "Are these Microsoft 365 Copilot features?" — No. This is an independent custom Foundry Local application. No certification, bundled license or Microsoft 365 integration is implied.
 "What if live inference fails?" — The error stays visible. Explicitly select Authored rehearsal; never describe it as measured or live.
@@ -280,7 +286,7 @@ async function initialize() {
     $("run-button").addEventListener("click", run);
     $("model").addEventListener("change", switchModel);
     $("source-button").addEventListener("click", () => dialog("Inspect the source.", scenarios[story].source));
-    $("device-button").addEventListener("click", () => dialog("Observed. Not assumed.", JSON.stringify(status.device, null, 2) + "\n\nInstalled memory is the sum of firmware DIMM capacities, not Windows-visible memory. GPU memory is the budget reported by nvidia-smi; these views must not be added or treated as separate dedicated memory pools. No memory partition settings were changed.\n\nGPU-focused inventory, not a published shipping specification.\n\nRuntime:\n" + JSON.stringify(status.engine, null, 2) + "\n\nInference runs on the RTX GPU through CUDA. No battery, accelerator-rating, dedicated-VRAM, all-network-isolation, competitive advantage or production-accuracy result is established."));
+    $("device-button").addEventListener("click", () => dialog("Observed. Not assumed.", JSON.stringify(status.device, null, 2) + "\n\nInstalled memory is the sum of firmware DIMM capacities, not Windows-visible memory. A GPU budget is a separate driver-reported view; these figures must not be added or treated as separate dedicated memory pools. No memory partition settings were changed.\n\nDetected device:\n" + JSON.stringify(status.target, null, 2) + "\n\nRuntime:\n" + JSON.stringify(status.engine, null, 2) + `\n\nSelected inference lane: ${inferencePlace()}. No battery, accelerator-rating, dedicated-VRAM, all-network-isolation, competitive advantage or production-accuracy result is established.`));
     $("guide-button").addEventListener("click", () => dialog("Land the story. Then scope the pilot.", playbook));
     $("close-dialog").addEventListener("click", () => $("info-dialog").close());
     $("info-dialog").addEventListener("click", event => { if (event.target === $("info-dialog")) { const bounds = event.target.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close(); } });

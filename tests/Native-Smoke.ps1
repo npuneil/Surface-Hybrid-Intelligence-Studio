@@ -6,10 +6,10 @@ param(
     [switch]$Rebuild,
     [ValidateRange(60, 7200)][int]$TimeoutSeconds = 2400
 )
-# Native UX checks for Surface Hybrid Intelligence x Zava Financial:
+# Native UX checks for Surface Hybrid Intelligence Studio:
 #  1. --self-test: deterministic sizing/platform/parser/privacy/export checks (no UI, no network).
-#  2. --smoke: drives the real WinUI window (navigation, sizing controls, business case via the
-#     service, rehearsal for every scenario and demo, exports, screenshots). -Live also streams every
+#  2. --smoke: drives the real WinUI window (navigation, sizing controls, the ROI Calculator link,
+#     rehearsal for every scenario and demo, exports, screenshots). -Live also streams every
 #     scenario on the RTX GPU, checks CUDA provenance, and runs the Live demos pre-flight (every demo
 #     live). Results: .runtime\native\*.json, screens\*.png.
 $ErrorActionPreference = 'Stop'

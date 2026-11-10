@@ -7,9 +7,19 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $edition = Get-Content -LiteralPath (Join-Path $root 'edition.json') -Raw -Encoding utf8 | ConvertFrom-Json
-$exe = Join-Path $root "native\bin\Release\net10.0-windows10.0.26100.0\win-arm64\$($edition.codeName).exe"
+$nativeArchitecture = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name PROCESSOR_ARCHITECTURE).PROCESSOR_ARCHITECTURE
+$rid = switch ($nativeArchitecture) {
+    'ARM64' { 'win-arm64' }
+    'AMD64' { 'win-x64' }
+    default { throw "Unsupported native Windows architecture: $nativeArchitecture. ARM64 or x64 is required." }
+}
+$platform = if ($rid -eq 'win-arm64') { 'ARM64' } else { 'x64' }
+$exe = @(
+    (Join-Path $root "native\bin\Release\net10.0-windows10.0.26100.0\$rid\$($edition.codeName).exe"),
+    (Join-Path $root "native\bin\$platform\Release\net10.0-windows10.0.26100.0\$rid\$($edition.codeName).exe")
+) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 $icon = Join-Path $root 'native\Assets\AppIcon.ico'
-if (-not (Test-Path -LiteralPath $exe) -or -not (Test-Path -LiteralPath $icon)) {
+if (-not $exe -or -not (Test-Path -LiteralPath $icon)) {
     throw 'Build the native app and generate its assets (tools\Sync-Edition.ps1) before installing the shortcut.'
 }
 $desktop = [Environment]::GetFolderPath('Desktop')

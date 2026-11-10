@@ -1,23 +1,21 @@
 #Requires -Version 7.2
 <#
 .SYNOPSIS
-Builds the downloadable release for this edition: the self-contained app zip, the icon pack, SHA256SUMS.txt and release notes.
+Builds device-aware prototype installer packs without bundled model weights.
 .DESCRIPTION
-1. Stages the edition's files (tracked plus untracked-but-not-ignored) in a clean folder.
-2. Exports the icon pack (PNG 16-1024 px, .ico, .svg, NOTICE) with tools\New-AppAssets.ps1.
-3. Builds the native app (Release, self-contained for win-arm64, no PDBs) where the scripts and shortcut expect it.
-4. Scans the stage for hygiene issues (user paths, credentials) and, with -ForbiddenToken, brand leaks in text files and
-   this app's own binaries (third-party runtime DLLs are skipped for tokens, since short tokens occur in them by chance).
-5. Zips <codeName>-<version>-win-arm64.zip (one top-level folder) and <codeName>-<version>-icon-pack.zip, then writes
-   SHA256SUMS.txt and release-notes.md. Everything lands in -OutputDirectory (default .runtime\release).
-.EXAMPLE
-pwsh -NoProfile -File tools\New-ReleasePackage.ps1 -ForbiddenToken <word from another edition>
+Stages source under .runtime\release\work and builds self-contained win-arm64 and win-x64 apps there.
+Creates Snapdragon-arm64, Intel-x64, NVIDIA-arm64 and NVIDIA-x64 packs, an icon pack, hashes and release notes.
+Pack names guide downloads only: the service's actual device detection and live-catalog resolver decide placement.
+-BuildOnly validates both builds without creating downloadable archives. No app, setup or shortcut is launched.
+-FinalizeStaged reuses verified native outputs after checking native source equality, refreshing the remaining source.
 #>
 [CmdletBinding()]
 param(
     [string]$OutputDirectory,
     [string[]]$ForbiddenToken = @(),
-    [string]$Dotnet
+    [string]$Dotnet,
+    [switch]$BuildOnly,
+    [switch]$FinalizeStaged
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -29,12 +27,21 @@ $csproj = Join-Path $root "native\$code.csproj"
 $version = @($projectXml.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ })[0]
 $framework = @($projectXml.Project.PropertyGroup | ForEach-Object { $_.TargetFramework } | Where-Object { $_ })[0]
 if (-not $version -or -not $framework) { throw "Version and TargetFramework must be set in $csproj." }
-$out = if ($OutputDirectory) { [System.IO.Path]::GetFullPath($OutputDirectory) } else { Join-Path $root '.runtime\release' }
-$appName = "$code-$version-win-arm64"
-$iconName = "$code-$version-icon-pack"
+$releaseRoot = [System.IO.Path]::GetFullPath((Join-Path $root '.runtime\release'))
+$out = if ($OutputDirectory) { [System.IO.Path]::GetFullPath($OutputDirectory) } else { $releaseRoot }
+if ($out -ne $releaseRoot -and -not $out.StartsWith("$releaseRoot\", [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'OutputDirectory must be inside this project''s .runtime\release folder.'
+}
 $work = Join-Path $out 'work'
-$stage = Join-Path $work $appName
+$stage = Join-Path $work 'source'
+$iconName = "$code-$version-icon-pack"
 $icons = Join-Path $work $iconName
+$packs = @(
+    @{ Name = 'Snapdragon-arm64'; Rid = 'win-arm64' },
+    @{ Name = 'Intel-x64'; Rid = 'win-x64' },
+    @{ Name = 'NVIDIA-arm64'; Rid = 'win-arm64' },
+    @{ Name = 'NVIDIA-x64'; Rid = 'win-x64' }
+)
 
 function Step([string]$Text) { Write-Host "== $Text" -ForegroundColor Cyan }
 
@@ -44,136 +51,206 @@ function Find-Dotnet {
     foreach ($candidate in $candidates) { if ($candidate -and (Test-Path -LiteralPath $candidate)) { return $candidate } }
     $onPath = Get-Command dotnet.exe -ErrorAction SilentlyContinue
     if ($onPath) { return $onPath.Source }
-    foreach ($candidate in @((Join-Path $env:ProgramFiles 'dotnet\dotnet.exe'), (Join-Path $env:USERPROFILE '.dotnet\dotnet.exe'))) {
-        if (Test-Path -LiteralPath $candidate) { return $candidate }
-    }
-    throw "No .NET SDK found. Install the .NET 10 SDK, pass -Dotnet or set $($edition.envPrefix)DOTNET."
+    throw "No .NET 10 SDK found. Pass -Dotnet or set $($edition.envPrefix)DOTNET."
 }
 
 function Get-RelativeFiles([string]$Folder) {
     $prefix = $Folder.TrimEnd('\').Length + 1
-    return @(Get-ChildItem -LiteralPath $Folder -Recurse -File -Force | ForEach-Object { $_.FullName.Substring($prefix) } | Sort-Object)
+    return @(Get-ChildItem -LiteralPath $Folder -Recurse -File -Force |
+        ForEach-Object { $_.FullName.Substring($prefix) } | Sort-Object)
 }
 
 function Write-Utf8([string]$Path, [string]$Text) {
     [System.IO.File]::WriteAllText($Path, ($Text -replace "`r?`n", "`r`n"), [System.Text.UTF8Encoding]::new($false))
 }
 
-Step "Staging $appName"
-if (Test-Path -LiteralPath $work) { Remove-Item -LiteralPath $work -Recurse -Force }
-$null = New-Item -ItemType Directory -Path $stage -Force
-$sourceFiles = Get-EditionFiles -Root $root
-foreach ($relative in $sourceFiles) {
-    $target = Join-Path $stage $relative
-    $null = New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force
-    Copy-Item -LiteralPath (Join-Path $root $relative) -Destination $target
+function Copy-RelativeFiles([string]$Source, [string]$Destination, [string[]]$Files) {
+    foreach ($relative in $Files) {
+        $target = Join-Path $Destination $relative
+        $null = New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force
+        Copy-Item -LiteralPath (Join-Path $Source $relative) -Destination $target
+    }
 }
-Write-Host "   $($sourceFiles.Count) source files"
+
+Step 'Staging source (never building in the running app''s output)'
+# Delete only our dedicated work directory, never a caller-selected broad directory or a junction.
+if (-not $FinalizeStaged -and (Test-Path -LiteralPath $work)) {
+    $resolved = (Resolve-Path -LiteralPath $work).Path
+    if ($resolved -ne [System.IO.Path]::GetFullPath($work) -or
+        (Get-Item -LiteralPath $work).Attributes -band [System.IO.FileAttributes]::ReparsePoint -or
+        -not $resolved.StartsWith("$releaseRoot\", [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Unsafe release work path: $work"
+    }
+    Remove-Item -LiteralPath $work -Recurse -Force
+}
+$null = New-Item -ItemType Directory -Path $stage -Force
+$sourceFiles = @(Get-EditionFiles -Root $root | Where-Object {
+    "\$_" -notmatch '\\(\.git|\.runtime|\.venv|__pycache__|bin|obj)(\\|$)' -and
+    $_ -notmatch '\.(onnx|gguf|safetensors|pdb|pyc)$'
+})
+if ($FinalizeStaged) {
+    foreach ($relative in @($sourceFiles | Where-Object { $_ -like 'native\*' })) {
+        $stagedFile = Join-Path $stage $relative
+        if (-not (Test-Path -LiteralPath $stagedFile) -or
+            (Get-FileHash -LiteralPath (Join-Path $root $relative)).Hash -ne (Get-FileHash -LiteralPath $stagedFile).Hash) {
+            throw "Native source changed since build: $relative. Re-run without -FinalizeStaged."
+        }
+    }
+}
+Copy-RelativeFiles $root $stage $sourceFiles
+Write-Host "   $($sourceFiles.Count) source files; model weights and local caches excluded"
 $git = Join-Path $env:LOCALAPPDATA 'Programs\MinGit\cmd\git.exe'
-if (-not (Test-Path -LiteralPath $git)) { $git = (Get-Command git.exe -ErrorAction SilentlyContinue).Source }
-$commit = $null
-if ($git -and (Test-Path -LiteralPath (Join-Path $root '.git'))) {
+$commit = 'working tree without git history'
+if ((Test-Path -LiteralPath $git) -and (Test-Path -LiteralPath (Join-Path $root '.git'))) {
     $commit = (& $git -C $root rev-parse --short HEAD).Trim()
-    if (& $git -C $root status --porcelain) { Write-Warning 'The working tree has uncommitted changes; the release notes say so.'; $commit = "$commit (with uncommitted changes)" }
+    if (& $git -C $root status --porcelain) { $commit += ' (with uncommitted changes)' }
 }
 
 Step 'Icon pack'
 & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $stage 'tools\New-AppAssets.ps1') -Root $stage -ExportDirectory $icons
 if ($LASTEXITCODE -ne 0) { throw 'tools\New-AppAssets.ps1 failed.' }
 foreach ($generated in 'native\Assets\AppIcon.ico', 'native\Assets\AppLogo.png') {
-    $a = (Get-FileHash -LiteralPath (Join-Path $root $generated)).Hash; $b = (Get-FileHash -LiteralPath (Join-Path $stage $generated)).Hash
-    if ($a -ne $b) { throw "$generated is out of date. Run tools\Sync-Edition.ps1 and commit before packaging." }
+    if ((Get-FileHash -LiteralPath (Join-Path $root $generated)).Hash -ne
+        (Get-FileHash -LiteralPath (Join-Path $stage $generated)).Hash) {
+        throw "$generated is out of date. Run tools\Sync-Edition.ps1 before packaging."
+    }
 }
-$style = Get-LogoStyle -Edition $edition
 Write-Utf8 (Join-Path $icons 'NOTICE.txt') @"
-$($edition.displayName) app icon ($style style)
-
-Original prototype artwork drawn for this project and generated from edition.json by tools\New-AppAssets.ps1.
-It is not the official logo, trademark or brand artwork of any company, and it implies no endorsement or affiliation.
-Use it to identify this app (shortcuts, slides, the app tile).
-
-Files: $code-<size>.png at $((Get-ChildItem -LiteralPath $icons -Filter "$code-*.png" | ForEach-Object { [int]($_.BaseName -replace '.*-', '') } | Sort-Object) -join ', ') px,
-$code.ico (16-256 px, for Windows shortcuts) and $code.svg (vector source).
+$($edition.displayName) prototype app icon
+Original artwork generated from edition.json by tools\New-AppAssets.ps1.
+Not official company artwork; no endorsement or affiliation is implied.
+Includes PNG sizes 16-1024, multi-size ICO and SVG.
 "@
 
-Step 'Building the native app (Release, self-contained, win-arm64, no PDBs)'
 $dotnet = Find-Dotnet
-# A Release build of this self-contained project is the complete app; dotnet publish omits the app's .pri and App.xbf.
-& $dotnet build (Join-Path $stage "native\$code.csproj") -c Release -nologo -v minimal `
-    -p:DebugType=None -p:DebugSymbols=false -p:ContinuousIntegrationBuild=true -p:RestoreLockedMode=true
-if ($LASTEXITCODE -ne 0) { throw 'dotnet build failed.' }
-$obj = Join-Path $stage 'native\obj'
-if (Test-Path -LiteralPath $obj) { Remove-Item -LiteralPath $obj -Recurse -Force }
-$appDir = Join-Path $stage "native\bin\Release\$framework\win-arm64"
-$unexpected = @(Get-ChildItem -LiteralPath (Join-Path $stage 'native\bin') -Directory -Recurse | Where-Object {
-        -not $appDir.StartsWith($_.FullName, [StringComparison]::OrdinalIgnoreCase) -and -not $_.FullName.StartsWith($appDir, [StringComparison]::OrdinalIgnoreCase) })
-if ($unexpected) { throw "Unexpected build output folders: $($unexpected.FullName -join ', ')" }
-foreach ($required in "$code.exe", "$code.dll", "$code.pri", 'App.xbf', 'Assets\AppIcon.ico') {
-    if (-not (Test-Path -LiteralPath (Join-Path $appDir $required))) { throw "The built app is missing $required." }
+foreach ($rid in 'win-arm64', 'win-x64') {
+    Step "Building self-contained $rid (build validation, not a device runtime test)"
+    # Build, not publish: WinUI needs the .pri and App.xbf produced by the build output.
+    if (-not $FinalizeStaged) {
+        & $dotnet build (Join-Path $stage "native\$code.csproj") -c Release -r $rid -nologo -v minimal `
+            -p:DebugType=None -p:DebugSymbols=false -p:ContinuousIntegrationBuild=true -p:RestoreLockedMode=true
+        if ($LASTEXITCODE -ne 0) { throw "dotnet build failed for $rid." }
+    }
+    $appDir = Join-Path $stage "native\bin\Release\$framework\$rid"
+    foreach ($required in "$code.exe", "$code.dll", "$code.pri", 'App.xbf', 'Assets\AppIcon.ico', 'coreclr.dll') {
+        if (-not (Test-Path -LiteralPath (Join-Path $appDir $required))) { throw "$rid output is missing $required." }
+    }
+    $bytes = [System.IO.File]::ReadAllBytes((Join-Path $appDir "$code.exe"))
+    $machine = [BitConverter]::ToUInt16($bytes, [BitConverter]::ToInt32($bytes, 0x3c) + 4)
+    $expectedMachine = if ($rid -eq 'win-arm64') { 0xaa64 } else { 0x8664 }
+    if ($machine -ne $expectedMachine) { throw "$rid executable has the wrong PE architecture: $machine" }
+    if (Get-ChildItem -LiteralPath $appDir -Recurse -Filter *.pdb) { throw "PDB files must not ship ($rid)." }
 }
-$pdbs = @(Get-ChildItem -LiteralPath $appDir -Recurse -Filter *.pdb)
-if ($pdbs) { throw "PDB files must not ship: $($pdbs.Name -join ', ')" }
-Write-Host "   $(@(Get-ChildItem -LiteralPath $appDir -Recurse -File).Count) files in native\bin\Release\$framework\win-arm64"
+if ($BuildOnly) {
+    Write-Host "Both architectures built and PE-checked in $stage. No runtime tests or installer actions performed." -ForegroundColor Green
+    return
+}
 
-Step 'Scanning the stage'
-$stageFiles = Get-RelativeFiles $stage
-$appPrefix = "native\bin\Release\$framework\win-arm64\"
-$ownFiles = @($stageFiles | Where-Object {
-        -not $_.StartsWith($appPrefix, [StringComparison]::OrdinalIgnoreCase) -or
-        ($_.Substring($appPrefix.Length) -like "$code.*") -or ($_.Substring($appPrefix.Length) -like 'Assets\*') })
-$hygiene = @(Find-HygieneIssues -Root $stage -Files $stageFiles) + @(Find-HygieneIssues -Root $icons -Files (Get-RelativeFiles $icons))
+Step 'Scanning staged source and build output'
+$stageFiles = @(Get-RelativeFiles $stage | Where-Object {
+    $_ -notlike 'native\obj\*' -and "\$_" -notmatch '\\(\.git|\.runtime|\.venv|__pycache__)(\\|$)'
+})
+$ownFiles = @($stageFiles | Where-Object { $_ -notlike 'native\bin\*' -or
+    $_ -like "native\bin\Release\$framework\*\$code.*" -or $_ -like "native\bin\Release\$framework\*\Assets\*" })
+$hygiene = @(Find-HygieneIssues -Root $stage -Files $stageFiles) +
+    @(Find-HygieneIssues -Root $icons -Files (Get-RelativeFiles $icons))
 if ($hygiene) { $hygiene | Format-Table -AutoSize | Out-String | Write-Host; throw 'Hygiene issues in the release.' }
-Write-Host "   hygiene: $($stageFiles.Count) files clean"
 if ($ForbiddenToken) {
-    $leaks = @(Find-EditionLeaks -Root $stage -Token $ForbiddenToken -Files $ownFiles) + @(Find-EditionLeaks -Root $icons -Token $ForbiddenToken -Files (Get-RelativeFiles $icons))
-    if ($leaks) { $leaks | Format-Table -AutoSize | Out-String | Write-Host; throw "Forbidden tokens in the release: $($ForbiddenToken -join ', ')" }
-    Write-Host "   forbidden tokens ($($ForbiddenToken -join ', ')): $($ownFiles.Count) own files clean"
+    $leaks = @(Find-EditionLeaks -Root $stage -Token $ForbiddenToken -Files $ownFiles) +
+        @(Find-EditionLeaks -Root $icons -Token $ForbiddenToken -Files (Get-RelativeFiles $icons))
+    if ($leaks) { $leaks | Format-Table -AutoSize | Out-String | Write-Host; throw 'Forbidden tokens in the release.' }
 }
 
-Step 'Zipping'
+Step 'Creating four device-family download packs'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$appZip = Join-Path $out "$appName.zip"
-$iconZip = Join-Path $out "$iconName.zip"
-foreach ($zip in $appZip, $iconZip) { if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force } }
-[System.IO.Compression.ZipFile]::CreateFromDirectory($stage, $appZip, [System.IO.Compression.CompressionLevel]::Optimal, $true)
-[System.IO.Compression.ZipFile]::CreateFromDirectory($icons, $iconZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
-$sums = foreach ($zip in $appZip, $iconZip) { '{0}  {1}' -f (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path $zip -Leaf) }
-Write-Utf8 (Join-Path $out 'SHA256SUMS.txt') (($sums -join "`n") + "`n")
-$appMb = [math]::Round((Get-Item -LiteralPath $appZip).Length / 1MB, 1)
-$iconKb = [math]::Round((Get-Item -LiteralPath $iconZip).Length / 1KB)
-$built = if ($commit) { "Built from commit $commit." } else { 'Built from a working tree without git history.' }
-Write-Utf8 (Join-Path $out 'release-notes.md') @"
-# $($edition.displayName) $version
+$archives = [System.Collections.Generic.List[string]]::new()
+foreach ($pack in $packs) {
+    $appName = "$code-$version-$($pack.Name)"
+    $destination = Join-Path $work $appName
+    $nativePrefix = "native\bin\Release\$framework\$($pack.Rid)\"
+    $files = @($stageFiles | Where-Object { $_ -notlike 'native\bin\*' -or $_.StartsWith($nativePrefix, [StringComparison]::OrdinalIgnoreCase) })
+    Copy-RelativeFiles $stage $destination $files
+    Write-Utf8 (Join-Path $destination 'README-FIRST.txt') @"
+$($edition.displayName) $version - $($pack.Name)
+EXTERNAL DEMONSTRATION PROTOTYPE - NOT A SUPPORTED PRODUCT
 
-A native WinUI 3 app for Windows ARM64 that runs local AI on the GPU of the $($edition.device) through Foundry Local (CUDA).
-All demo data is synthetic. $built
+This pack contains the self-contained $($pack.Rid) WinUI app and local service source.
+No .NET or Windows App SDK installation is required to launch the included app.
+Built from $commit. Both native architectures are build-validated, not runtime-certified on every device.
 
-## Downloads
+REQUIREMENTS
+- Windows 11 (build 22621 or later), native $($pack.Rid) architecture.
+- Native-architecture Python 3.12-3.14 from python.org (3.13 preferred).
+- Internet access and sufficient free disk space for first-use dependencies and selected models.
+- Current device drivers. Model/provider availability depends on the live Foundry Local catalog.
+  An NPU or GPU being present does not guarantee a supported provider or model.
 
-| File | What it is |
-| --- | --- |
-| ``$appName.zip`` ($appMb MB) | The app, self-contained: no .NET or Windows App SDK install needed. Includes the local service, demo content and ``Setup.cmd``. |
-| ``$iconName.zip`` ($iconKb KB) | The app icon: PNG from 16 to 1024 px, a multi-size .ico and the .svg source. Original artwork, not the official brand artwork of any company. |
-| ``SHA256SUMS.txt`` | SHA-256 hashes of both zips. Compare with ``(Get-FileHash .\<file>).Hash``. |
+FIRST USE
+1. Extract the entire folder to a writable local location. Unblock the downloaded ZIP if Windows requires it.
+2. Run Setup.cmd. It creates this folder's .venv, installs requirements.txt constrained by constraints.txt,
+   creates a desktop shortcut, and starts the service with model downloads allowed.
+   Terminal alternative: .\Setup.ps1 -Prepare; add -NoShortcut to omit the shortcut.
+3. Setup uses the existing device/silicon detection and live-catalog memory-fit resolver on THIS PC.
+   Only demos with fully available model steps are prepared and checked; limited/unavailable demos are
+   skipped with their reasons in .runtime\setup-prepare.json. A zero-eligible-demo result fails preparation.
+4. Open the desktop shortcut, or run .\Start-NativeShowcase.ps1.
 
-## Requirements
-
-- Windows 11 on ARM64 with an NVIDIA GPU and current drivers. Built and tested on the $($edition.device).
-- Python 3.12 to 3.14 for Windows ARM64 (3.13 tested), from python.org. Setup installs the tested dependency versions in ``constraints.txt``.
-- An internet connection and plenty of free disk for the first model downloads.
-
-## Install
-
-1. Download ``$appName.zip`` and check its hash against ``SHA256SUMS.txt``.
-2. Unblock it (right-click > Properties > Unblock, or ``Unblock-File .\$appName.zip``), then extract it to a short path such as ``C:\Apps``.
-3. Double-click ``Setup.cmd`` in the extracted folder. It creates the Python environment, installs the Foundry Local SDK, adds the
-   desktop shortcut **$($edition.shortcutName)**, then downloads every model and runs each live demo once to check it.
-   The same from a terminal: ``.\Setup.ps1 -Prepare``.
-4. Open the desktop shortcut.
-
-The app is not code-signed, so Windows may ask you to confirm the first launch.
+MODEL DOWNLOADS AND LIMITS
+No model weights are bundled. First-use downloads can be large and slow; review each model's license.
+Packs of the same architecture contain the same app; the family name is download guidance, not a forced
+GPU/NPU mode. Actual hardware, driver/provider support, live catalog and memory fit are authoritative.
+No cloud endpoint is required for local inference after preparation; downloads need network access.
+Demo data is synthetic. Results and benchmarks are illustrative, not product or performance guarantees.
+The prototype is unsigned. Your organization's execution/security policy may block it.
 "@
+    $metadata = [ordered]@{ schema = 'studio-installer-pack/1'; prototype = $true; family = $pack.Name
+        runtime = $pack.Rid; model_weights_bundled = $false; placement = 'detected-device-live-catalog'
+        validation = 'cross-architecture build and PE checks; not device runtime certification'; source = $commit }
+    Write-Utf8 (Join-Path $destination 'installer-pack.json') ($metadata | ConvertTo-Json)
+    $packFiles = Get-RelativeFiles $destination
+    $issues = @(Find-HygieneIssues -Root $destination -Files @('README-FIRST.txt', 'installer-pack.json'))
+    if ($issues) { throw "Generated pack documentation failed hygiene checks: $($pack.Name)" }
+    if (@($packFiles | Where-Object { $_ -match '\.(onnx|gguf|safetensors|pdb|pyc)$' -or $_ -like 'native\obj\*' })) {
+        throw "Unexpected weights or build intermediates in $appName."
+    }
+    $zip = Join-Path $out "$appName.zip"
+    if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($destination, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $true)
+    $archives.Add($zip)
+}
+$iconZip = Join-Path $out "$iconName.zip"
+if (Test-Path -LiteralPath $iconZip) { Remove-Item -LiteralPath $iconZip -Force }
+[System.IO.Compression.ZipFile]::CreateFromDirectory($icons, $iconZip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+$archives.Add($iconZip)
+$sums = foreach ($zip in $archives) { '{0}  {1}' -f (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path $zip -Leaf) }
+Write-Utf8 (Join-Path $out 'SHA256SUMS.txt') (($sums -join "`n") + "`n")
+$downloadRows = foreach ($zip in $archives) {
+    "| ``$(Split-Path $zip -Leaf)`` | $([math]::Round((Get-Item -LiteralPath $zip).Length / 1MB, 1)) MB |"
+}
+Write-Utf8 (Join-Path $out 'release-notes.md') @"
+# $($edition.displayName) $version - device-aware prototype packs
 
+External demonstration prototype, not a supported product. Synthetic demo data. Built from $commit.
+
+| Download | Size |
+| --- | --- |
+$($downloadRows -join "`n")
+| ``SHA256SUMS.txt`` | SHA-256 hashes for all five archives |
+
+Choose the native ARM64 or x64 pack for your PC; family names are guidance, not forced acceleration.
+Both architectures are self-contained build-validated outputs; this is not runtime testing on unavailable devices.
+No model weights ship. Read README-FIRST.txt inside each pack for requirements and first-use downloads.
+
+Windows 11 build 22621+, native Python 3.12-3.14 (3.13 preferred), current drivers, internet and disk space are required.
+Setup installs requirements.txt using the pinned constraints.txt, detects the actual PC through the existing device kit,
+resolves live-catalog models that fit its memory budget, then downloads and checks only fully available demos.
+Limited/unavailable demos are skipped and reported. Provider support, not hardware marketing or the ZIP name, determines
+whether CPU, GPU or NPU models run. No blanket GPU/NPU compatibility or performance guarantee is made.
+
+Extract the whole archive, run Setup.cmd (or .\Setup.ps1 -Prepare -NoShortcut), then launch the shortcut or
+.\Start-NativeShowcase.ps1. The unsigned prototype may be blocked by Windows or organizational security policy.
+"@
 Step 'Done'
-Get-ChildItem -LiteralPath $out -File | Select-Object Name, @{ n = 'MB'; e = { [math]::Round($_.Length / 1MB, 2) } } | Format-Table -AutoSize | Out-String | Write-Host
-Write-Host "Release files are in $out (staging folder: $work)." -ForegroundColor Green
+Get-ChildItem -LiteralPath $out -File | Select-Object Name, @{ n = 'MB'; e = { [math]::Round($_.Length / 1MB, 2) } } |
+    Format-Table -AutoSize | Out-String | Write-Host
+Write-Host "Release files: $out. Staging: $work. No installer or shortcut executed." -ForegroundColor Green

@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text.Json;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,17 +10,6 @@ internal sealed partial class MainWindow
     private readonly Dictionary<string, Button> _platformTry = [];
     private readonly Dictionary<string, PlatformCardView> _platformCards = [];
     private TextBlock _platformBanner = null!;
-    private readonly Dictionary<string, NumberBox> _businessInputs = [];
-    private readonly Button _calculate = Id(Primary("Calculate"), "BusinessCalculate");
-    private readonly Button _businessExport = Id(Secondary("Export business case (JSON)"), "BusinessExport");
-    private readonly InfoBar _businessError = Id(new InfoBar { Severity = InfoBarSeverity.Error, IsClosable = true, Title = "Check the assumptions" }, "BusinessError");
-    private readonly InfoBar _businessInfo = Id(new InfoBar { Severity = InfoBarSeverity.Success, IsClosable = true }, "BusinessExportInfo");
-    private TextBlock _bHours = null!, _bCapacity = null!, _bInvestment = null!;
-    private readonly TextBlock _bDisclaimer = Id(Small(""), "BusinessDisclaimer");
-    private readonly TextBlock _bState = Id(Small("Enter the firm's assumptions, then calculate."), "BusinessState");
-    private JsonDocument? _lastBusiness;
-    private bool _businessDefaultsApplied;
-    private static readonly CultureInfo Usd = CultureInfo.GetCultureInfo("en-US");
 
     /// <summary>The parts of a platform card that follow the PC shown: which card is live, its status line and its live-run buttons.</summary>
     private sealed record PlatformCardView(Border Band, PillView Status, TextBlock StatusLine, TextBlock VerifyHeader, IReadOnlyList<Button> LiveButtons);
@@ -155,112 +142,6 @@ internal sealed partial class MainWindow
             ToolTipService.SetToolTip(button, preview ? "Live runs are paused while another Surface is previewed."
                 : available ? $"Runs a synthetic text fixture live {On(_words)}. Not evidence of execution on other platforms."
                 : "This workflow is not offered by the running local service.");
-        }
-    }
-
-    private FrameworkElement BuildBusiness()
-    {
-        var grid = new AdaptiveGrid(230, 4, 14);
-        foreach (var (key, label, min, max, help) in BusinessCase.Fields)
-        {
-            var box = Id(new NumberBox
-            {
-                Header = label, Value = BusinessCase.Defaults[key], SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-                SmallChange = key is "users" ? 10 : 1, LargeChange = key is "users" ? 100 : 10,
-                ValidationMode = NumberBoxValidationMode.Disabled, PlaceholderText = $"{min:N0} to {max:N0}",
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-            }, "Business_" + key);
-            box.ValueChanged += (_, _) => _bState.Text = "Assumptions changed. Calculate to refresh the results.";
-            _businessInputs[key] = box;
-            grid.With(Stack(4, box, Small(string.IsNullOrEmpty(help) ? $"{min:N0} to {max:N0}" : $"{help}. {min:N0} to {max:N0}")));
-        }
-        _calculate.Click += async (_, _) => await CalculateBusinessAsync();
-        var reset = Id(Secondary("Reset to defaults"), "BusinessReset");
-        reset.Click += (_, _) =>
-        {
-            foreach (var (key, box) in _businessInputs) box.Value = (_status?.Assumptions ?? BusinessCase.Defaults).GetValueOrDefault(key, BusinessCase.Defaults[key]);
-        };
-        _businessExport.IsEnabled = false;
-        _businessExport.Click += (_, _) => ExportBusiness();
-
-        var results = new AdaptiveGrid(240, 3).With(
-            StatCard(out _bHours, "-", "Capacity hours per year", "Users x tasks x minutes x days x adoption", "BusinessHours", out _),
-            StatCard(out _bCapacity, "-", "Illustrative capacity value", "Hours x loaded hourly cost. Not cash savings", "BusinessCapacity", out _),
-            StatCard(out _bInvestment, "-", "Device premium investment", "Users x premium per user", "BusinessInvestment", out _));
-        _bCapacity.Foreground = Accent;
-
-        return Page(Stack(22,
-            Stack(10, Eyebrow("Business case"), H1("Frame the pilot with the firm's own numbers."),
-                Body("Deterministic arithmetic from the local service. Every input is the firm's hypothesis to validate in a pilot; nothing here is a forecast.")),
-            CardBorder(Stack(16, grid, Row(10, _calculate, reset), _bState, _businessError), 22),
-            results,
-            CardBorder(Stack(8, H3("How to read this"), _bDisclaimer,
-                Small("Formula: hours = users x tasks x minutes / 60 x days x adoption / 100; capacity value = hours x hourly cost; investment = users x device premium."),
-                Row(10, _businessExport), _businessInfo), 22, Sand)));
-    }
-
-    private void ApplyBusinessStatus(StatusSnapshot status)
-    {
-        if (_businessDefaultsApplied || status.Assumptions.Count == 0) return;
-        _businessDefaultsApplied = true;
-        foreach (var (key, box) in _businessInputs)
-            if (status.Assumptions.TryGetValue(key, out double v)) box.Value = v;
-        _bState.Text = "Defaults loaded from the local service. Adjust, then calculate.";
-    }
-
-    internal async Task<bool> CalculateBusinessAsync()
-    {
-        _businessError.IsOpen = false;
-        var values = _businessInputs.ToDictionary(k => k.Key, k => k.Value.Value);
-        if (BusinessCase.Validate(values) is string invalid)
-        {
-            _businessError.Message = invalid;
-            _businessError.IsOpen = true;
-            _bState.Text = "Not calculated: fix the highlighted assumption.";
-            return false;
-        }
-        _calculate.IsEnabled = false;
-        try
-        {
-            var document = await _client.CalculateAsync(values, _lifetime.Token);
-            _lastBusiness?.Dispose();
-            _lastBusiness = document;
-            var r = document.RootElement;
-            _bHours.Text = (StatusParser.Num(r, "hours") ?? double.NaN).ToString("N0", Usd);
-            _bCapacity.Text = (StatusParser.Num(r, "capacity") ?? double.NaN).ToString("C0", Usd);
-            _bInvestment.Text = (StatusParser.Num(r, "investment") ?? double.NaN).ToString("C0", Usd);
-            _bDisclaimer.Text = StatusParser.Str(r, "disclaimer") ?? "";
-            _bState.Text = $"Calculated by the local service at {DateTime.Now:t}.";
-            _businessExport.IsEnabled = true;
-            return true;
-        }
-        catch (Exception exception) when (!_lifetime.IsCancellationRequested)
-        {
-            _businessError.Message = exception.Message;
-            _businessError.IsOpen = true;
-            _bState.Text = "Not calculated.";
-            return false;
-        }
-        catch (Exception) when (_lifetime.IsCancellationRequested)
-        {
-            return false;
-        }
-        finally { _calculate.IsEnabled = true; }
-    }
-
-    private string? ExportBusiness()
-    {
-        if (_lastBusiness is null) return null;
-        try
-        {
-            string path = Evidence.Save(Evidence.BusinessCaseExport(_lastBusiness.RootElement), ExportDirectory, "business-case");
-            _businessInfo.Title = "Business case exported"; _businessInfo.Message = path; _businessInfo.Severity = InfoBarSeverity.Success; _businessInfo.IsOpen = true;
-            return path;
-        }
-        catch (Exception exception)
-        {
-            _businessInfo.Title = "Export failed"; _businessInfo.Message = exception.Message; _businessInfo.Severity = InfoBarSeverity.Error; _businessInfo.IsOpen = true;
-            return null;
         }
     }
 }

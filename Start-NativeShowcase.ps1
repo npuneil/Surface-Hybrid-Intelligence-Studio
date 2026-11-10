@@ -4,10 +4,10 @@ param(
     [switch]$Rebuild,
     [switch]$Windowed,
     [switch]$NoBackendStart,
-    [ValidateSet('overview', 'device', 'live', 'demos', 'hybrid', 'industries', 'showoff', 'build', 'sizing', 'platforms', 'business', 'playbook', 'learn')][string]$Section,
+    [ValidateSet('overview', 'device', 'live', 'demos', 'hybrid', 'industries', 'showoff', 'build', 'sizing', 'platforms', 'roi', 'playbook', 'learn')][string]$Section,
     [switch]$Wait
 )
-# Launches the native WinUI 3 Surface Hybrid Intelligence x Zava Financial (never a browser).
+# Launches the native WinUI 3 Surface Hybrid Intelligence Studio (never a browser).
 # Backend lifecycle is owned by the app: it reuses a showcase service already on
 # 127.0.0.1:$Port (left running on exit), otherwise it starts server.py with
 # HYBRID_STUDIO_PYTHON, the project .venv or the sibling Foundry SDK venv, logs to
@@ -18,9 +18,16 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $project = Join-Path $root 'native\HybridIntelligenceStudio.csproj'
+$nativeArchitecture = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name PROCESSOR_ARCHITECTURE).PROCESSOR_ARCHITECTURE
+$rid = switch ($nativeArchitecture) {
+    'ARM64' { 'win-arm64' }
+    'AMD64' { 'win-x64' }
+    default { throw "Unsupported native Windows architecture: $nativeArchitecture. ARM64 or x64 is required." }
+}
+$platform = if ($rid -eq 'win-arm64') { 'ARM64' } else { 'x64' }
 $candidates = @(
-    (Join-Path $root 'native\bin\Release\net10.0-windows10.0.26100.0\win-arm64\HybridIntelligenceStudio.exe'),
-    (Join-Path $root 'native\bin\ARM64\Release\net10.0-windows10.0.26100.0\win-arm64\HybridIntelligenceStudio.exe')
+    (Join-Path $root "native\bin\Release\net10.0-windows10.0.26100.0\$rid\HybridIntelligenceStudio.exe"),
+    (Join-Path $root "native\bin\$platform\Release\net10.0-windows10.0.26100.0\$rid\HybridIntelligenceStudio.exe")
 )
 
 function Find-Exe { $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1 }
@@ -42,8 +49,8 @@ function Find-Dotnet {
 $exe = Find-Exe
 if ($Rebuild -or -not $exe) {
     $dotnet = Find-Dotnet
-    Write-Host "Building Surface Hybrid Intelligence x Zava Financial with $dotnet ..."
-    & $dotnet build $project -c Release -nologo -v minimal
+    Write-Host "Building Surface Hybrid Intelligence Studio with $dotnet ..."
+    & $dotnet build $project -c Release -r $rid -nologo -v minimal
     if ($LASTEXITCODE -ne 0) { throw "Native build failed (exit $LASTEXITCODE)." }
     $exe = Find-Exe
     if (-not $exe) { throw 'Build completed but HybridIntelligenceStudio.exe was not found.' }

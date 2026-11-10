@@ -6,8 +6,8 @@ from local_engine import MEDIA_MODELS, MODELS, LocalEngine
 from surface_devicekit import DeviceDetectionService, simulate
 from surface_devicekit.foundry import CatalogVariant, norm_ep
 
-# The reference PC the demos were tuned on: an NVIDIA GPU-first Surface with 64 GB.
-REFERENCE_DEVICE = "nvidia-n1x-64"
+# The reference PC with enough memory for the full resident lineup.
+REFERENCE_DEVICE = "nvidia-n1x-128"
 CATALOG_FIXTURE = device_context.ROOT / "devicekit" / "python" / "tests" / "data" / "foundry-catalog-arm64-cuda.json"
 
 

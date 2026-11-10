@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import device_context
+import gpu_runtime
 import target_plan
 from fakes import REFERENCE_DEVICE, FakeSource, real_catalog, reference_builds, report_for, service_for
 from local_engine import LANES_ENV, LocalEngine, ThinkFilter, forced_lanes, lane_phrase
@@ -66,6 +67,14 @@ class ThinkFilterTests(unittest.TestCase):
 
 
 class LaneTests(unittest.TestCase):
+    def test_x64_never_downloads_or_loads_arm64_gpu_supplement(self):
+        with patch.object(gpu_runtime.os, "name", "nt"), patch.object(gpu_runtime, "architecture", return_value="AMD64"), \
+                patch.object(gpu_runtime, "install") as install, patch.object(gpu_runtime, "preload") as preload:
+            result = gpu_runtime.ensure("unused", allow_download=True)
+        self.assertEqual(result["state"], "not_needed")
+        install.assert_not_called()
+        preload.assert_not_called()
+
     def test_lane_phrases_name_the_lane_and_never_a_speed(self):
         self.assertEqual(lane_phrase("npu"), "the NPU")
         self.assertEqual(lane_phrase("cpu"), "the CPU")
@@ -108,10 +117,10 @@ class EngineTargetTests(unittest.TestCase):
         self.assertEqual({item["where"] for item in engine.expected_models()}, {RTX})
         self.assertEqual([slot["model"] is not None for slot in engine.target_info()["slots"]], [True] * 5)
 
-    def test_a_snapdragon_pc_runs_everything_on_the_npu_and_maps_the_tuned_names_to_its_models(self):
+    def test_a_snapdragon_pc_maps_the_tuned_names_to_models_that_fit_together(self):
         engine = self.preview("snapdragon-x2-elite-24")
         self.assertEqual(engine.alias_for("qwen2.5-coder-14b"), "qwen2.5-7b")
-        self.assertEqual(engine.alias_for("gpt-oss-20b"), "deepseek-r1-7b")
+        self.assertEqual(engine.alias_for("gpt-oss-20b"), "phi-4-mini-reasoning")
         self.assertEqual(engine.describe(None), {"label": "Qwen2.5 7B", "where": "the NPU", "lane": "npu", "available": True})
         self.assertEqual({(item["lane"], item["where"]) for item in engine.expected_models()}, {("npu", "the NPU")})
         self.assertTrue(engine.reasoning("gpt-oss-20b"), "the reasoning slot's model thinks before it answers")
@@ -124,8 +133,8 @@ class EngineTargetTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "CPU"):
             engine.require_alias("gpt-oss-20b")
         self.assertEqual(engine.describe("gpt-oss-20b")["available"], False)
-        self.assertEqual([row["slot"] for row in engine.unavailable_models()], ["reasoner"])
-        self.assertEqual(len(engine.expected_models()), 4)
+        self.assertEqual([row["slot"] for row in engine.unavailable_models()], ["reasoner", "asr", "vision", "embed"])
+        self.assertEqual(len(engine.expected_models()), 1)
         self.assertEqual(engine.alias_for("qwen2.5-coder-14b"), "qwen2.5-0.5b")
 
     def test_a_preview_is_provisional_until_the_catalog_answers(self):
@@ -250,7 +259,60 @@ class TargetPlanTests(unittest.TestCase):
         self.assertIn("CPU", choices["reasoner"].blocker)
         self.assertEqual(choices["chat"].model.lane, "cpu")
         forced = target_plan.estimate(report_for("nvidia-n1x-64"), catalog, lanes={"cpu"})
-        self.assertEqual({choice.model.lane for choice in forced.values()}, {"cpu"})
+        self.assertEqual({choice.model.lane for choice in forced.values() if choice.model}, {"cpu"})
+
+    def test_every_sample_lineup_fits_its_lanes_and_shared_memory_pool(self):
+        catalog = device_context.service().catalog
+        for device in service_for().simulated_devices:
+            with self.subTest(device=device.id):
+                report = report_for(device.id)
+                choices = target_plan.estimate(report, catalog)
+                lane_usage, pool_usage, limits, variants = {}, {}, {}, set()
+                for lane in report.profile.usable_lanes:
+                    pool = "discrete" if lane.kind == "gpu-discrete" else "system"
+                    limits[pool] = max(limits.get(pool, 0), lane.budget_gb)
+                for choice in choices.values():
+                    model = choice.model
+                    if model is None or model.variant_id in variants:
+                        continue
+                    variants.add(model.variant_id)
+                    lane = report.profile.lane(model.lane)
+                    pool = "discrete" if lane.kind == "gpu-discrete" else "system"
+                    lane_usage[lane.id] = lane_usage.get(lane.id, 0) + model.required_gb
+                    pool_usage[pool] = pool_usage.get(pool, 0) + model.required_gb
+                    self.assertLessEqual(lane_usage[lane.id], lane.budget_gb + 1e-9)
+                    self.assertLessEqual(pool_usage[pool], limits[pool] + 1e-9)
+
+    def test_shared_model_variant_is_budgeted_once(self):
+        from dataclasses import replace
+
+        chat = target_plan.SLOTS[0]
+        second = replace(chat, key="another-chat")
+        with patch.object(target_plan, "SLOTS", (chat, second)):
+            choices = target_plan.estimate(report_for("intel-pentium-8"), device_context.service().catalog)
+        self.assertIsNotNone(choices[chat.key].model)
+        self.assertEqual(choices[chat.key].model.variant_id, choices[second.key].model.variant_id)
+
+    def test_small_pc_does_not_count_cpu_and_npu_memory_twice(self):
+        choices = target_plan.estimate(report_for("snapdragon-x2-plus-8"), device_context.service().catalog)
+        self.assertEqual(choices["chat"].model.lane, "npu")
+        self.assertIsNone(choices["vision"].model)
+        self.assertIn("resident lineup", choices["vision"].blocker)
+
+    def test_replanning_keeps_loaded_variants_and_reserves_them_before_replacements(self):
+        report = report_for("nvidia-n1x-64")
+        catalog = device_context.service().catalog
+        source = target_plan.EstimatedSource(catalog, report)
+        initial = target_plan.choose(report, catalog, source, usable={"cuda", "cpu"}, allow_download=True)
+        fixed = {key: choice.model for key, choice in initial.items() if key != "chat" and choice.model}
+        replanned = target_plan.choose(report, catalog, source, usable={"cuda", "cpu"}, allow_download=True,
+                                      fixed=fixed, failed={initial["chat"].model.variant_id})
+        for key, model in fixed.items():
+            self.assertIs(replanned[key].model, model)
+        self.assertNotEqual(replanned["chat"].model.variant_id, initial["chat"].model.variant_id)
+        gpu_models = {choice.model.variant_id: choice.model for choice in replanned.values()
+                      if choice.model and choice.model.lane == "gpu"}
+        self.assertLessEqual(sum(model.required_gb for model in gpu_models.values()), report.profile.lane("gpu").budget_gb)
 
     def test_only_a_gpu_lane_with_cuda_needs_the_cuda_supplement(self):
         self.assertTrue(target_plan.has_cuda_lane(report_for("nvidia-n1x-64")))

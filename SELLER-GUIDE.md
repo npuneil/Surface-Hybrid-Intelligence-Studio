@@ -1,17 +1,23 @@
-# Banking playbook: Surface Hybrid Intelligence x Zava Financial
+# Seller playbook: Surface Hybrid Intelligence Studio
 
-**Event:** Zava Financial executive briefing, theme *Hybrid AI for global banking*.
-Zava Financial is a fictional firm, and the reference architecture is illustrative
-rather than a description of any bank's systems. When you brief a real customer,
-use its name as text only: no logos, marks or affiliation claims.
+**Session:** Explore Hybrid Intelligence. Discover. Demonstrate. Evaluate.
+No customer or partner branding. The banking **Industry Examples** below are
+synthetic practice examples; the architecture is illustrative, not a description
+of any institution's systems.
 
-**Audience:** line-of-business leaders, CIOs, CDAOs, CISOs, model risk and technology teams.
+**Audience:** customers, partners, developers and presenters exploring local AI.
 
-**Positioning:** Hybrid AI for global banking. Client conversations, account data and NPI
-stay inside the firm; only de-identified, minimized queries for complex questions
-would go to Azure OpenAI; bankers review and approve every draft. This is a locally
-demonstrated workflow, not a claim that every workload belongs on a PC. The device
-earns its place through a measured pilot.
+**Prototype, not a product:** independent, experimental sample code, provided
+as-is without support, warranties or performance guarantees. Not a Microsoft
+product, production solution or endorsement. Use synthetic data and human review.
+
+**Seller talk track:** Ask which repeated workflow matters, what its baseline is,
+which data must stay local and where connectivity is unreliable. Demonstrate one
+relevant workflow, showing the source, draft, model, provider and measured timing.
+Explain the Hybrid router's NOT SENT cloud preview. Use sizing and Platform fit
+to discuss the device, then agree a pilot owner, human review, quality gate and
+success criteria. Never promise savings, ROI or a customer outcome; for the ROI
+conversation, point to the standalone **Hybrid Intelligence ROI Calculator** (coming soon).
 
 **Ground rules for the session:**
 - Every bank, client, account and record is fictional and synthetic.
@@ -25,7 +31,7 @@ earns its place through a measured pilot.
 
 ## The reference architecture (open with this)
 
-| Tier | Button on the Firm overview | Say |
+| Tier | Button on the Solution overview | Say |
 |---|---|---|
 | Tier 1: Smart capture (the banker's Surface) | **Run client meeting capture** | "The client conversation is captured with consent and transcribed locally. Nothing has left the laptop." |
 | Tier 2: In-firm drafting (local AI beside systems of record) | **Draft a KYC refresh checklist** | "Firm policy is applied inside the firm and a cited checklist comes back for the analyst. No risk rating is assigned." |
@@ -36,10 +42,10 @@ earns its place through a measured pilot.
 
 | Time | Show | Say |
 |---|---|---|
-| 0:00 | Firm overview: reference architecture and Device evidence | "Client data stay in the firm: recordings, account data and NPI remain inside. Let me prove each tier." |
+| 0:00 | Solution overview: reference architecture and Device evidence | "This independent prototype uses synthetic data to explore local AI and the local/cloud split. Let me show each tier." |
 | 0:45 | **Run client meeting capture** (Client meeting to call notes and actions, live) | "A synthetic client meeting is transcribed and drafted into call notes on this GPU. It marks the wire-limit review 'Not assigned' instead of inventing an owner." |
 | 2:00 | **Draft a KYC refresh checklist**, then **Route a complex question** | "The checklist waits for an analyst. For a complex question, only the de-identified query would reach the cloud." |
-| 3:15 | T-shirt sizing leader view, then Business case | "Which banker workflow matters most to you? Replace these illustrative inputs with your own baseline." |
+| 3:15 | T-shirt sizing leader view, then the ROI Calculator page | "Which banker workflow matters most to you, and what is today's baseline? We'll build the ROI case with your own numbers in the Hybrid Intelligence ROI Calculator, coming soon." |
 | 4:15 | Pilot close | "Let's scope a four-week pilot on synthetic client records, with bankers approving every draft and clear quality gates." |
 
 Swap the scenario to match the room: **Card disputes** for consumer and card
@@ -55,15 +61,16 @@ the audience-facing device name, availability and approved specifications.
 For a non-live walkthrough, explicitly choose **Authored rehearsal**.
 Never present rehearsal as an inference or timing measurement.
 
-**Memory correction:** This unit has **128 GB installed**, measured from physical
+**NVIDIA reference device:** The development unit has **128 GB installed**, measured from physical
 DIMM capacity. Approximately **64 GB is visible to Windows**; NVIDIA separately
 reports a **64,000 MiB GPU budget**. These are distinct memory views, not separate
 additive pools or a dedicated-VRAM claim. No memory partition settings are changed.
-The Firm overview shows the hero specs (128 GB unified memory, 6,144-core
-Blackwell RTX GPU, 20-core CPU, 15-inch PixelSense Ultra display); open
-**Device evidence** for the three memory views.
+The Solution overview reads the actual PC's inventory, not these fixed figures.
+The NVIDIA reference device has a 6,144-core Blackwell RTX GPU, 20-core CPU and
+15-inch PixelSense Ultra display; open **Device evidence** for the memory views
+on the PC being demonstrated.
 
-**Larger-model walkthrough:** Start with **Qwen2.5-Coder 14B**, then use the
+**Larger-model walkthrough (compatible NVIDIA hardware only):** Start with **Qwen2.5-Coder 14B**, then use the
 on-device model selector to load **GPT-OSS 20B**. Wait for ready status before
 running. The workspace keeps one chat model resident at a time; the Live demos
 face-off loads both. GPT-OSS can spend longer reasoning
@@ -122,9 +129,9 @@ Rules for live demos:
   separate checkboxes to select workloads for sizing. If the GPU is busy or
   not ready, the demo explains why it cannot start.
 
-## Banking scenarios and a leave-behind deck
+## Industry Examples and a leave-behind deck
 
-The **Banking scenarios** page has six fictional Zava Financial workflows: KYC
+The **Industry Examples** page has six fictional Example bank workflows: KYC
 refresh, card dispute intake, model risk documentation readiness, treasury
 onboarding, markets settlement breaks and wealth review preparation. Pick the one closest to the room, then:
 
@@ -149,7 +156,7 @@ The **Show it off** page has a five-step run of show, one button per step:
 | 1. Show the decision | Open the router (loads *Supplier payment with today's rates*) | "This client reply has an account number *and* needs today's exchange rates. The PC redacts the details first, so only the clean request would go to the cloud." |
 | 2. Put a number on it | Run speed test | "That's how fast this model is generating on this laptop's GPU right now. One run here, not a benchmark." |
 | 3. Prove it's an endpoint | Open Build on Surface | "Bank developers and data scientists call this like a cloud API, but it's on 127.0.0.1." Start the endpoint, then **Send a test call**. |
-| 4. Make it theirs | Banking scenarios | Run the banking workflow closest to their role. |
+| 4. Make it theirs | Industry Examples | Run the banking workflow closest to their role. |
 | 5. Leave with a deck | Open PPTX Forge | Stage the matching brief and build the leave-behind locally. |
 
 On the **Hybrid router**, press **Route** for the decision and its reasons (no model
@@ -252,6 +259,15 @@ are not implemented merely because a use-case card describes them.
 runtime and device together." Use the platform page's official source links
 to qualify a proposed configuration; memory arithmetic alone is insufficient.
 
+## ROI: the standalone Hybrid Intelligence ROI Calculator
+
+The studio no longer has a business-case page. The **ROI Calculator** page points to
+the standalone **Hybrid Intelligence ROI Calculator**, a separate Windows app to help
+customers understand the ROI of using local AI, coming soon to the Microsoft Store. Its
+**PREVIEW** link opens the current Store listing. Use it after you have agreed a workflow
+and its baseline, with the customer's own numbers; the studio itself makes no savings or
+ROI claim, and a pilot measures the result.
+
 ## Optional: ramp up with "Coding as a second language"
 
 Bankers, operations and technology staff who want to follow developer conversations can take the
@@ -259,7 +275,8 @@ optional eight-lesson AI-literacy module. It teaches reading,
 not writing, code, and ends with reviewing AI-written code. Use **Ask the
 local coding tutor** to have the on-device coding model explain any lesson's code
 in plain English. Treat its answer as a draft, like any generated output.
-Hide the tab from the Banking playbook page if you do not need it.
+The tab is hidden by default. To use it, turn on **Show the optional 'Coding as a
+second language' tab** on the Seller playbook page; turn it off there to hide it again.
 
 ## Handle the important objections
 
@@ -290,10 +307,12 @@ That is not a security or air-gap certification. Setup/catalog operations can
 use the network, and minimal SDK process telemetry may remain.
 Evaluate deployment controls with the firm's information security, privacy and model risk teams.
 
-**"How much money will it save?"** The calculator estimates possible capacity,
-not cash savings. Its device cost is an assumption, not a quote. Add software,
-deployment, support and change-management costs in a complete business case.
-Retain existing cloud subscriptions in the analysis.
+**"How much money will it save?"** This studio makes no savings or ROI claim.
+Build the ROI case with the customer's own numbers in the standalone Hybrid
+Intelligence ROI Calculator (coming soon; see the ROI Calculator page). A complete
+case also includes software, deployment, support and change-management costs, and
+device costs come from a quote, not an assumption. Retain existing cloud
+subscriptions in the analysis, and measure time savings and adoption in a pilot.
 
 **"Does it work disconnected?"** Do not claim a result not measured. Prepare
 models first, then validate the exact workflow with connectivity intentionally

@@ -139,18 +139,18 @@ internal sealed partial class MainWindow : Window
             Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(12, 8, 0, 8),
             Children = { Logo(32, "NavLogo"), Stack(0, Id(Text(Brand.Mark, 15, Accent, FontWeights.Bold), "NavMark"), Small(Brand.MarkSubtitle)) }
         };
-        AddNav("overview", "Firm overview", "\uE80F", "NavOverview");
+        AddNav("overview", "Solution overview", "\uE80F", "NavOverview");
         AddNav("device", "This PC", "\uE7F4", "NavDevice");
         AddNav("live", "Live workspace", "\uE945", "NavLive");
         AddNav("demos", "Live demos", "\uE768", "NavDemos");
         AddNav("hybrid", "Hybrid router", "\uE8AB", "NavHybrid");
-        AddNav("industries", "Banking scenarios", "\uE7BE", "NavIndustries");
+        AddNav("industries", "Industry Examples", "\uE7BE", "NavIndustries");
         AddNav("showoff", "Show it off", "\uEC4A", "NavShowOff");
         AddNav("build", "Build on Surface", "\uE943", "NavBuild");
         AddNav("sizing", "T-shirt sizing", "\uE9D9", "NavSizing");
         AddNav("platforms", "Platform fit", "\uE7F8", "NavPlatforms");
-        AddNav("business", "Business case", "\uE8EF", "NavBusiness");
-        AddNav("playbook", "Banking playbook", "\uE82D", "NavPlaybook");
+        AddNav("roi", "ROI Calculator", "\uE8EF", "NavRoi");
+        AddNav("playbook", "Seller playbook", "\uE82D", "NavPlaybook");
         AddLearnNav();
         var evidence = new NavigationViewItem { Content = "Device evidence", Icon = Glyph("\uE9D2", 16, Muted), SelectsOnInvoked = false, Tag = "evidence" };
         Id(evidence, "NavDeviceEvidence");
@@ -174,7 +174,7 @@ internal sealed partial class MainWindow : Window
         _pages["build"] = BuildBuild();
         _pages["sizing"] = BuildSizing();
         _pages["platforms"] = BuildPlatforms();
-        _pages["business"] = BuildBusiness();
+        _pages["roi"] = BuildRoi();
         _pages["playbook"] = BuildPlaybook();
         _pages["learn"] = BuildLearn();
         foreach (var (key, page) in _pages) Id(page, "Page_" + key);
@@ -301,7 +301,6 @@ internal sealed partial class MainWindow : Window
         ApplyLiveStatus(status);
         ApplyDemosStatus(status);
         ApplySizingStatus(status);
-        ApplyBusinessStatus(status);
         ApplyLabStatus(status);
     }
 

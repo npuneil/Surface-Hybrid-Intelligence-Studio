@@ -1,29 +1,96 @@
-# Surface Hybrid Intelligence x Zava Financial | Surface Laptop Ultra
+# Surface Hybrid Intelligence Studio
 
-A native **WinUI 3** local AI showcase, tailored for **Zava Financial**, a fictional
-global financial services firm. Built for line-of-business leaders, CIOs, CDAOs,
-CISOs, model risk and technology teams, it adds
+A native **WinUI 3** prototype for exploring **Hybrid Intelligence on Surface**.
+Customers, partners and developers can explore local AI workflows, the local/cloud
+split and workload-to-device fit using synthetic data and measured local runs.
+The device kit detects the PC's silicon and memory; the live model catalog
+determines which model variants and demos can run. It includes
 a three-tier **illustrative banking reference architecture** (smart capture at the
 client meeting, in-firm drafting, cloud support only for de-identified complex
 questions), six fictional **banking scenarios** (card dispute intake, KYC refresh, treasury onboarding,
 markets settlement breaks, wealth review preparation and model risk documentation
 readiness), twelve one-click **live demos** (including a synthetic
-client meeting transcribed and drafted into call notes and actions on the RTX GPU),
+client meeting transcribed and drafted into call notes and actions locally),
 a **Hybrid router** that shows what stays in the firm and what de-identified query
 would go to the cloud, a **GPU speedometer** and run of show, a **Build on Surface**
-hub, T-shirt model sizing, platform-fit use cases and an assumption-driven capacity
-calculator. Independent demonstration prototype, not a product announcement or
+hub, T-shirt model sizing, platform-fit use cases and a pointer to the standalone
+**Hybrid Intelligence ROI Calculator** (coming soon). Independent demonstration prototype, not a product announcement or
 endorsement. The conceptual device illustration is original, not a product photograph.
 
-## The Zava Financial executive briefing
+## On-Device AI Prototypes & Sample Code
 
-Prepared as a **Zava Financial** executive briefing, theme *Hybrid AI for global banking*.
-Zava Financial is a fictional global financial services firm, not a real company, and
-the architecture is illustrative rather than a description of any bank's systems.
-Every firm, client, account and record in the app is fictional (Zava Financial,
-Woodgrove Bank, Contoso Bank and similar). To brief a real customer, generate a
-separate edition with its own manifest (see *Editions and scale-out harness*) and use
-the customer's name as text only: no logos, marks or affiliation claims.
+### Overview
+
+This repository contains independent prototypes, demos and sample code for
+educational and demonstration purposes. It illustrates approaches to local AI
+and hybrid workflows; **it is a prototype, not a product**. It does not contain
+a Microsoft product and is not a supported or production-ready offering.
+
+### Prototype & Sample Code Disclosure
+
+All code and demos are experimental, may be incomplete, and may change or be
+removed without notice. The contents are provided **as-is, without warranties
+or guarantees of any kind**.
+
+### No Product, Performance, or Business Claims
+
+This repository makes no guarantees about performance, accuracy, productivity,
+cost savings, reliability or security. Live timings describe a single run on
+the reported device, not a benchmark, comparison or expected result. Device-fit
+plans are memory estimates checked against the runtime catalog, not hardware
+qualification. The Studio makes no savings or ROI forecast.
+
+### AI Output Variability
+
+AI output may be non-deterministic, incomplete or incorrect and may vary across
+runs, devices and environments. Authored rehearsal output is labelled and is
+never presented as live inference.
+
+### Responsible AI Considerations
+
+These are technical patterns, not validated AI systems. Evaluate fairness,
+reliability, privacy, accessibility and safety before adapting them. Production
+use requires independent testing, human oversight and domain-specific safeguards.
+
+### No Financial, Investment, Procurement, Legal, or Tax Advice
+
+Nothing in this repository is professional advice, a pricing quote or a
+procurement recommendation. Validate any real decision against current sources,
+applicable policies and qualified human review.
+
+### Data & Fictitious Content
+
+All bundled organizations, client records and workflow inputs are fictional
+and synthetic. Do not enter real customer data, confidential information or
+nonpublic personal information into this demonstration.
+
+### Third-Party Components
+
+.NET, Windows App SDK, Foundry Local, execution providers, model weights and other
+third-party components remain subject to their own licenses and terms. Installer
+packs do not redistribute model weights; setup downloads compatible models from
+the runtime catalog. Review the applicable licenses before use.
+
+### No Endorsement / No Affiliation
+
+Microsoft, Surface, Intel, Qualcomm Snapdragon, NVIDIA and other product or
+organization names are used only for descriptive context. Their use does not
+imply affiliation, sponsorship, endorsement or an official product announcement.
+The original conceptual artwork is not official brand artwork.
+
+### No Support
+
+The repository owner provides no support, SLAs or warranties. Use and adaptation
+are at your own risk and subject to your legal, regulatory and operational duties.
+
+## Explore the prototype
+
+Open **Solution overview**, then use **Seller playbook** for the talk track:
+discover a repeated workflow, prove one draft live, explain the local/cloud split,
+size the device and agree a pilot with a baseline, owner and quality gate.
+The banking **Industry Examples** are synthetic practice examples, not a named
+customer briefing or a description of any institution's systems. Keep customer
+and partner names, logos and affiliation claims out of the bundled examples.
 
 The earlier cross-industry studio (manufacturing, insurance, retail and public sector
 scenarios) remains available as release
@@ -40,10 +107,10 @@ Guardrails:
   identifiers only and is not certified. No core banking, CRM or payments
   connection is made.
 
-Suggested five-minute flow: **Firm overview** reference architecture ->
+Suggested five-minute flow: **Solution overview** reference architecture ->
 **Run client meeting capture** (Tier 1) -> **Draft a KYC refresh checklist** (Tier 2) ->
 **Route a complex question** in the Hybrid router (escalate, NOT SENT) ->
-**Banking playbook** to agree a four-week pilot on synthetic client records. See
+**Seller playbook** to agree a four-week pilot on synthetic client records. See
 [SELLER-GUIDE.md](SELLER-GUIDE.md) (the banking playbook; the file name is kept for
 the `/seller-guide` route).
 
@@ -52,13 +119,13 @@ demos.
 
 ## Illustrative reference architecture: hybrid AI for global banking
 
-The **Firm overview** opens with a three-tier reference architecture. It is an
+The **Solution overview** opens with a three-tier reference architecture. It is an
 illustrative pattern, not any bank's actual design. Each tier has a button that
 proves it with a live, local demo:
 
 | Tier | Where it runs | What it does | Proved in the app by |
 |---|---|---|---|
-| **Tier 1: Smart capture** | The banker's Surface at the client meeting | Capture the conversation with consent, transcribe locally, draft call notes, sync securely inside the firm | **Run client meeting capture**: the *Client meeting to call notes and actions* demo transcribes a synthetic client meeting on the RTX GPU |
+| **Tier 1: Smart capture** | The banker's Surface at the client meeting | Capture the conversation with consent, transcribe locally, draft call notes, sync securely inside the firm | **Run client meeting capture**: the *Client meeting to call notes and actions* demo transcribes a synthetic client meeting on a supported local lane |
 | **Tier 2: In-firm drafting** | Local AI beside the firm's systems of record | Apply policies and procedures, draft checklists and next steps, keep client records inside the firm | **Draft a KYC refresh checklist**: the *KYC refresh notes to a review checklist* scenario, live |
 | **Escalate only when needed** | Inside the firm | Remove NPI and account numbers, minimize context, algorithmic delegation | **Route a complex question**: the Hybrid router's *Complex question* preset masks the client's name, account number and email |
 | **Tier 3: Cloud support** | External cloud (Azure OpenAI) | Frontier reasoning for complex questions; de-identified queries in, model support out | **Preview the cloud payload**: the de-identification demo shows what would leave, marked NOT SENT |
@@ -77,22 +144,41 @@ compliance determination.
 
 The [latest release](https://github.com/npuneil/Surface-Hybrid-Intelligence-Studio/releases/latest) contains:
 
+App filenames are `HybridIntelligenceStudio-<version>-<package>.zip`, using the
+package names below. Model weights are downloaded during preparation, not bundled.
+
 | File | What it is |
 |---|---|
-| `HybridIntelligenceStudio-<version>-win-arm64.zip` | The self-contained app (no .NET or Windows App SDK install needed), the local service, demo content and `Setup.cmd` |
+| Snapdragon-arm64 | Native ARM64 app for Qualcomm Snapdragon devices |
+| Intel-x64 | Native x64 app for Intel and AMD devices without an NVIDIA GPU |
+| NVIDIA-arm64 | Native ARM64 app for NVIDIA-based Surface devices |
+| NVIDIA-x64 | Native x64 app for devices with a discrete NVIDIA GPU |
 | `HybridIntelligenceStudio-<version>-icon-pack.zip` | The app icon: PNG from 16 to 1024 px, a multi-size `.ico` and the `.svg` source, with a NOTICE |
-| `SHA256SUMS.txt` | SHA-256 hashes of both zips |
+| `SHA256SUMS.txt` | SHA-256 hashes of the release zips |
 
 Check the hash, unblock the zip (`Unblock-File`), extract it to a short path
-such as `C:\Apps`, then double-click `Setup.cmd`. It finds an ARM64 Python 3.12
+such as `C:\Apps`, then double-click `Setup.cmd`. It finds native Python 3.12
 to 3.14 (3.13 tested), creates `.venv`, installs `requirements.txt` with the
 tested dependency versions pinned in `constraints.txt`, adds the
-desktop shortcut, then downloads every model the app uses and runs each live
-demo once to check it. `.\Setup.ps1 -Prepare` does the same from a terminal
+desktop shortcut, then downloads the model variants selected for this PC and runs
+its fully supported demos once to check them. Models and demos that do not fit
+are reported, not downloaded or presented as ready. `.\Setup.ps1 -Prepare` does the same from a terminal
 (Windows PowerShell 5.1 or PowerShell 7); `-NoShortcut`, `-Port` and
 `-Python <path>` are optional. The pre-flight result is saved to
-`.runtime\setup-prepare.json`. Requires Windows 11 on ARM64 with an NVIDIA GPU.
+`.runtime\setup-prepare.json`. Requires Windows 11 and an architecture-matched
+package and Python. Runtime/provider availability is checked against Foundry
+Local's live catalog; a package label does not override hardware detection.
 The app is not code-signed, so Windows may ask you to confirm the first launch.
+
+To build all four installer packs, the icon pack and checksums from source:
+
+```powershell
+.\tools\New-ReleasePackage.ps1
+```
+
+Both native architectures are built; cross-building does not qualify execution
+on hardware that has not been tested. Use each extracted pack's `Setup.cmd` on
+the target PC before demonstrating its live models.
 
 ## Run on this device
 
@@ -104,12 +190,12 @@ From the repository root:
 
 The native application uses real WinUI controls, not an embedded browser.
 Its C# interface talks to the existing loopback Python inference service so the
-verified CUDA model selection, stream filtering, and calculation rules stay
-consistent. **Qwen2.5-Coder 14B** and **GPT-OSS 20B** are the featured live models;
+device-fit model selection and stream filtering stay consistent.
+**Qwen2.5-Coder 14B** and **GPT-OSS 20B** are reference models on a sufficiently large NVIDIA device;
 larger llama.cpp models are offered when their weights are installed (see *Larger models*).
-Snapdragon and Intel recommendations are separate planning content, not
-claims of having run those platforms on this machine. This build targets
-Windows ARM64; platform guidance is not a cross-platform deployment package.
+Snapdragon and Intel models are selected from their device's actual catalog and
+supported NPU/GPU/CPU lanes. ARM64 and x64 packages are built separately.
+Planning and simulation are not claims of live verification on other hardware.
 
 The app reuses an identified showcase service already running on
 `127.0.0.1:8790` and leaves that external service running when it closes.
@@ -117,7 +203,7 @@ If none exists, it starts the local Python service itself and stops that
 owned service on exit; a Windows job object also prevents an orphan if the
 app crashes. Startup logs are in `.runtime\native\backend-*.log`.
 `-Port`, `-Windowed`, `-Section <page>` (overview, device, live, demos, hybrid, industries,
-showoff, build, sizing, platforms, business, playbook, learn), and `-Rebuild` are supported by
+showoff, build, sizing, platforms, roi, playbook, learn), and `-Rebuild` are supported by
 `Start-NativeShowcase.ps1`; no browser or extra terminal must remain open.
 The launcher builds the native executable if it is missing. A .NET 10 SDK
 and Windows App SDK NuGet packages are required for a build, not for every launch.
@@ -129,7 +215,7 @@ accent colours come from `edition.json` (see *Editions and scale-out harness*);
 `.\tools\Sync-Edition.ps1` regenerates `native\Brand.cs` and the PNG/ICO/SVG
 assets in `native\Assets`.
 `.\tools\Install-NativeShortcut.ps1` installs or updates the
-**Surface Hybrid Intelligence x Zava Financial** desktop shortcut with the native target,
+**Surface Hybrid Intelligence Studio** desktop shortcut with the native target,
 app icon and matching Windows taskbar identity.
 
 The live workspace offers five synthetic text workflows: executive briefing,
@@ -147,7 +233,10 @@ The **This PC** page shows what the Surface device kit (`devicekit\`, see
 [devicekit/README.md](devicekit/README.md)) detected here: processor, memory, GPU and NPU, and
 which lanes (NPU, GPU, CPU) run models, with each lane's runtimes. The studio has five model
 slots (chat, reasoning, speech, vision and embeddings), each tied to the model the demos were
-tuned on. Where that model fits its lane it runs unchanged; otherwise the slot gets the
+tuned on. The slots are planned together in that order. A shared variant is counted once;
+CPU, NPU and integrated/unified GPU allocations share one system-memory pool, while
+discrete video memory is separate. Loaded slots keep their reservation if another
+model fails and is replaced. Where the reference model fits the remaining budget it runs unchanged; otherwise the slot gets the
 strongest model in Foundry Local's catalog that fits, on this PC's best lane (on a PC whose NPU
 runs models, the NPU first, then the GPU, then the CPU). Models that are not downloaded yet are
 marked. **Demos on this PC** orders the demos by how well they fit; a demo whose models do not
@@ -164,15 +253,19 @@ the page.
 
 ### Live demos
 
-The **Live demos** tab has a launch button for each of twelve demos that run
-real models on the RTX GPU (Foundry Local CUDA variants only; no CPU or cloud
-fallback). Every input is synthetic and fictional. The meeting and voice-memo
+The **Live demos** tab positions demos by their fit on this PC. Live buttons stay
+disabled when a required model cannot fit or its runtime is unavailable; the reason
+is shown. A reduced model lineup may support only part of an independent comparison
+demo, labelled **limited** rather than fully ready. Every input is synthetic and fictional. The meeting and voice-memo
 audio is spoken by Windows text-to-speech, and the form and receipt images are
 drawn by Windows. Both are rendered once on the laptop by
 `Render-DemoMedia.ps1` into `.runtime\demo-media`. Because the script is known,
 the engine can grade live output against it.
 
-| Demo | Runs on the GPU | Graded by the engine |
+The table below lists the NVIDIA reference lineup, not a promise that every device
+uses these models. The app names the model and execution provider actually selected.
+
+| Demo | Reference models | Graded by the engine |
 |---|---|---|
 | Client meeting to call notes and actions | Whisper medium, then Qwen2.5-Coder 14B | Word accuracy against the spoken script; unowned action marked |
 | Voice memo to work order | Whisper medium, then Qwen2.5-Coder 14B | Valid JSON; fields match the memo |
@@ -194,9 +287,9 @@ answer is shown as a graded result, never hidden or replaced. **Play rehearsal**
 replays authored sample output, labelled *Rehearsal: no model ran*. The
 face-off, the five-model demo and non-default translation languages have no
 rehearsal. Editing a live instruction skips checks that depend on the default
-prompt. **Pre-flight: run every demo live** runs all twelve with their default
-inputs and reports how many ran end to end and how many passed every check. On
-this unit a warm pre-flight takes about three minutes. Export saves the
+prompt. **Pre-flight: run every demo live** runs the demos offered on this PC with
+their default inputs and reports end-to-end runs, checks and skipped demos with
+their reasons. Preparation time depends on this PC's models and runtime. Export saves the
 selected run's evidence as JSON. On the Sales sizing tab, each blue **Run live
 demo** button with a play icon opens the matching demo and starts a live
 run on this PC. The separate checkboxes select workloads for sizing; the buttons do not
@@ -206,9 +299,9 @@ not ready, the demo opens with the reason it cannot start; no rehearsal is subst
 Demos load extra models beside the selected chat model and keep them resident,
 so later runs skip loading. Selecting a model in the Live workspace still
 unloads the other chat models. Speech, vision and embedding models need two
-items that `Start-Showcase.ps1 -Prepare` downloads once:
-- the model weights;
-- NVIDIA's cuDNN 9.26 and NVRTC 13.4 redistributables, about 210 MB of
+items that preparation downloads when needed:
+- the compatible model weights selected for the detected PC;
+- On NVIDIA CUDA devices only, cuDNN 9.26 and NVRTC 13.4 redistributables, about 210 MB of
   SHA-256-pinned wheels from PyPI. They go into the app-data folder, because the
   Foundry Local ARM64 CUDA bundle ships cuDNN without the sub-libraries that
   convolution and attention graphs need.
@@ -299,6 +392,16 @@ Official references:
 - [OpenVINO GenAI pipelines and platform support](https://github.com/openvinotoolkit/openvino.genai)
 - [Microsoft Foundry Local SDK and execution providers](https://learn.microsoft.com/en-us/azure/foundry-local/reference/reference-sdk-current)
 
+### ROI Calculator
+
+The **ROI Calculator** page (section `roi`) points sellers to the standalone
+**Hybrid Intelligence ROI Calculator**, a separate Windows app to help customers
+understand the ROI of using local AI, coming soon to the Microsoft Store. Its
+**PREVIEW** link opens the current Microsoft Store listing. The URL
+is the single allow-listed constant `ApprovedLinks.RoiCalculatorPreview` in
+`native\PlatformGuide.cs`: replace it there when the final Store link is ready. The
+studio itself calculates and claims no savings or ROI.
+
 ### Optional: Coding as a second language
 
 An optional AI-literacy tab for bankers, operations and technology staff who want to ramp up technically. Eight
@@ -311,8 +414,9 @@ lessons are computed by the same engine as the sizing page (for example 14B at
 4-bit = 6.52 GiB of weights). **Ask the local coding tutor** opens the Live
 workspace with the lesson's code in the prompt so the local coding model explains it
 on this PC. Code is displayed, never executed. Progress is stored only in
-`%LOCALAPPDATA%\HybridIntelligenceStudio\learning.json`. Hide or restore the tab from
-the lesson page or the **Banking playbook** page.
+`%LOCALAPPDATA%\HybridIntelligenceStudio\learning.json`. The tab is hidden by default:
+turn it on with **Show the optional 'Coding as a second language' tab** on the
+**Seller playbook** page, and hide it again there or from the lesson page.
 
 ### Companion web presentation
 
@@ -322,18 +426,18 @@ the lesson page or the **Banking playbook** page.
 
 Open **http://127.0.0.1:8790**. Keep the launch terminal open. Ctrl+C stops only
 the process started by the launcher. Ctrl+Enter runs the selected AI story.
-The full-screen button expands the presentation. The Banking playbook contains
+The full-screen button expands the presentation. The Seller playbook contains
 the talk track and objection handling; **Print executive handout** prints a
 clean, audience-facing summary with the calculator's current assumptions.
-`.\tools\Install-NativeShortcut.ps1` adds a **Surface Hybrid Intelligence x Zava Financial** desktop shortcut.
+`.\tools\Install-NativeShortcut.ps1` adds a **Surface Hybrid Intelligence Studio** desktop shortcut.
 `Executive-Handout.pdf` is the prepared single-page handout using illustrative
 default assumptions; print again from the app after changing those inputs.
 Launching again opens the existing showcase rather than starting a second
 model process. Stop the original launch terminal before changing startup mode.
 
-### Banking scenarios and Offline PPTX Forge
+### Industry Examples and Offline PPTX Forge
 
-The **Banking scenarios** page (section `industries`) adds six fictional Zava Financial
+The **Industry Examples** page (section `industries`) adds six fictional Example bank
 workflows across lines of business, each a live drafting workflow on the local GPU model:
 
 | Line of business | Workflow |
@@ -373,7 +477,7 @@ Forge** button above still opens the external Forge.
 ### Hybrid Intelligence: router, show-off tools and builder hub
 
 Three pages turn "Hybrid Intelligence on Surface" from a slide into something people can
-see, measure and build on. The Firm overview links to all three.
+see, measure and build on. The Solution overview links to all three.
 
 **Hybrid router** (`-Section hybrid`) shows where a request should run and why. A published,
 deterministic policy (`hybrid.py`, standard library only) scans the text for identifiers and
@@ -388,7 +492,7 @@ data, beyond-device scale). It then picks one lane:
 - **Cloud**: nothing sensitive and a real cloud need.
 
 Six fictional presets cover each lane. **Route** is policy only (no model runs); **Run it on
-this PC** streams the local answer or the redaction from the RTX GPU. Cloud payloads are
+this PC** streams the local answer or the redaction on the detected model lane. Cloud payloads are
 displayed and marked **NOT SENT**: the studio never calls a cloud service. A gallery of seven
 hybrid patterns (local-first, redact-then-cloud, private knowledge, field, high volume,
 right-size, same API) links each pattern to a demo or page you can run now. The rules catch
@@ -419,7 +523,7 @@ structured identifiers, not every name or context clue; they are not a data-loss
 - **Code snippets**: copy-ready calls for the current endpoint and model (PowerShell, curl,
   Python, the OpenAI Python SDK, JavaScript, C# and the models list).
 - **Starter kits**: five small projects written to
-  `Documents\Surface Hybrid Intelligence x Zava Financial\Exports\Starters\<kit>-<time>`:
+  `Documents\Surface Hybrid Intelligence Studio\Exports\Starters\<kit>-<time>`:
 
   | Kit | Run | Shows |
   |---|---|---|
@@ -439,11 +543,12 @@ Live, Demos and Industries runs wait, and the other way round.
 
 ### Larger models
 
-The model selector has two tiers, all running on the RTX GPU:
+On a compatible NVIDIA device, the model selector also offers an optional
+llama.cpp tier. These larger weights are not installed by the standard setup:
 
 | Model | Runtime | Notes |
 |---|---|---|
-| **Qwen2.5-Coder 14B** (default), **GPT-OSS 20B** (reasoning) | Foundry Local CUDA | Featured models; already cached |
+| **Qwen2.5-Coder 14B**, **GPT-OSS 20B** (reasoning) | Foundry Local CUDA | Reference models, only when they fit and the catalog offers them |
 | **Qwen3-Coder 30B-A3B** | llama.cpp CUDA | Speech, vision and second-model demos can still run beside it |
 | **Llama 3.3 70B**, **GPT-OSS 120B** | llama.cpp CUDA | Need the GPU to themselves: Foundry Local closes while selected |
 | **MAI Code 1.1 Flash** (137B MoE) | Not available | Listed, disabled; see below |
@@ -513,10 +618,11 @@ Both launchers and the native app choose Python in this order: the
 `HYBRID_STUDIO_PYTHON` environment variable (must point to an existing
 `python.exe`), a project `.venv`, then an installed Foundry SDK environment in
 sibling folder `..\hydrafusion-autorouting-demo\.venv` if one exists. They do not
-modify that project. When present, the existing SDK data/cache folder
-`%LOCALAPPDATA%\ASUAgenticShowcase` is reused for provider registration and its
-`models` subfolder for the larger model weights; no ASU application source is changed.
-Otherwise the SDK uses `%USERPROFILE%\.surface-hybrid-intelligence-studio`. SDK logs
+modify that project. When another showcase on this PC already has a shared SDK
+data/cache folder (see `storage_dirs()` in `local_engine.py`), it is reused for
+provider registration and its `models` subfolder for the larger model weights; no
+other application's source is changed. Otherwise the SDK uses
+`%USERPROFILE%\.surface-hybrid-intelligence-studio`. SDK logs
 for this showcase go to `.runtime\foundry-logs`. Providers must be registered
 in each process, even when already cached. That SDK operation can check the
 network and repair its cache. No Python packages are automatically installed.
@@ -524,12 +630,12 @@ Use `-Prepare` explicitly to allow missing model/initial provider acquisition
 before presenting. `-RehearsalOnly` does not import the SDK or load a model.
 `-NoBrowser` and `-Port 8791` are also available.
 
-For a standalone installation from source on compatible Windows ARM64 NVIDIA hardware:
+For a standalone installation from source on compatible Windows 11 hardware:
 
 ```powershell
 git clone https://github.com/npuneil/Surface-Hybrid-Intelligence-Studio.git
 Set-Location Surface-Hybrid-Intelligence-Studio
-.\Setup.ps1 -Prepare                      # .venv, requirements.txt, every model checked
+.\Setup.ps1 -Prepare                      # .venv, requirements.txt, this PC's fitting models and demos
 .\Start-NativeShowcase.ps1                # builds the native app on first run
 .\tools\Install-NativeShortcut.ps1
 ```
@@ -579,7 +685,7 @@ App SDK.
   where available. SDK output token counts can include reasoning. Exported token
   rate includes prompt processing and reasoning, not decode-only speed.
   No comparative performance is implied.
-- The capacity calculator runs deterministic server-side arithmetic:
+- The companion web presentation's capacity calculator runs deterministic server-side arithmetic:
   people × tasks/day × minutes gained/task ÷ 60 × days/year × effective adoption.
   Capacity value = hours × loaded labor value. Assumed incremental hardware
   cost = people × assumed per-device difference. Default result: 2,640 hours,
@@ -596,7 +702,7 @@ No email, file-system automation, service-desk or Microsoft 365 integration exis
 
 Rehearsal is explicitly selected, labeled **authored / no inference**, and tied
 to the fixed sample prompt. Failures never substitute rehearsed text.
-The presentation and device inventory focus on the RTX GPU and CUDA.
+The presentation follows the detected device, available runtime and selected model lane.
 There is no fabricated cloud baseline, savings counter, battery test,
 accelerator-rating claim, PC certification claim or subscription replacement claim.
 RAM is not described as dedicated GPU memory.
@@ -615,7 +721,9 @@ The runtime may maintain its own model caches and logs. The optional builder
 endpoint is a separate, unauthenticated loopback API that is off until started;
 starter kits are written only when you create one and are never executed by the studio.
 
-Capacity value is not cash savings or an ROI forecast. Software, implementation,
+The native studio makes no savings or ROI claim; the ROI conversation belongs in the
+standalone Hybrid Intelligence ROI Calculator. The companion web presentation's
+capacity value is not cash savings or an ROI forecast. Software, implementation,
 support, financing and change-management costs are excluded. Adoption and time
 improvements are assumptions until a pilot measures them. Cloud subscriptions
 are unchanged. Confirm availability, approved positioning, model licensing,
@@ -623,9 +731,9 @@ exact shipping SKU and pricing with the appropriate channels before selling.
 
 ## Editions and scale-out harness
 
-The Zava Financial update was produced with this harness: `tools\New-Edition.ps1`
-re-badged a banking edition of the studio with a `zava-financial` manifest, then its
-content was retargeted to global banking workflows across lines of business.
+This independent prototype supports editions through `tools\New-Edition.ps1`, which
+can retarget the studio for another audience. The bundled banking workflows are
+fictional examples, with no customer or partner branding.
 
 The studio is built to be re-badged for another partner, device or audience
 without hand-editing a fork. `edition.json` is this tree's brand manifest:
@@ -695,7 +803,7 @@ The Surface device kit and the standalone Forge have their own checks, in
 
 Native checks exercise deterministic sizing boundaries, Sales-to-Technical
 parity, coding-lesson answers and progress storage, scenario parsing,
-platform claims, exports, native navigation, calculator, authored rehearsal,
+platform claims, exports, native navigation, the ROI Calculator link, authored rehearsal,
 every Live demos launch, rehearsal and hand-off, every Hybrid router preset's
 lane, the starter-kit writer's path guards, companion-tool discovery and the
 interlock between GPU jobs.
@@ -713,4 +821,4 @@ The live option exercises both AI stories on both featured larger CUDA models,
 exports measured evidence, and restores the default 14B model. It requires a
 running showcase with both models cached and checks this device's 128 GB / 64 GB
 memory views. Both browser modes validate the single-page PDF layout.
-See `SELLER-GUIDE.md` (the Banking playbook) for the presentation.
+See `SELLER-GUIDE.md` (the Seller playbook) for the presentation.

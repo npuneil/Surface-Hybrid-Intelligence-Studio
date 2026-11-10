@@ -56,6 +56,15 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(row["verified"])
         self.assertAlmostEqual(row["need_gib"], LARGE_MODELS["llama3.3-70b"]["overhead_gib"], places=1)
 
+    def test_installed_large_model_is_disabled_when_it_exceeds_detected_gpu_budget(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(llama_engine, "locate", return_value=(Path(tmp) / "model.gguf", int(40 * GIB), None, True)), \
+                patch.object(llama_engine, "server_exe", return_value=Path(__file__)):
+            row = next(r for r in LargeModelHost(Path(tmp)).catalog(memory_budget_gib=8) if r["alias"] == "llama3.3-70b")
+        self.assertTrue(row["cached"])
+        self.assertFalse(row["available"])
+        self.assertIn("8.0 GiB", row["blocker"])
+
 
 class PreflightTests(unittest.TestCase):
     def setUp(self):

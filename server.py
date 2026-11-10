@@ -161,14 +161,10 @@ class Handler(BaseHTTPRequestHandler):
     def demo_listing(self):
         """The demos with this PC's model names and lanes, how well each fits, and the order this PC is best at them."""
         view = self.server.view
-        try:
-            engine = view.shown()
-            fits, order = view.fits(engine)
-            rows = {row["id"]: row for row in demos.public(demos.wording(engine))}
-            return [{**rows[demo_id], "fit": fits[demo_id]} for demo_id in order]
-        except Exception:
-            logging.exception("Device-aware demo list failed; serving the plain list")
-            return demos.public(self.server.demos.wording())
+        engine = view.shown()
+        fits, order = view.fits(engine)
+        rows = {row["id"]: row for row in demos.public(demos.wording(engine))}
+        return [{**rows[demo_id], "fit": fits[demo_id]} for demo_id in order]
 
     def do_GET(self):
         if not self.valid_host():
@@ -190,9 +186,14 @@ class Handler(BaseHTTPRequestHandler):
                                       for k, v in SCENARIOS.items()})
         if path == "/api/demos":
             engine = self.server.engine.state
-            return self.json_out(200, {"demos": self.demo_listing(), "media": dict(self.server.media.state),
-                                       "engine": {"state": engine.get("state"), "model": engine.get("model"),
-                                                  "media": engine.get("media")}})
+            try:
+                listing = self.demo_listing()
+            except Exception as exc:
+                logging.exception("Device-aware demo list failed")
+                return self.json_out(503, {"error": f"Demo fit unavailable: {exc}"})
+            return self.json_out(200, {"demos": listing, "media": dict(self.server.media.state),
+                                      "engine": {"state": engine.get("state"), "model": engine.get("model"),
+                                                 "media": engine.get("media")}})
         if path == "/api/hybrid":
             return self.json_out(200, hybrid.public(hybrid_wording(self.server.view.shown())))
         if path == "/api/builder":
@@ -309,6 +310,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json_out(409, paused)
             if mode == "live" and self.server.engine.state["state"] != "ready":
                 return self.json_out(503, {"error": self.server.engine.state["detail"]})
+            if mode == "live":
+                try:
+                    fits, _ = self.server.view.fits(self.server.engine)
+                except Exception as exc:
+                    logging.exception("Could not verify demo fit")
+                    return self.json_out(503, {"error": f"Demo fit unavailable: {exc}"})
+                if fits[demo_id]["state"] == "unavailable":
+                    return self.json_out(409, {"error": fits[demo_id]["summary"]})
             if not self.server.run_lock.acquire(blocking=False):
                 return self.json_out(409, {"error": "A run is already active. Wait for it to finish."})
             return self.stream_events(lambda: self.server.demos.run(demo_id, mode, prompt, option, edited))

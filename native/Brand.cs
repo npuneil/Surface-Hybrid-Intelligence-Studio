@@ -6,12 +6,12 @@ namespace HybridIntelligenceStudio;
 /// <summary>Edition identity and accent. The self-test checks these against edition.json.</summary>
 internal static class Brand
 {
-    internal const string EditionId = "zava-financial";
-    internal const string DisplayName = "Surface Hybrid Intelligence x Zava Financial";
-    internal const string Device = "Surface Laptop Ultra";
-    internal const string WindowTitle = "Surface Hybrid Intelligence x Zava Financial - Surface Laptop Ultra";
+    internal const string EditionId = "studio";
+    internal const string DisplayName = "Surface Hybrid Intelligence Studio";
+    internal const string Device = "Surface";
+    internal const string WindowTitle = "Surface Hybrid Intelligence Studio - Surface";
     internal const string Mark = "Surface";
-    internal const string MarkSubtitle = "Hybrid Intelligence x Financial Services";
+    internal const string MarkSubtitle = "Hybrid Intelligence Prototype";
     internal const string CodeName = "HybridIntelligenceStudio";
     internal const string AppUserModelId = "SurfaceHybridIntelligence.Studio";
     internal const string ServiceAppId = "surface-hybrid-intelligence-studio";
